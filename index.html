@@ -1299,10 +1299,31 @@
             const [selectedIds, setSelectedIds] = useState({});
             const [exportFormat, setExportFormat] = useState('csv');
             const [delimiter, setDelimiter] = useState(',');
-            const [fileExtension, setFileExtension] = useState('csv');
             const [acadScriptType, setAcadScriptType] = useState('pline');
             const [addCsvDescription, setAddCsvDescription] = useState(false);
             const [generatedCommand, setGeneratedCommand] = useState('');
+            
+            // NEW: States for filename and extension
+            const [fileName, setFileName] = useState('تصدير_نقاط');
+            const [fileExtension, setFileExtension] = useState('csv');
+
+            // NEW: Effect to suggest filename and extension based on selected format
+            useEffect(() => {
+                if (exportFormat === 'csv') {
+                    setFileName('تصدير_نقاط');
+                    // The extension is handled by its own select dropdown for csv/txt
+                } else if (exportFormat === 'acad_script') {
+                    setFileName(`سكريبت_${acadScriptType}`);
+                    setFileExtension('scr');
+                }
+            }, [exportFormat, acadScriptType]);
+
+            // NEW: Effect to update acad script filename when script type changes
+            useEffect(() => {
+                if (exportFormat === 'acad_script') {
+                    setFileName(`سكريبت_${acadScriptType}`);
+                }
+            }, [acadScriptType]);
 
             const handleSelectionChange = (id, type) => {
                 setSelectedIds(prev => {
@@ -1325,10 +1346,16 @@
             };
 
             const handleExportClick = () => {
-                const command = onExport({ selectedIds, exportFormat, delimiter, fileExtension, acadScriptType, addCsvDescription });
+                if (!fileName || fileName.trim() === '') {
+                    addToast('الرجاء إدخال اسم ملف صالح.', 'error');
+                    return;
+                }
+                const options = { selectedIds, exportFormat, delimiter, fileExtension, acadScriptType, addCsvDescription };
+                const result = onExport(options, fileName.trim());
+
                 if (exportFormat === 'acad_script') {
-                    if(command) {
-                        setGeneratedCommand(command);
+                    if (result) {
+                        setGeneratedCommand(result);
                     }
                 } else {
                     onClose();
@@ -1336,6 +1363,7 @@
             };
 
             const copyCommandToClipboard = () => {
+                if (!generatedCommand) return;
                 const textArea = document.createElement("textarea");
                 textArea.value = generatedCommand;
                 document.body.appendChild(textArea);
@@ -1347,6 +1375,12 @@
                     addToast('فشل النسخ إلى الحافظة.', 'error');
                 }
                 document.body.removeChild(textArea);
+            };
+
+            const handleDownloadScript = () => {
+                if (!generatedCommand || !fileName) return;
+                downloadFile(generatedCommand, `${fileName.trim()}.scr`, 'application/octet-stream');
+                addToast('تم تنزيل ملف السكريبت.', 'success');
             };
 
             return (
@@ -1374,11 +1408,29 @@
                             </div>
                         </div>
                         <div>
-                            <h3 className="text-lg font-semibold mb-2">2. تحديد الصيغة</h3>
+                            <h3 className="text-lg font-semibold mb-2">2. تحديد الصيغة والإعدادات</h3>
                             <div className="space-y-2">
-                                <div className="flex items-center"><input type="radio" id="format-csv" name="format" value="csv" checked={exportFormat === 'csv'} onChange={e => {setExportFormat(e.target.value); setGeneratedCommand('')}} className="ml-2" /><label htmlFor="format-csv">ملف نصي</label></div>
-                                <div className="flex items-center"><input type="radio" id="format-acad" name="format" value="acad_script" checked={exportFormat === 'acad_script'} onChange={e => {setExportFormat(e.target.value); setGeneratedCommand('')}} className="ml-2" /><label htmlFor="format-acad">سكريبت AutoCAD/Civil</label></div>
+                                <div className="flex items-center"><input type="radio" id="format-csv" name="format" value="csv" checked={exportFormat === 'csv'} onChange={e => setExportFormat(e.target.value)} className="ml-2" /><label htmlFor="format-csv">ملف نصي</label></div>
+                                <div className="flex items-center"><input type="radio" id="format-acad" name="format" value="acad_script" checked={exportFormat === 'acad_script'} onChange={e => setExportFormat(e.target.value)} className="ml-2" /><label htmlFor="format-acad">سكريبت AutoCAD/Civil</label></div>
                             </div>
+                            
+                            {/* NEW: Filename Input */}
+                            <div className="mt-4">
+                                <label htmlFor="file-name-input" className="block text-sm font-medium mb-1">اسم الملف</label>
+                                <div className="flex">
+                                    <input 
+                                        id="file-name-input"
+                                        type="text" 
+                                        value={fileName} 
+                                        onChange={e => setFileName(e.target.value)} 
+                                        className="block w-full p-2 border rounded-r-md dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-blue-500" 
+                                    />
+                                    <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm dark:bg-slate-800 dark:border-slate-600 dark:text-slate-400">
+                                        .{fileExtension}
+                                    </span>
+                                </div>
+                            </div>
+                            
                             {exportFormat === 'csv' && (
                                 <div className="mt-4 space-y-4">
                                     <div>
@@ -1391,8 +1443,8 @@
                                         </select>
                                     </div>
                                     <div>
-                                        <label htmlFor="file-extension" className="block text-sm font-medium mb-1">نوع الملف</label>
-                                        <select id="file-extension" value={fileExtension} onChange={e => setFileExtension(e.target.value)} className="block w-full p-2 border rounded-md dark:bg-slate-700 dark:border-slate-600">
+                                        <label htmlFor="file-extension-select" className="block text-sm font-medium mb-1">نوع الملف</label>
+                                        <select id="file-extension-select" value={fileExtension} onChange={e => setFileExtension(e.target.value)} className="block w-full p-2 border rounded-md dark:bg-slate-700 dark:border-slate-600">
                                             <option value="csv">ملف CSV</option>
                                             <option value="txt">ملف نصي TXT</option>
                                         </select>
@@ -1420,10 +1472,16 @@
                         <div className="mt-4">
                             <h4 className="font-semibold mb-1">الأمر المولد:</h4>
                             <textarea readOnly value={generatedCommand} className="w-full h-24 p-2 border rounded-md dark:bg-slate-700 dark:border-slate-600 font-mono text-sm" />
-                            <button onClick={copyCommandToClipboard} className="button-primary mt-2">
-                                <Icon name="copy" size={16} className="inline-block ml-1" />
-                                نسخ الأمر
-                            </button>
+                            <div className="flex items-center gap-2 mt-2">
+                                <button onClick={copyCommandToClipboard} className="button-secondary">
+                                    <Icon name="copy" size={16} className="inline-block ml-1" />
+                                    نسخ الأمر
+                                </button>
+                                <button onClick={handleDownloadScript} className="button-primary">
+                                    <Icon name="download" size={16} className="inline-block ml-1" />
+                                    تنزيل ملف .scr
+                                </button>
+                            </div>
                         </div>
                     )}
                 </GenericModal>
@@ -1720,44 +1778,49 @@
             };
             
             // معالج عملية تصدير البيانات
-            const handleExportData = (options) => {
+            const handleExportData = (options, fileNameFromModal) => {
                 const { selectedIds, exportFormat, delimiter, fileExtension, acadScriptType, addCsvDescription } = options;
                 
                 const selectedGroups = workAreas.flatMap(area => 
                     area.groups.filter(group => selectedIds[area.id] || selectedIds[`group-${group.id}`])
                 );
 
-                if (selectedGroups.flatMap(g => g.points).length === 0) { addToast('لم يتم تحديد نقاط صالحة للتصدير.', 'error'); return null; }
+                const pointsToExport = selectedGroups.flatMap(g => g.points)
+                    .filter(p => p && p.utm && typeof p.utm.easting === 'number' && typeof p.utm.northing === 'number');
 
-                let content = '';
-                let fileName = 'export';
-                let mimeType = 'text/plain';
-                
+                if (pointsToExport.length === 0) {
+                    addToast('لم يتم تحديد نقاط صالحة للتصدير.', 'error');
+                    return null;
+                }
+
                 const safeToFixed = (num, digits = 3) => (typeof num === 'number' ? num.toFixed(digits) : '0.000');
                 
-                const pointsToExport = selectedGroups.flatMap(g => g.points).filter(p => p && p.utm && typeof p.utm.easting === 'number' && typeof p.utm.northing === 'number');
-
-                switch(exportFormat) {
-                    case 'csv':
-                        content = pointsToExport.map((p, index) => {
-                            const base = `${safeToFixed(p.utm.easting)}${delimiter}${safeToFixed(p.utm.northing)}${delimiter}${safeToFixed(p.elevation)}`;
-                            return addCsvDescription ? `${index + 1}${delimiter}${base}${delimiter}${p.description || ''}` : base;
-                        }).join('\n');
-                        fileName += `.${fileExtension}`;
-                        mimeType = fileExtension === 'csv' ? 'text/csv' : 'text/plain';
-                        downloadFile(content, fileName, mimeType);
-                        break;
-                    case 'acad_script':
-                        if (acadScriptType === 'pline') {
-                            content = selectedGroups.map(group => "PLINE\n" + group.points.map(p => `${safeToFixed(p.utm?.easting)},${safeToFixed(p.utm?.northing)}`).join('\n')).join('\n \n');
-                        } else { // points
-                            content = pointsToExport.map(p => `_POINT ${safeToFixed(p.utm?.easting)},${safeToFixed(p.utm?.northing)},${safeToFixed(p.elevation)}`).join('\n');
-                        }
-                        fileName = `acad_script_${acadScriptType}.scr`;
-                        mimeType = 'application/octet-stream';
-                        downloadFile(content, fileName, mimeType);
-                        break;
+                let content = '';
+                
+                if (exportFormat === 'csv') {
+                    content = pointsToExport.map((p, index) => {
+                        const base = `${safeToFixed(p.utm.easting)}${delimiter}${safeToFixed(p.utm.northing)}${delimiter}${safeToFixed(p.elevation)}`;
+                        return addCsvDescription ? `${index + 1}${delimiter}${base}${delimiter}${p.description || ''}` : base;
+                    }).join('\n');
+                    
+                    const finalFileName = `${fileNameFromModal}.${fileExtension}`;
+                    const mimeType = fileExtension === 'csv' ? 'text/csv' : 'text/plain';
+                    downloadFile(content, finalFileName, mimeType);
+                    return null; // Download is handled
+                } 
+                else if (exportFormat === 'acad_script') {
+                    if (acadScriptType === 'pline') {
+                        content = selectedGroups.map(group => 
+                            "PLINE\n" + group.points.map(p => `${safeToFixed(p.utm?.easting)},${safeToFixed(p.utm?.northing)}`).join('\n')
+                        ).join('\n \n');
+                    } else { // points
+                        content = pointsToExport.map(p => 
+                            `_POINT ${safeToFixed(p.utm?.easting)},${safeToFixed(p.utm?.northing)},${safeToFixed(p.elevation)}`
+                        ).join('\n');
+                    }
+                    return content; // Return script content for the modal
                 }
+
                 return null;
             };
 
