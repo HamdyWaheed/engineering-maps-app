@@ -841,11 +841,12 @@
         // ====================================================================
         
         // مكون شريط الأدوات العائم على الخريطة
-        const FloatingToolbar = ({ settings, onUpdateSettings, onAddPointFromCurrentLocation, isDeleteMode, onToggleDeleteMode, isZoomedInEnough }) => {
+        const FloatingToolbar = ({ settings, onUpdateSettings, onAddPointFromCurrentLocation, isDeleteMode, onToggleDeleteMode, isZoomedInEnough, onTakeScreenshot }) => {
             const [isOpen, setIsOpen] = useState(false);
             const { showPolylines, showElevations, showLabels, labelContent, isMeasuring, isAreaMeasuring, snapEnabled } = settings;
             
             const tools = [
+                { id: 'screenshot', icon: 'camera', title: 'أخذ لقطة شاشة', action: onTakeScreenshot, active: false },
                 { id: 'location', icon: 'crosshair', title: 'إضافة نقطة من موقعي', action: onAddPointFromCurrentLocation, active: false },
                 { id: 'measure', icon: 'ruler', title: 'قياس المسافة', action: () => onUpdateSettings('isMeasuring', !isMeasuring), active: isMeasuring },
                 { id: 'area', icon: 'square', title: 'قياس المساحة', action: () => onUpdateSettings('isAreaMeasuring', !isAreaMeasuring), active: isAreaMeasuring },
@@ -858,7 +859,7 @@
             ];
 
             return (
-                 <div className="absolute bottom-4 left-4 z-10 flex flex-row-reverse items-center gap-2">
+                 <div id="floating-toolbar" className="absolute bottom-4 left-4 z-10 flex flex-row-reverse items-center gap-2">
                     <button 
                         onClick={() => setIsOpen(o => !o)} 
                         className="w-14 h-14 bg-blue-600 text-white rounded-full shadow-lg flex items-center justify-center hover:bg-blue-700 transition-all duration-300"
@@ -884,7 +885,7 @@
         
         // مكون أزرار التراجع والإعادة
         const HistoryControls = ({ undo, redo, canUndo, canRedo }) => (
-            <div className="absolute top-4 left-4 z-10 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm p-1 rounded-full shadow-lg flex border dark:border-slate-700">
+            <div id="history-controls" className="absolute top-4 left-4 z-10 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm p-1 rounded-full shadow-lg flex border dark:border-slate-700">
                 <button onClick={undo} disabled={!canUndo} className="icon-button" title="تراجع"><Icon name="undo-2" /></button>
                 <div className="w-px bg-slate-300 dark:bg-slate-600 my-2"></div>
                 <button onClick={redo} disabled={!canRedo} className="icon-button" title="إعادة"><Icon name="redo-2" /></button>
@@ -893,7 +894,7 @@
 
         // مكون مؤشر المنطقة والمجموعة النشطة
         const ActiveAreaIndicator = ({ areaName, groupName }) => (
-            <div className="absolute top-4 right-4 z-10 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm p-2 px-4 rounded-lg shadow-lg border dark:border-slate-700 text-sm">
+            <div id="active-area-indicator" className="absolute top-4 right-4 z-10 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm p-2 px-4 rounded-lg shadow-lg border dark:border-slate-700 text-sm">
                 <p><span className="font-semibold">منطقة العمل:</span> {areaName || 'غير محدد'}</p>
                 <p><span className="font-semibold">المجموعة:</span> {groupName || 'غير محدد'}</p>
             </div>
@@ -1895,6 +1896,45 @@
                     addToast('تم حفظ المشروع بنجاح.', 'success');
                 });
             };
+
+            // **جديد:** دالة لأخذ لقطة شاشة
+            const handleTakeScreenshot = () => {
+                const mapContainer = document.getElementById('map-container');
+                if (!mapContainer) return;
+
+                const elementsToHide = [
+                    document.getElementById('floating-toolbar'),
+                    document.getElementById('history-controls'),
+                    document.getElementById('active-area-indicator'),
+                ];
+
+                elementsToHide.forEach(el => {
+                    if (el) el.style.visibility = 'hidden';
+                });
+                
+                addToast('جاري أخذ لقطة شاشة...', 'info', 2000);
+
+                setTimeout(() => {
+                    html2canvas(mapContainer, {
+                        useCORS: true,
+                        allowTaint: true,
+                        backgroundColor: null,
+                    }).then(canvas => {
+                        const link = document.createElement('a');
+                        link.download = `خريطة-${new Date().toISOString().slice(0, 10)}.png`;
+                        link.href = canvas.toDataURL('image/png');
+                        link.click();
+                        addToast('تم حفظ لقطة الشاشة بنجاح.', 'success');
+                    }).catch(err => {
+                        console.error("Screenshot error:", err);
+                        addToast('فشل أخذ لقطة الشاشة.', 'error');
+                    }).finally(() => {
+                        elementsToHide.forEach(el => {
+                            if (el) el.style.visibility = 'visible';
+                        });
+                    });
+                }, 100);
+            };
             
             // العرض النهائي للتطبيق (JSX)
             return (
@@ -1952,6 +1992,7 @@
                                             isDeleteMode={isDeleteMode}
                                             onToggleDeleteMode={handleToggleDeleteMode}
                                             isZoomedInEnough={isZoomedInEnough}
+                                            onTakeScreenshot={handleTakeScreenshot}
                                         />
                                     </>
                                 )}
