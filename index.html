@@ -117,15 +117,15 @@
         const LABEL_VISIBILITY_ZOOM_THRESHOLD = 17; // مستوى التقريب الذي تبدأ عنده التسميات (Labels) بالظهور
         const POINT_GROUP_COLORS = ['#3b82f6', '#22c55e', '#f97316', '#8b5cf6', '#ef4444', '#ec4899', '#14b8a6', '#6b7280']; // مصفوفة الألوان الافتراضية لمجموعات النقاط
         
-        // الإعدادات الافتراضية لكل مجموعة نقاط جديدة
+        // **تعديل:** تم تحديث الإعدادات الافتراضية
         const DEFAULT_GROUP_SETTINGS = {
-            showPolylines: true, // إظهار الخطوط الواصلة بين النقاط
-            showElevations: false, // إظهار المناسيب
-            showLabels: true, // إظهار التسميات
-            labelContent: 'number', // محتوى التسمية: 'number' (رقم) أو 'name' (اسم)
-            isMeasuring: false, // هل وضع قياس المسافات مفعل؟
-            isAreaMeasuring: false, // هل وضع قياس المساحات مفعل؟
-            snapEnabled: true, // هل الالتقاط مفعل؟
+            showPolylines: true,     // نشط افتراضياً حسب الطلب
+            showElevations: false,   // غير نشط
+            showLabels: false,       // غير نشط
+            labelContent: 'number',
+            isMeasuring: false,      // غير نشط
+            isAreaMeasuring: false,  // غير نشط
+            snapEnabled: false,      // غير نشط
         };
         
         // تعريف أشكال ورموز العلامات (Markers) المختلفة على الخريطة
@@ -1051,23 +1051,35 @@
                         if (showPolylines && path.length > 1) {
                             polylinesRef.current[group.id] = new window.google.maps.Polyline({ path, map, geodesic: true, strokeColor: group.color, strokeOpacity: 0.8, strokeWeight: 3 });
                             
-                            // عرض قياسات المسافات
+                            // **تعديل:** منطق عرض المسافات بوحدات ديناميكية
                             if (isMeasuring) {
                                 for (let i = 0; i < path.length - 1; i++) {
                                     const p1 = path[i], p2 = path[i+1];
                                     const distance = window.google.maps.geometry.spherical.computeDistanceBetween(p1, p2);
                                     const midpoint = window.google.maps.geometry.spherical.interpolate(p1, p2, 0.5);
-                                    newOverlays.push({ id: `dist-${group.id}-${i}`, position: midpoint, text: `${distance.toFixed(2)} م`, styleProps: { transform: 'translate(-50%, -50%)', background: darkMode ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.8)', color: darkMode ? 'white' : 'black', padding: '4px 8px', borderRadius: '6px', fontSize: '14px', fontWeight: 'bold', border: `1px solid ${darkMode ? 'white' : 'black'}` } });
+                                    let distanceText;
+                                    if (distance > 10000) { // إذا كان الطول أكبر من 10 كم
+                                        distanceText = `${(distance / 1000).toFixed(2)} كم`;
+                                    } else {
+                                        distanceText = `${distance.toFixed(2)} م`;
+                                    }
+                                    newOverlays.push({ id: `dist-${group.id}-${i}`, position: midpoint, text: distanceText, styleProps: { transform: 'translate(-50%, -50%)', background: darkMode ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.8)', color: darkMode ? 'white' : 'black', padding: '4px 8px', borderRadius: '6px', fontSize: '14px', fontWeight: 'bold', border: `1px solid ${darkMode ? 'white' : 'black'}` } });
                                 }
                             }
                         }
                         
-                        // عرض قياس المساحة
+                        // **تعديل:** منطق عرض المساحة بوحدات ديناميكية
                         if (isAreaMeasuring && path.length >= 3) {
                             const area = window.google.maps.geometry.spherical.computeArea(path);
                             const bounds = new window.google.maps.LatLngBounds();
                             path.forEach(p => bounds.extend(p));
-                            newOverlays.push({ id: `area-${group.id}`, position: bounds.getCenter(), text: `المساحة: ${area.toFixed(2)} م²`, styleProps: { transform: 'translate(-50%, -50%)', background: darkMode ? 'rgba(30,41,59,0.9)' : 'rgba(241,245,249,0.9)', color: darkMode ? '#f1f5f9' : '#1e293b', padding: '8px 12px', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', border: `2px solid ${group.color}` } });
+                            let areaText;
+                            if (area > 400000) { // إذا كانت المساحة أكبر من 400 ألف متر مربع
+                                areaText = `المساحة: ${(area / 1000000).toFixed(3)} كم²`;
+                            } else {
+                                areaText = `المساحة: ${area.toFixed(2)} م²`;
+                            }
+                            newOverlays.push({ id: `area-${group.id}`, position: bounds.getCenter(), text: areaText, styleProps: { transform: 'translate(-50%, -50%)', background: darkMode ? 'rgba(30,41,59,0.9)' : 'rgba(241,245,249,0.9)', color: darkMode ? '#f1f5f9' : '#1e293b', padding: '8px 12px', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', border: `2px solid ${group.color}` } });
                         }
                     });
                 }
@@ -1303,22 +1315,18 @@
             const [addCsvDescription, setAddCsvDescription] = useState(false);
             const [generatedCommand, setGeneratedCommand] = useState('');
             
-            // NEW: States for filename and extension
             const [fileName, setFileName] = useState('تصدير_نقاط');
             const [fileExtension, setFileExtension] = useState('csv');
 
-            // NEW: Effect to suggest filename and extension based on selected format
             useEffect(() => {
                 if (exportFormat === 'csv') {
                     setFileName('تصدير_نقاط');
-                    // The extension is handled by its own select dropdown for csv/txt
                 } else if (exportFormat === 'acad_script') {
                     setFileName(`سكريبت_${acadScriptType}`);
                     setFileExtension('scr');
                 }
             }, [exportFormat, acadScriptType]);
 
-            // NEW: Effect to update acad script filename when script type changes
             useEffect(() => {
                 if (exportFormat === 'acad_script') {
                     setFileName(`سكريبت_${acadScriptType}`);
@@ -1414,7 +1422,6 @@
                                 <div className="flex items-center"><input type="radio" id="format-acad" name="format" value="acad_script" checked={exportFormat === 'acad_script'} onChange={e => setExportFormat(e.target.value)} className="ml-2" /><label htmlFor="format-acad">سكريبت AutoCAD/Civil</label></div>
                             </div>
                             
-                            {/* NEW: Filename Input */}
                             <div className="mt-4">
                                 <label htmlFor="file-name-input" className="block text-sm font-medium mb-1">اسم الملف</label>
                                 <div className="flex">
@@ -1842,12 +1849,22 @@
                 });
             };
 
-            // معالج تحديث إعدادات المجموعة النشطة
+            // **تعديل:** تحديث منطق إعدادات المجموعة
             const handleUpdateGroupSettings = (settingKey, value) => {
-                if (!selectedGroupId) return;
+                if (!selectedGroupId || !selectedArea) return;
                 updateWorkArea(selectedArea.id, area => ({
                     ...area,
-                    groups: area.groups.map(g => g.id === selectedGroupId ? {...g, [settingKey]: value} : g)
+                    groups: area.groups.map(g => {
+                        if (g.id === selectedGroupId) {
+                            const newSettings = { ...g, [settingKey]: value };
+                            // إذا تم تغيير محتوى التسمية وكانت التسميات مخفية، قم بإظهارها
+                            if (settingKey === 'labelContent' && !g.showLabels) {
+                                newSettings.showLabels = true;
+                            }
+                            return newSettings;
+                        }
+                        return g;
+                    })
                 }));
             };
             
