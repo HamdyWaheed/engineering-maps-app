@@ -5,46 +5,53 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>تطبيق الخرائط الهندسية - تطوير م. حمدي وحيد</title>
     
-    <!-- Google Fonts - Cairo -->
+    <!-- BLOCK: STYLES & LIBRARIES -->
+    <!-- هذا القسم يحتوي على جميع الروابط للمكتبات الخارجية والأنماط (CSS) التي يحتاجها التطبيق -->
+
+    <!-- Google Fonts - Cairo: لاستخدام خط "كايرو" في التطبيق -->
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
     
-    <!-- Tailwind CSS CDN -->
+    <!-- Tailwind CSS CDN: مكتبة لتنسيق واجهة المستخدم بسرعة وسهولة عبر فئات CSS جاهزة -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- React & ReactDOM CDN -->
+    <!-- React & ReactDOM CDN: المكتبات الأساسية لتشغيل تطبيق React في المتصفح -->
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     
-    <!-- Babel Standalone for JSX transformation in browser -->
+    <!-- Babel Standalone: لتحويل كود JSX (الذي يدمج HTML مع JavaScript) إلى JavaScript عادي يفهمه المتصفح -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
-    <!-- Lucide Icons CDN -->
+    <!-- Lucide Icons CDN: مكتبة أيقونات خفيفة وسهلة الاستخدام -->
     <script src="https://unpkg.com/lucide@latest"></script>
     
-    <!-- Proj4js for coordinate transformations -->
+    <!-- Proj4js: مكتبة متخصصة في تحويل الإحداثيات بين أنظمة الإسقاط المختلفة (مثل WGS84 و UTM) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.8.0/proj4.js"></script>
 
-    <!-- html2canvas for screenshots -->
+    <!-- html2canvas: مكتبة لأخذ لقطات شاشة (screenshot) لعناصر HTML -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
-    <!-- Google Maps API (Note: Replace YOUR_API_KEY with your actual key) -->
-    <!-- Libraries: geometry, places, elevation -->
+    <!-- Google Maps API: واجهة برمجة تطبيقات خرائط جوجل. لاحظ أنه يجب استبدال "YOUR_API_KEY" بمفتاحك الخاص -->
+    <!-- Libraries: geometry (للحسابات الهندسية), places (للأماكن), elevation (للحصول على المناسيب) -->
     <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAKXVuJsf0vANjBtlUIWcPj-wNWPkOc-S4&libraries=geometry,places,elevation&callback=initMap"></script>
 
     <style>
+        /* أنماط CSS مخصصة لتكملة Tailwind CSS */
         body { font-family: 'Cairo', sans-serif; overscroll-behavior: none; }
         .dark-mode { background-color: #020617; color: #e2e8f0; }
         .dark-mode body { background-color: #020617; }
 
+        /* أنماط النافذة المنبثقة (Modal) */
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.7); display: flex; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(4px); animation: fade-in 0.3s ease-out forwards; }
         .modal-content { background-color: white; padding: 2rem; border-radius: 0.75rem; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); width: 90%; max-width: 800px; max-height: 90vh; overflow-y: auto; animation: slide-in-down 0.3s ease-out forwards; transform-origin: center; }
         .dark-mode .modal-content { background-color: #1e293b; }
         
+        /* أنماط الأزرار الرئيسية والثانوية */
         .button-primary { background-color: #2563eb; color: white; padding: 0.5rem 1.25rem; border-radius: 0.5rem; font-weight: 600; transition: all 0.2s; box-shadow: 0 1px 3px 0 rgba(0,0,0,0.1), 0 1px 2px 0 rgba(0,0,0,0.06); }
         .button-primary:hover { background-color: #1d4ed8; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); transform: translateY(-1px); }
         .button-secondary { background-color: #64748b; color: white; padding: 0.5rem 1.25rem; border-radius: 0.5rem; font-weight: 600; transition: all 0.2s; }
         .button-secondary:hover { background-color: #475569; transform: translateY(-1px); }
 
+        /* أنماط أزرار الأيقونات */
         .icon-button { background: transparent; border: none; cursor: pointer; padding: 0.5rem; border-radius: 9999px; transition: background-color 0.2s, transform 0.2s; line-height: 1; display: flex; align-items: center; justify-content: center; }
         .icon-button:hover { background-color: rgba(0,0,0,0.1); transform: scale(1.1); }
         .dark-mode .icon-button:hover { background-color: rgba(255,255,255,0.1); }
@@ -52,15 +59,18 @@
         .icon-button.danger.active { background-color: #ef4444; color: white; }
         .icon-button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; background-color: transparent !important; }
 
+        /* أنماط شريط التمرير (Scrollbar) */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; }
         .dark-mode ::-webkit-scrollbar-track { background: #0f172a; }
         ::-webkit-scrollbar-thumb { background: #a8a29e; border-radius: 4px; }
         .dark-mode ::-webkit-scrollbar-thumb { background: #475569; }
         
+        /* تأثيرات الحركة (Animations) */
         @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slide-in-down { from { opacity: 0; transform: translateY(-20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
 
+        /* أنماط الإشعارات (Toasts) */
         .toast-container { position: fixed; top: 1rem; left: 1rem; z-index: 1001; display: flex; flex-direction: column; gap: 0.5rem; }
         .toast { background-color: white; color: #333; padding: 0.75rem 1rem; border-radius: 0.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: space-between; min-width: 250px; animation: slide-in-right 0.3s ease-out forwards, fade-out 0.5s ease-in 2.5s forwards; }
         .dark-mode .toast { background-color: #1e293b; color: #e2e8f0; }
@@ -73,142 +83,80 @@
         @keyframes slide-in-right { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
         @keyframes fade-out { from { opacity: 1; } to { opacity: 0; } }
         
-        .color-picker-label {
-            position: relative;
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            cursor: pointer;
-            border: 2px solid white;
-            box-shadow: 0 0 0 1px rgba(0,0,0,0.2);
-            transition: transform 0.2s;
-        }
-        .color-picker-label:hover {
-            transform: scale(1.2);
-        }
-        .color-picker-label input[type="color"] {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            opacity: 0;
-            cursor: pointer;
-        }
-        .custom-select {
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            appearance: none;
-            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
-            background-position: left 0.5rem center;
-            background-repeat: no-repeat;
-            background-size: 1.5em 1.5em;
-            padding-left: 2.5rem;
-        }
-        .dark-mode .custom-select {
-             background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
-        }
+        /* أنماط منتقي الألوان (Color Picker) */
+        .color-picker-label { position: relative; display: inline-block; width: 20px; height: 20px; border-radius: 50%; cursor: pointer; border: 2px solid white; box-shadow: 0 0 0 1px rgba(0,0,0,0.2); transition: transform 0.2s; }
+        .color-picker-label:hover { transform: scale(1.2); }
+        .color-picker-label input[type="color"] { position: absolute; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+        
+        /* أنماط القائمة المنسدلة المخصصة (Custom Select) */
+        .custom-select { -webkit-appearance: none; -moz-appearance: none; appearance: none; background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: left 0.5rem center; background-repeat: no-repeat; background-size: 1.5em 1.5em; padding-left: 2.5rem; }
+        .dark-mode .custom-select { background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); }
     </style>
 </head>
 <body>
+    <!-- هذا هو العنصر الجذر الذي سيتم عرض تطبيق React بداخله -->
     <div id="root"></div>
+
+    <!-- هذا الوسم يخبر Babel بتحويل كل ما بداخله من JSX إلى JavaScript -->
     <script type="text/babel">
         // ====================================================================
         //  BLOCK: IMPORTS & SETUP
+        //  هنا يتم استيراد الوظائف الأساسية من مكتبة React و ReactDOM
         // ====================================================================
         const { useState, useEffect, useRef, useCallback, useMemo, createContext, useContext, forwardRef, useImperativeHandle } = React;
         const { createRoot } = ReactDOM;
 
         // ====================================================================
         //  FILE: src/constants.js
+        //  هذا الملف يحتوي على الثوابت التي تستخدم في جميع أنحاء التطبيق
         // ====================================================================
-        const Maps_API_KEY = 'AIzaSyAKXVuJsf0vANjBtlUIWcPj-wNWPkOc-S4';
-        const DEFAULT_UTM_ZONE = 35;
-        const SNAP_TOLERANCE_METERS = 10;
-        const MAX_ZOOM_FOR_SNAP = 21;
-        const LABEL_VISIBILITY_ZOOM_THRESHOLD = 17;
-        const POINT_GROUP_COLORS = ['#3b82f6', '#22c55e', '#f97316', '#8b5cf6', '#ef4444', '#ec4899', '#14b8a6', '#6b7280'];
+        const Maps_API_KEY = 'AIzaSyAKXVuJsf0vANjBtlUIWcPj-wNWPkOc-S4'; // مفتاح API لخرائط جوجل
+        const DEFAULT_UTM_ZONE = 35; // منطقة UTM الافتراضية
+        const SNAP_TOLERANCE_METERS = 10; // مسافة الالتقاط (Snap) بالـمتر
+        const MAX_ZOOM_FOR_SNAP = 21; // أقصى مستوى تقريب (Zoom) يتم فيه تفعيل الالتقاط
+        const LABEL_VISIBILITY_ZOOM_THRESHOLD = 17; // مستوى التقريب الذي تبدأ عنده التسميات (Labels) بالظهور
+        const POINT_GROUP_COLORS = ['#3b82f6', '#22c55e', '#f97316', '#8b5cf6', '#ef4444', '#ec4899', '#14b8a6', '#6b7280']; // مصفوفة الألوان الافتراضية لمجموعات النقاط
         
+        // الإعدادات الافتراضية لكل مجموعة نقاط جديدة
         const DEFAULT_GROUP_SETTINGS = {
-            showPolylines: true,
-            showElevations: false,
-            showLabels: true,
-            labelContent: 'number', // 'number' or 'name'
-            isMeasuring: false,
-            isAreaMeasuring: false,
-            snapEnabled: true,
+            showPolylines: true, // إظهار الخطوط الواصلة بين النقاط
+            showElevations: false, // إظهار المناسيب
+            showLabels: true, // إظهار التسميات
+            labelContent: 'number', // محتوى التسمية: 'number' (رقم) أو 'name' (اسم)
+            isMeasuring: false, // هل وضع قياس المسافات مفعل؟
+            isAreaMeasuring: false, // هل وضع قياس المساحات مفعل؟
+            snapEnabled: true, // هل الالتقاط مفعل؟
         };
         
+        // تعريف أشكال ورموز العلامات (Markers) المختلفة على الخريطة
         const MARKER_ICONS = {
-            default: {
-                type: 'default',
-                label: 'دائرة',
-                path: 'M 0, 0 m -10, 0 a 10,10 0 1,0 20,0 a 10,10 0 1,0 -20,0', // Simple circle
-                scale: 0.8,
-                strokeWeight: 2,
-            },
-            benchmark: {
-                type: 'custom',
-                label: 'روبير',
-                path: 'M -10,0 L 0,-15 L 10,0 Z', // Triangle
-                anchor: { x: 0, y: -7.5 },
-                scale: 1,
-                strokeWeight: 2.5
-            },
-            tripod: {
-                type: 'custom',
-                label: 'حامل ثلاثي',
-                path: 'M 0 -12 L 10 6 L -10 6 Z M 0 0 m -3, 0 a 3,3 0 1,0 6,0 a 3,3 0 1,0 -6,0', // Top-down tripod
-                anchor: { x: 0, y: 0 },
-                scale: 1.2,
-                strokeWeight: 2
-            },
-            building: {
-                type: 'custom',
-                label: 'مبنى',
-                path: 'M -10 -10 L 10 -10 L 10 10 L -10 10 Z', // Square
-                anchor: { x: 0, y: 0 },
-                scale: 1,
-                strokeWeight: 2.5
-            },
-            pole: {
-                type: 'custom',
-                label: 'عمود',
-                path: 'M 0, 0 m -8, 0 a 8,8 0 1,0 16,0 a 8,8 0 1,0 -16,0 M -5, -5 L 5, 5 M -5, 5 L 5, -5', // Circle with cross
-                anchor: { x: 0, y: 0 },
-                scale: 1,
-                strokeWeight: 2
-            },
-            tree: {
-                type: 'custom',
-                label: 'شجرة',
-                path: 'M 0 -5 Q 5 -15 10 -5 T 0 5 Q -5 -5 -10 -5 T 0 -5 Z M 0 5 L 0 15', // Stylized tree
-                anchor: { x: 0, y: 15 },
-                scale: 1,
-                strokeWeight: 2
-            },
-            anchor: {
-                type: 'custom',
-                label: 'مرساة',
-                path: 'M 0 -12 A 6 6 0 0 0 6 -6 V 8 H 12 C 10 14 4 12 4 8 V -6 A 6 6 0 0 0 0 -12 Z M -6 -6 A 6 6 0 0 1 0 -12 M -6 -6 V 8 H -12 C -10 14 -4 12 -4 8 V -6 A 6 6 0 0 1 0 -12',
-                anchor: { x: 0, y: 0 },
-                scale: 1,
-                strokeWeight: 2
-            }
+            default: { type: 'default', label: 'دائرة', path: 'M 0, 0 m -10, 0 a 10,10 0 1,0 20,0 a 10,10 0 1,0 -20,0', scale: 0.8, strokeWeight: 2 },
+            benchmark: { type: 'custom', label: 'روبير', path: 'M -10,0 L 0,-15 L 10,0 Z', anchor: { x: 0, y: -7.5 }, scale: 1, strokeWeight: 2.5 },
+            tripod: { type: 'custom', label: 'حامل ثلاثي', path: 'M 0 -12 L 10 6 L -10 6 Z M 0 0 m -3, 0 a 3,3 0 1,0 6,0 a 3,3 0 1,0 -6,0', anchor: { x: 0, y: 0 }, scale: 1.2, strokeWeight: 2 },
+            building: { type: 'custom', label: 'مبنى', path: 'M -10 -10 L 10 -10 L 10 10 L -10 10 Z', anchor: { x: 0, y: 0 }, scale: 1, strokeWeight: 2.5 },
+            pole: { type: 'custom', label: 'عمود', path: 'M 0, 0 m -8, 0 a 8,8 0 1,0 16,0 a 8,8 0 1,0 -16,0 M -5, -5 L 5, 5 M -5, 5 L 5, -5', anchor: { x: 0, y: 0 }, scale: 1, strokeWeight: 2 },
+            tree: { type: 'custom', label: 'شجرة', path: 'M 0 -5 Q 5 -15 10 -5 T 0 5 Q -5 -5 -10 -5 T 0 -5 Z M 0 5 L 0 15', anchor: { x: 0, y: 15 }, scale: 1, strokeWeight: 2 },
+            anchor: { type: 'custom', label: 'مرساة', path: 'M 0 -12 A 6 6 0 0 0 6 -6 V 8 H 12 C 10 14 4 12 4 8 V -6 A 6 6 0 0 0 0 -12 Z M -6 -6 A 6 6 0 0 1 0 -12 M -6 -6 V 8 H -12 C -10 14 -4 12 -4 8 V -6 A 6 6 0 0 1 0 -12', anchor: { x: 0, y: 0 }, scale: 1, strokeWeight: 2 }
         };
 
 
         // ====================================================================
         //  FILE: src/utils.js
+        //  هذا الملف يحتوي على الدوال المساعدة التي تستخدم في مهام متكررة
         // ====================================================================
+        
+        // دالة لإنشاء معرف فريد (unique ID)
         const generateUniqueId = () => Math.random().toString(36).substring(2, 9);
         
+        // تعريف أنظمة الإسقاط UTM باستخدام مكتبة Proj4js
         if (window.proj4) {
-            proj4.defs("EPSG:4326", "+proj=longlat +datum=WGS84 +no_defs");
+            proj4.defs("EPSG:4326", "+proj=longlat +datum=WGS84 +no_defs"); // نظام الإحداثيات الجغرافي العالمي
             for (let i = 30; i <= 40; i++) {
-                proj4.defs(`EPSG:326${i}`, `+proj=utm +zone=${i} +datum=WGS84 +units=m +no_defs`);
+                proj4.defs(`EPSG:326${i}`, `+proj=utm +zone=${i} +datum=WGS84 +units=m +no_defs`); // تعريف مناطق UTM من 30 إلى 40
             }
         }
 
+        // دالة لتحويل الإحداثيات من خطوط الطول والعرض (Lat/Lng) إلى UTM
         const convertLatLngToUtm = (lat, lng, zone) => {
             try {
                 const utmProjection = `EPSG:326${zone}`;
@@ -218,6 +166,7 @@
             } catch (error) { console.error("Conversion error:", error); return null; }
         };
 
+        // دالة لتحويل الإحداثيات من UTM إلى خطوط الطول والعرض (Lat/Lng)
         const convertUtmToLatLng = (easting, northing, zone) => {
             try {
                 const utmProjection = `EPSG:326${zone}`;
@@ -227,11 +176,13 @@
             } catch (error) { console.error("Conversion error:", error); return null; }
         };
         
+        // حساب الإحداثيات الأولية لمركز الخريطة
         const initialCoords = convertUtmToLatLng(765898.785, 3449300.220, DEFAULT_UTM_ZONE);
         const DEFAULT_MAP_CENTER_LAT = initialCoords ? initialCoords.lat : 31.20;
         const DEFAULT_MAP_CENTER_LNG = initialCoords ? initialCoords.lng : 29.91;
         const DEFAULT_MAP_ZOOM = 20;
 
+        // دالة لجلب المنسوب (Elevation) من خرائط جوجل لنقطة معينة (مع محاولة إعادة الطلب في حالة الفشل)
         const getElevation = async (latLng, retries = 3, delay = 1000) => {
             if (!window.google || !window.google.maps || !window.google.maps.ElevationService) {
                 console.warn("Google Maps Elevation Service not available.");
@@ -242,10 +193,7 @@
 
             for (let i = 0; i < retries; i++) {
                 const result = await new Promise(resolve => {
-                    const request = {
-                        'locations': [new window.google.maps.LatLng(latLng.lat, latLng.lng)]
-                    };
-                    elevationService.getElevationForLocations(request, (results, status) => {
+                    elevationService.getElevationForLocations({ 'locations': [new window.google.maps.LatLng(latLng.lat, latLng.lng)] }, (results, status) => {
                         lastStatus = status;
                         if (status === 'OK' && results && results[0]) {
                             resolve({ success: true, elevation: results[0].elevation });
@@ -257,7 +205,6 @@
                 });
                 if (result.success) return { elevation: result.elevation, status: 'OK' };
                 if (lastStatus !== 'UNKNOWN_ERROR' && lastStatus !== 'OVER_QUERY_LIMIT') {
-                    console.warn(`Elevation service failed with non-retriable status: ${lastStatus}`);
                     break; 
                 }
                 if (i < retries - 1) await new Promise(resolve => setTimeout(resolve, delay * (i + 1)));
@@ -266,7 +213,7 @@
             return { elevation: null, status: lastStatus };
         };
 
-
+        // دالة لجلب الموقع الجغرافي الحالي للمستخدم من المتصفح
         const getCurrentLocation = () => {
             return new Promise(resolve => {
                 if (!navigator.geolocation) {
@@ -287,11 +234,13 @@
             });
         };
 
+        // دالة لتحليل نص يحتوي على بيانات مفصولة (مثل CSV)
         const parseDelimitedText = (text) => {
             if (!text || typeof text !== 'string') return { data: [], error: "المحتوى فارغ أو غير صالح." };
             const lines = text.trim().split(/\r?\n/).filter(line => line.trim() !== '');
             if (lines.length === 0) return { data: [], error: "الملف فارغ." };
             
+            // محاولة اكتشاف الفاصل المستخدم تلقائياً
             const delimiters = [',', '\t', ';', ' '];
             let bestDelimiter = ',';
             let maxCols = 0;
@@ -309,6 +258,7 @@
                  return { data, error: "بعض الصفوف لا تتطابق مع عدد الأعمدة." };
             }
             
+            // محاولة اكتشاف هل يحتوي الملف على ترويسة (Header)
             let hasHeader = false;
             const firstRow = data[0];
             if (firstRow) {
@@ -321,6 +271,7 @@
             return { data, error: null, hasHeader };
         };
 
+        // دالة لتنزيل محتوى كنص في ملف
         const downloadFile = (content, fileName, mimeType) => {
             const blob = new Blob([content], { type: mimeType });
             const link = document.createElement('a');
@@ -334,23 +285,18 @@
 
         // ====================================================================
         //  FILE: src/hooks/useHistoryState.js
-        //  هذا الهوك المخصص لإدارة حالة التطبيق مع إمكانية التراجع والإعادة
+        //  هذا هوك (Hook) مخصص لإدارة حالة التطبيق مع إضافة إمكانية التراجع (Undo) والإعادة (Redo)
         // ====================================================================
         const useHistoryState = (initialState) => {
-            const historyRef = useRef({
-                past: [],
-                present: initialState,
-                future: []
-            });
-            const [, forceUpdate] = useState({});
+            const historyRef = useRef({ past: [], present: initialState, future: [] });
+            const [, forceUpdate] = useState({}); // مجرد دالة لإجبار إعادة العرض
 
+            // دالة لتحديث الحالة الحالية وإضافتها إلى سجل التغييرات
             const setState = useCallback((action) => {
                 const { past, present } = historyRef.current;
                 const newPresent = typeof action === 'function' ? action(present) : action;
                 
-                if (JSON.stringify(present) === JSON.stringify(newPresent)) {
-                    return; // No change
-                }
+                if (JSON.stringify(present) === JSON.stringify(newPresent)) return; // لا تقم بأي شيء إذا لم تتغير الحالة
 
                 historyRef.current = {
                     past: [...past, present],
@@ -360,6 +306,7 @@
                 forceUpdate({});
             }, []);
 
+            // دالة التراجع
             const undo = useCallback(() => {
                 const { past, present, future } = historyRef.current;
                 if (past.length === 0) return;
@@ -373,6 +320,7 @@
                 forceUpdate({});
             }, []);
 
+            // دالة الإعادة
             const redo = useCallback(() => {
                 const { past, present, future } = historyRef.current;
                 if (future.length === 0) return;
@@ -387,18 +335,20 @@
             }, []);
 
             return [
-                historyRef.current.present,
-                setState,
-                undo,
-                redo,
-                historyRef.current.past.length > 0,
-                historyRef.current.future.length > 0
+                historyRef.current.present, // الحالة الحالية
+                setState, // دالة تحديث الحالة
+                undo, // دالة التراجع
+                redo, // دالة الإعادة
+                historyRef.current.past.length > 0, // هل يمكن التراجع؟
+                historyRef.current.future.length > 0 // هل يمكن الإعادة؟
             ];
         };
 
 
         // ====================================================================
         //  FILE: src/contexts/AppContext.js
+        //  هذا الملف يوفر "سياق" (Context) لمشاركة الحالة العامة بين المكونات المختلفة
+        //  مثل (الوضع الداكن، منطقة UTM، الإشعارات، النوافذ المنبثقة)
         // ====================================================================
         const AppContext = createContext();
         const AppProvider = ({ children }) => {
@@ -407,16 +357,20 @@
             const [toasts, setToasts] = useState([]);
             const [modal, setModal] = useState(null);
 
+            // تفعيل/إلغاء الوضع الداكن على مستوى الصفحة
             useEffect(() => { document.documentElement.classList.toggle('dark-mode', darkMode); }, [darkMode]);
 
+            // دالة لإضافة إشعار مؤقت (Toast)
             const addToast = useCallback((message, type = 'info', duration = 3000) => {
                 const id = generateUniqueId();
                 setToasts(prev => [...prev, { id, message, type }]);
                 setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), duration);
             }, []);
             
+            // دالة لإغلاق النافذة المنبثقة الحالية
             const closeModal = useCallback(() => setModal(null), []);
 
+            // تجميع كل قيم السياق في كائن واحد باستخدام useMemo لتحسين الأداء
             const value = useMemo(() => ({
                 darkMode, setDarkMode, utmZone, setUtmZone, addToast, closeModal, setModal
             }), [darkMode, utmZone, addToast, closeModal, setModal]);
@@ -431,10 +385,11 @@
                 </AppContext.Provider>
             );
         };
-        const useAppContext = () => useContext(AppContext);
+        const useAppContext = () => useContext(AppContext); // هوك مخصص للوصول السريع إلى السياق
 
         // ====================================================================
         //  FILE: src/components/common/Toast.js, Icon.js
+        //  مكونات واجهة مستخدم عامة: الإشعارات والأيقونات
         // ====================================================================
         const Toast = ({ id, message, type, onDismiss }) => (
             <div className={`toast ${type}`}>
@@ -444,12 +399,14 @@
         );
         
         const Icon = ({ name, ...props }) => {
+            // هذا التأثير يضمن إعادة رسم الأيقونات عند تغييرها
             useEffect(() => { window.lucide?.createIcons(); }, [name]);
             return <i data-lucide={name} {...props}></i>;
         };
 
         // ====================================================================
         //  FILE: src/components/layout/Header.js, Sidebar.js
+        //  مكونات التخطيط الرئيسية: الشريط العلوي (Header) والشريط الجانبي (Sidebar)
         // ====================================================================
         const Header = ({ onToggleFullScreen, isFullScreen, onToggleSidebar }) => {
             const { darkMode, setDarkMode } = useAppContext();
@@ -479,6 +436,7 @@
             const selectedArea = workAreas.find(area => area.id === selectedAreaId);
             const selectedGroup = selectedArea?.groups.find(group => group.id === selectedGroupId);
 
+            // دوال مساعدة لفتح نوافذ منبثقة (prompt, confirm)
             const promptAction = (title, message, inputLabel, initialValue, onConfirm) => {
                 setModal(<GenericModal type="prompt" title={title} message={message} inputLabel={inputLabel} initialValue={initialValue} onConfirm={onConfirm} onClose={closeModal} />);
             };
@@ -486,10 +444,11 @@
                 setModal(<GenericModal type="confirm" title={title} message={message} onConfirm={onConfirm} onClose={closeModal} />);
             };
 
+            // معالج حدث اختيار ملف من الجهاز
             const handleFileSelect = (event) => {
                 const file = event.target.files[0];
                 if (file) onFileLoad(file);
-                event.target.value = null;
+                event.target.value = null; // إعادة تعيين الحقل للسماح باختيار نفس الملف مرة أخرى
             };
 
             const sidebarClasses = `
@@ -503,7 +462,7 @@
                 <>
                     <div className={`fixed inset-0 bg-gray-900/50 z-30 lg:hidden ${isOpen ? 'block' : 'hidden'}`} onClick={onClose}></div>
                     <aside className={sidebarClasses}>
-                        {/* Work Areas Section */}
+                        {/* قسم مناطق العمل */}
                         <div className="mb-6">
                             <div className="flex justify-between items-center mb-2">
                                 <h2 className="text-lg font-bold">مناطق العمل</h2>
@@ -511,7 +470,7 @@
                             </div>
                             <select id="work-area-select" value={selectedAreaId || ''} onChange={e => onSelectArea(e.target.value)} className="w-full p-2 border rounded-md dark:bg-slate-700 dark:border-slate-600 mb-2 text-base custom-select">
                                 {workAreas.map(area => (
-                                    <option key={area.id} value={area.id}>{area.name}</option>
+                                    <option key={area.id} value={area.id}>{area.name} ({area.groups.length})</option>
                                 ))}
                             </select>
                             {selectedArea && (
@@ -525,7 +484,7 @@
                             )}
                         </div>
 
-                        {/* Point Groups Section */}
+                        {/* قسم مجموعات النقاط */}
                         {selectedArea && (
                             <div className="border-t pt-4 mt-4 dark:border-slate-700">
                                 <div className="flex justify-between items-center mb-2">
@@ -535,10 +494,10 @@
                                 <select id="point-group-select" value={selectedGroupId || ''} onChange={e => {
                                     const groupId = e.target.value;
                                     onSelectGroup(groupId);
-                                    onZoomToGroup(selectedArea.id, groupId);
+                                    onZoomToGroup(selectedArea.id, groupId); // تقريب الخريطة إلى المجموعة المحددة
                                 }} className="w-full p-2 border rounded-md dark:bg-slate-700 dark:border-slate-600 mb-2 text-base custom-select">
                                     {selectedArea.groups.map(group => (
-                                        <option key={group.id} value={group.id}>{group.name}</option>
+                                        <option key={group.id} value={group.id}>{group.name} ({group.points.length})</option>
                                     ))}
                                 </select>
                                 {selectedGroup && (
@@ -558,7 +517,7 @@
                             </div>
                         )}
 
-                        {/* Tools & Settings Section */}
+                        {/* قسم الأدوات والإعدادات */}
                         <div className="border-t pt-4 mt-4 dark:border-slate-700">
                             <h3 className="font-semibold mb-2">الإعدادات والأدوات</h3>
                             <label htmlFor="utm-zone-select" className="block text-sm font-medium mb-1">UTM Zone</label>
@@ -579,6 +538,7 @@
             );
         };
         
+        // مكون النافذة المنبثقة العام (Generic Modal)
         const GenericModal = ({ type, title, message, inputLabel, initialValue, onConfirm, onClose, onCancel, children, confirmText = "تأكيد" }) => {
             const [inputValue, setInputValue] = useState(initialValue || '');
             const inputRef = useRef(null);
@@ -613,16 +573,19 @@
 
         // ====================================================================
         //  FILE: src/components/table/PointsTable.js
+        //  مكون جدول عرض الإحداثيات والتحكم فيها
         // ====================================================================
         const PointsTable = ({ selectedArea, onUpdatePoint, onDeletePoint, onZoomToPoint, onActivateGroup, activePointId, setActivePointId }) => {
             const { addToast, setModal, closeModal } = useAppContext();
             const [selectedPointIds, setSelectedPointIds] = useState(new Set());
-            const rowRefs = useRef({});
+            const rowRefs = useRef({}); // لتخزين مراجع لصفوف الجدول للتحكم في التمرير
         
+            // إعادة تعيين النقاط المحددة عند تغيير منطقة العمل
             useEffect(() => {
                 setSelectedPointIds(new Set());
             }, [selectedArea]);
             
+            // التمرير التلقائي إلى النقطة النشطة في الجدول
             useEffect(() => {
                 if (activePointId && rowRefs.current[activePointId]) {
                     rowRefs.current[activePointId].scrollIntoView({
@@ -632,6 +595,7 @@
                 }
             }, [activePointId]);
 
+            // معالج لتحديد/إلغاء تحديد كل النقاط في مجموعة
             const handleSelectAll = (group, isChecked) => {
                 const pointIds = group.points.map(p => p.id);
                 setSelectedPointIds(prev => {
@@ -645,6 +609,7 @@
                 });
             };
 
+            // معالج لتحديد/إلغاء تحديد نقطة واحدة
             const handleSelectPoint = (pointId) => {
                 setSelectedPointIds(prev => {
                     const newSet = new Set(prev);
@@ -657,6 +622,7 @@
                 });
             };
 
+            // معالج لفتح نافذة اختيار رمز العلامة (Marker)
             const handleOpenMarkerPicker = (e, point, group) => {
                 e.stopPropagation();
                 setModal(
@@ -672,12 +638,12 @@
                 );
             };
 
+            // دالة لنسخ نص إلى الحافظة
             const copyToClipboard = (text, message) => {
                 const textArea = document.createElement("textarea");
                 textArea.value = text;
                 textArea.style.position = "fixed";
                 textArea.style.top = "-9999px";
-                textArea.style.left = "-9999px";
                 document.body.appendChild(textArea);
                 textArea.focus();
                 textArea.select();
@@ -690,6 +656,7 @@
                 document.body.removeChild(textArea);
             };
 
+            // دالة لنسخ إحداثيات UTM المحددة
             const copyUtmToClipboard = (points) => {
                 if (points.length === 0) return;
                 const safeToFixed = (num, digits = 3) => (typeof num === 'number' ? num.toFixed(digits) : '0.000');
@@ -697,6 +664,7 @@
                 copyToClipboard(textToCopy, `تم نسخ ${points.length} نقطة (UTM).`);
             };
             
+            // دالة لنسخ إحداثيات Lat/Lng لنقطة واحدة
             const copyLatLngToClipboard = (point) => {
                 const textToCopy = `${point.lat.toFixed(8)},${point.lng.toFixed(8)}`;
                 copyToClipboard(textToCopy, 'تم نسخ إحداثيات Lat/Lng.');
@@ -797,11 +765,13 @@
 
         // ====================================================================
         //  FILE: src/components/map/CustomLabel.js
+        //  مكون لإنشاء تسميات (Labels) مخصصة على الخريطة باستخدام Google Maps OverlayView
         // ====================================================================
         const CustomLabel = ({ map, position, text, styleProps }) => {
             const overlay = useRef(null);
 
             useEffect(() => {
+                // تعريف فئة (Class) للتسمية المخصصة التي ترث من OverlayView
                 class CustomLabelOverlay extends window.google.maps.OverlayView {
                     constructor(position, text, styleProps) {
                         super();
@@ -811,6 +781,7 @@
                         this.div = null;
                     }
 
+                    // دالة onAdd: يتم استدعاؤها عند إضافة التسمية إلى الخريطة لأول مرة
                     onAdd() {
                         const div = document.createElement('div');
                         div.style.position = 'absolute';
@@ -818,21 +789,21 @@
                         this.div = div;
                         this.updateText();
                         this.updateStyle();
-                        this.getPanes().floatPane.appendChild(this.div);
+                        this.getPanes().floatPane.appendChild(this.div); // إضافة العنصر إلى طبقة floatPane
                     }
 
+                    // دالة draw: يتم استدعاؤها عند الحاجة لإعادة رسم التسمية (عند تحريك الخريطة أو تغيير التقريب)
                     draw() {
                         const proj = this.getProjection();
-                        if (!proj || !this.div) { 
-                            return;
-                        }
-                        const point = proj.fromLatLngToDivPixel(this.position);
+                        if (!proj || !this.div) return;
+                        const point = proj.fromLatLngToDivPixel(this.position); // تحويل إحداثيات LatLng إلى بكسل على الشاشة
                         if (point) {
                             this.div.style.left = point.x + 'px';
                             this.div.style.top = point.y + 'px';
                         }
                     }
 
+                    // دالة onRemove: يتم استدعاؤها عند إزالة التسمية من الخريطة
                     onRemove() {
                         if (this.div) {
                             this.div.parentNode.removeChild(this.div);
@@ -840,9 +811,9 @@
                         }
                     }
                     
+                    // دوال مساعدة لتحديث خصائص التسمية
                     updateText(text) { if(this.div) this.div.innerHTML = text || this.text; }
                     updatePosition(position) { this.position = position; this.draw(); }
-                    
                     updateStyle(styleProps) {
                         if (!this.div) return;
                         const styles = styleProps || this.styleProps;
@@ -853,19 +824,23 @@
                 overlay.current = new CustomLabelOverlay(position, text, styleProps);
                 overlay.current.setMap(map);
                 
-                return () => overlay.current?.setMap(null);
+                return () => overlay.current?.setMap(null); // تنظيف: إزالة التسمية عند إزالة المكون
             }, [map]);
 
+            // تأثيرات لتحديث التسمية عند تغيير الخصائص
             useEffect(() => { overlay.current?.updatePosition(position); }, [position]);
             useEffect(() => { overlay.current?.updateText(text); }, [text]);
             useEffect(() => { overlay.current?.updateStyle(styleProps); }, [styleProps]);
 
-            return null;
+            return null; // هذا المكون لا يعرض أي شيء مباشرة في DOM الخاص بـ React
         };
 
         // ====================================================================
         //  FILE: src/components/map/MapToolbar.js, MapComponent.js, and new UI elements
+        //  المكونات الأساسية للخريطة: شريط الأدوات، مكون الخريطة نفسه، وعناصر واجهة مستخدم إضافية
         // ====================================================================
+        
+        // مكون شريط الأدوات العائم على الخريطة
         const FloatingToolbar = ({ settings, onUpdateSettings, onAddPointFromCurrentLocation, isDeleteMode, onToggleDeleteMode, isZoomedInEnough }) => {
             const [isOpen, setIsOpen] = useState(false);
             const { showPolylines, showElevations, showLabels, labelContent, isMeasuring, isAreaMeasuring, snapEnabled } = settings;
@@ -907,6 +882,7 @@
             );
         };
         
+        // مكون أزرار التراجع والإعادة
         const HistoryControls = ({ undo, redo, canUndo, canRedo }) => (
             <div className="absolute top-4 left-4 z-10 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm p-1 rounded-full shadow-lg flex border dark:border-slate-700">
                 <button onClick={undo} disabled={!canUndo} className="icon-button" title="تراجع"><Icon name="undo-2" /></button>
@@ -915,6 +891,7 @@
             </div>
         );
 
+        // مكون مؤشر المنطقة والمجموعة النشطة
         const ActiveAreaIndicator = ({ areaName, groupName }) => (
             <div className="absolute top-4 right-4 z-10 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm p-2 px-4 rounded-lg shadow-lg border dark:border-slate-700 text-sm">
                 <p><span className="font-semibold">منطقة العمل:</span> {areaName || 'غير محدد'}</p>
@@ -922,17 +899,19 @@
             </div>
         );
 
+        // مكون الخريطة الرئيسي
         const MapComponent = forwardRef(({ selectedArea, utmZone, onAddPoint, onUpdatePoint, addToast, onUpdateGroupSettings, selectedGroupId, isDeleteMode, onDeletePointById, onActivateGroup, setActivePointId, onZoomChange }, ref) => {
             const { darkMode } = useAppContext();
-            const mapRef = useRef(null);
-            const [map, setMap] = useState(null);
-            const [mapOverlays, setMapOverlays] = useState([]);
-            const markersRef = useRef({});
-            const polylinesRef = useRef({});
-            const infoWindowRef = useRef(null);
+            const mapRef = useRef(null); // مرجع لعنصر div الخاص بالخريطة
+            const [map, setMap] = useState(null); // حالة لتخزين كائن الخريطة
+            const [mapOverlays, setMapOverlays] = useState([]); // حالة لتخزين التسميات المخصصة
+            const markersRef = useRef({}); // مرجع لتخزين العلامات (Markers)
+            const polylinesRef = useRef({}); // مرجع لتخزين الخطوط (Polylines)
+            const infoWindowRef = useRef(null); // مرجع لنافذة المعلومات
             const onAddPointRef = useRef(onAddPoint);
             useEffect(() => { onAddPointRef.current = onAddPoint; }, [onAddPoint]);
 
+            // useImperativeHandle يسمح للمكون الأب باستدعاء دوال داخل هذا المكون
             useImperativeHandle(ref, () => ({
                 zoomToPoint(lat, lng) { map?.setCenter({ lat, lng }); map?.setZoom(21); },
                 zoomToBounds(boundsData) {
@@ -948,11 +927,13 @@
                 }
             }));
 
+            // تأثير لتهيئة الخريطة عند تحميل المكون لأول مرة
             useEffect(() => {
                 if (mapRef.current && !map) {
                     const mapInstance = new window.google.maps.Map(mapRef.current, { center: { lat: DEFAULT_MAP_CENTER_LAT, lng: DEFAULT_MAP_CENTER_LNG }, zoom: DEFAULT_MAP_ZOOM, mapTypeId: 'satellite', mapTypeControl: false, streetViewControl: false, fullscreenControl: false, zoomControl: true, clickableIcons: !isDeleteMode });
                     infoWindowRef.current = new window.google.maps.InfoWindow();
                     
+                    // إضافة مستمع لحدث النقر على الخريطة لإضافة نقطة
                     mapInstance.addListener('click', (e) => {
                         if (isDeleteMode) {
                             addToast('وضع الحذف مفعل. انقر على نقطة لحذفها.', 'info');
@@ -961,6 +942,7 @@
                         onAddPointRef.current(e.latLng.lat(), e.latLng.lng());
                     });
                     
+                    // إضافة مستمع لحدث تغيير مستوى التقريب
                     mapInstance.addListener('zoom_changed', () => {
                         const currentZoom = mapInstance.getZoom();
                         onZoomChange(currentZoom);
@@ -974,15 +956,17 @@
                 }
             }, [mapRef, map, selectedGroupId, onUpdateGroupSettings]);
 
-            // Toggle map cursor based on delete mode
+            // تأثير لتغيير شكل مؤشر الفأرة حسب وضع الحذف
             useEffect(() => {
                 if(map) {
                     map.setOptions({ draggableCursor: isDeleteMode ? 'crosshair' : null, clickableIcons: !isDeleteMode });
                 }
             }, [map, isDeleteMode]);
 
+            // التأثير الرئيسي لرسم كل شيء على الخريطة (علامات، خطوط، تسميات)
             useEffect(() => {
                 if (!map) return;
+                // تنظيف الخريطة قبل إعادة الرسم
                 Object.values(markersRef.current).forEach(m => m.setMap(null));
                 markersRef.current = {};
                 Object.values(polylinesRef.current).forEach(p => p.setMap(null));
@@ -1001,53 +985,33 @@
                             const latLng = new window.google.maps.LatLng(point.lat, point.lng);
                             path.push(latLng);
 
+                            // إعداد أيقونة العلامة
                             const iconKey = point.markerIcon || 'default';
                             const iconDefinition = MARKER_ICONS[iconKey] || MARKER_ICONS['default'];
-                            
-                            const markerIcon = {
-                                path: iconDefinition.path,
-                                fillColor: group.color,
-                                fillOpacity: 1,
-                                strokeWeight: iconDefinition.strokeWeight,
-                                strokeColor: '#ffffff',
-                                scale: iconDefinition.scale,
-                                anchor: iconDefinition.anchor ? new window.google.maps.Point(iconDefinition.anchor.x, iconDefinition.anchor.y) : null
-                            };
+                            const markerIcon = { path: iconDefinition.path, fillColor: group.color, fillOpacity: 1, strokeWeight: iconDefinition.strokeWeight, strokeColor: '#ffffff', scale: iconDefinition.scale, anchor: iconDefinition.anchor ? new window.google.maps.Point(iconDefinition.anchor.x, iconDefinition.anchor.y) : null };
 
-                            const marker = new window.google.maps.Marker({
-                                position: latLng, map, draggable: !isDeleteMode,
-                                title: `نقطة ${index + 1} (${group.name})`,
-                                icon: markerIcon,
-                                cursor: isDeleteMode ? 'pointer' : 'grab'
-                            });
+                            // إنشاء العلامة
+                            const marker = new window.google.maps.Marker({ position: latLng, map, draggable: !isDeleteMode, title: `نقطة ${index + 1} (${group.name})`, icon: markerIcon, cursor: isDeleteMode ? 'pointer' : 'grab' });
                             markersRef.current[point.id] = marker;
                             
+                            // إعداد نص التسمية
                             let labelText = '';
                             if (labelsAreVisible) {
-                                if (labelContent === 'name') {
-                                    labelText = point.name || `${index + 1}`;
-                                } else {
-                                    labelText = `${index + 1}`;
-                                }
+                                labelText = (labelContent === 'name') ? (point.name || `${index + 1}`) : `${index + 1}`;
                             }
-
                             if (showElevations && point.elevation != null) {
                                 const elevationLabel = point.elevation.toFixed(2);
                                 labelText = labelText ? `${labelText} (${elevationLabel})` : elevationLabel;
                             }
-
                             if (labelText) {
-                                newOverlays.push({
-                                    id: `point-${point.id}`,
-                                    position: latLng,
-                                    text: labelText,
-                                    styleProps: { transform: 'translate(-50%, -50px)', background: group.color, color: 'white', padding: '4px 10px', borderRadius: '16px', fontSize: '24px', fontWeight: 'bold', border: '1px solid rgba(255,255,255,0.75)', boxShadow: '0 1px 4px rgba(0,0,0,0.4)' }
-                                });
+                                newOverlays.push({ id: `point-${point.id}`, position: latLng, text: labelText, styleProps: { transform: 'translate(-50%, -50px)', background: group.color, color: 'white', padding: '4px 10px', borderRadius: '16px', fontSize: '24px', fontWeight: 'bold', border: '1px solid rgba(255,255,255,0.75)', boxShadow: '0 1px 4px rgba(0,0,0,0.4)' } });
                             }
 
+                            // إعداد محتوى نافذة المعلومات
                             const utm = convertLatLngToUtm(point.lat, point.lng, utmZone);
                             const infoContent = `<div dir="rtl"><h4>نقطة ${index + 1} (${group.name})</h4><p>Lat: ${point.lat.toFixed(6)}</p><p>Lng: ${point.lng.toFixed(6)}</p>${utm ? `<p>Easting: ${utm.easting.toFixed(2)}</p><p>Northing: ${utm.northing.toFixed(2)}</p>` : ''}<p>Elevation: ${point.elevation != null ? point.elevation.toFixed(2) : 'N/A'}</p>${point.description ? `<p>الوصف: ${point.description}</p>` : ''}</div>`;
                             
+                            // إضافة مستمع لحدث النقر على العلامة
                             marker.addListener('click', () => { 
                                 onActivateGroup(group.id);
                                 setActivePointId(point.id);
@@ -1059,13 +1023,13 @@
                                 }
                             });
                             
+                            // إضافة مستمع لحدث سحب العلامة
                             marker.addListener('dragend', (event) => {
                                 const newLatLng = event.latLng;
-                                let finalLat = newLatLng.lat();
-                                let finalLng = newLatLng.lng();
+                                let finalLat = newLatLng.lat(), finalLng = newLatLng.lng();
                                 
+                                // منطق الالتقاط (Snapping)
                                 const allOtherPoints = selectedArea.groups.flatMap(g => g.points).filter(p => p.id !== point.id);
-
                                 if (group.snapEnabled && allOtherPoints.length > 0) {
                                     const closestPoint = allOtherPoints.reduce((closest, current) => {
                                         const distance = window.google.maps.geometry.spherical.computeDistanceBetween(newLatLng, new window.google.maps.LatLng(current.lat, current.lng));
@@ -1083,34 +1047,27 @@
                             });
                         });
 
+                        // رسم الخطوط (Polylines)
                         if (showPolylines && path.length > 1) {
                             polylinesRef.current[group.id] = new window.google.maps.Polyline({ path, map, geodesic: true, strokeColor: group.color, strokeOpacity: 0.8, strokeWeight: 3 });
                             
+                            // عرض قياسات المسافات
                             if (isMeasuring) {
                                 for (let i = 0; i < path.length - 1; i++) {
                                     const p1 = path[i], p2 = path[i+1];
                                     const distance = window.google.maps.geometry.spherical.computeDistanceBetween(p1, p2);
                                     const midpoint = window.google.maps.geometry.spherical.interpolate(p1, p2, 0.5);
-                                    newOverlays.push({
-                                        id: `dist-${group.id}-${i}`,
-                                        position: midpoint,
-                                        text: `${distance.toFixed(2)} م`,
-                                        styleProps: { transform: 'translate(-50%, -50%)', background: darkMode ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.8)', color: darkMode ? 'white' : 'black', padding: '4px 8px', borderRadius: '6px', fontSize: '14px', fontWeight: 'bold', border: `1px solid ${darkMode ? 'white' : 'black'}` }
-                                    });
+                                    newOverlays.push({ id: `dist-${group.id}-${i}`, position: midpoint, text: `${distance.toFixed(2)} م`, styleProps: { transform: 'translate(-50%, -50%)', background: darkMode ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.8)', color: darkMode ? 'white' : 'black', padding: '4px 8px', borderRadius: '6px', fontSize: '14px', fontWeight: 'bold', border: `1px solid ${darkMode ? 'white' : 'black'}` } });
                                 }
                             }
                         }
                         
+                        // عرض قياس المساحة
                         if (isAreaMeasuring && path.length >= 3) {
                             const area = window.google.maps.geometry.spherical.computeArea(path);
                             const bounds = new window.google.maps.LatLngBounds();
                             path.forEach(p => bounds.extend(p));
-                            newOverlays.push({
-                                id: `area-${group.id}`,
-                                position: bounds.getCenter(),
-                                text: `المساحة: ${area.toFixed(2)} م²`,
-                                styleProps: { transform: 'translate(-50%, -50%)', background: darkMode ? 'rgba(30,41,59,0.9)' : 'rgba(241,245,249,0.9)', color: darkMode ? '#f1f5f9' : '#1e293b', padding: '8px 12px', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', border: `2px solid ${group.color}` }
-                            });
+                            newOverlays.push({ id: `area-${group.id}`, position: bounds.getCenter(), text: `المساحة: ${area.toFixed(2)} م²`, styleProps: { transform: 'translate(-50%, -50%)', background: darkMode ? 'rgba(30,41,59,0.9)' : 'rgba(241,245,249,0.9)', color: darkMode ? '#f1f5f9' : '#1e293b', padding: '8px 12px', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', border: `2px solid ${group.color}` } });
                         }
                     });
                 }
@@ -1127,7 +1084,10 @@
 
         // ====================================================================
         //  FILE: src/components/import/ImportExportModals.js
+        //  مكونات النوافذ المنبثقة لعمليات الاستيراد والتصدير واختيار الرموز
         // ====================================================================
+        
+        // نافذة منبثقة لاختيار رمز العلامة (Marker)
         const MarkerPickerModal = ({ onClose, onSelect, currentIconKey, previewColor = '#6b7280' }) => {
             return (
                 <div className="modal-overlay" onClick={onClose}>
@@ -1154,6 +1114,7 @@
             );
         };
 
+        // نافذة منبثقة للصق الإحداثيات مباشرة
         const DirectPasteModal = ({ onClose, onProcessPaste, utmZone }) => {
             const { addToast } = useAppContext();
             const [text, setText] = useState('');
@@ -1186,16 +1147,7 @@
                     const latLng = convertUtmToLatLng(easting, northing, utmZone);
                     if (!latLng) return null;
                     
-                    return { 
-                        id: generateUniqueId(), 
-                        lat: latLng.lat, 
-                        lng: latLng.lng, 
-                        elevation: isNaN(elevation) ? null : elevation, 
-                        utm: { easting, northing, zone: utmZone }, 
-                        description,
-                        markerIcon: 'default',
-                        createdAt: new Date().toISOString() 
-                    };
+                    return { id: generateUniqueId(), lat: latLng.lat, lng: latLng.lng, elevation: isNaN(elevation) ? null : elevation, utm: { easting, northing, zone: utmZone }, description, markerIcon: 'default', createdAt: new Date().toISOString() };
                 }).filter(Boolean);
 
                 if (pointsToImport.length === 0) {
@@ -1227,6 +1179,7 @@
             );
         };
         
+        // نافذة منبثقة لاستيراد النقاط من ملف
         const ImportPointsModal = ({ fileData, onClose, onImport, utmZone }) => {
             const { addToast } = useAppContext();
             const [mappings, setMappings] = useState({ easting: '0', northing: '1', elevation: '-1', description: '-1' });
@@ -1243,6 +1196,7 @@
                 return { headers: headerRow, dataRows: dataContent };
             }, [fileData.data, ignoreHeader]);
 
+            // تأثير لاكتشاف أعمدة الإحداثيات تلقائياً من الترويسة
             useEffect(() => {
                 if (ignoreHeader && headers.length > 0) {
                     const lowerCaseHeaders = headers.map(h => h.toLowerCase());
@@ -1339,6 +1293,7 @@
             );
         };
 
+        // نافذة منبثقة لتصدير النقاط
         const ExportPointsModal = ({ workAreas, onClose, onExport }) => {
             const { addToast } = useAppContext();
             const [selectedIds, setSelectedIds] = useState({});
@@ -1477,8 +1432,10 @@
 
         // ====================================================================
         //  FILE: src/App.js
+        //  هذا هو المكون الرئيسي للتطبيق الذي يجمع كل المكونات الأخرى ويدير الحالة العامة
         // ====================================================================
         function App() {
+            // دالة لتهيئة مناطق العمل، إما من التخزين المحلي (localStorage) أو إنشاء منطقة عمل افتراضية
             const initializeWorkAreas = () => {
                 try {
                     const saved = localStorage.getItem('workAreas');
@@ -1500,21 +1457,22 @@
                 }];
             };
 
+            // تعريف الحالات (States) الرئيسية للتطبيق
             const [workAreas, setWorkAreas, undo, redo, canUndo, canRedo] = useHistoryState(initializeWorkAreas());
             const [selectedWorkAreaId, setSelectedWorkAreaId] = useState(() => localStorage.getItem('selectedWorkAreaId') || workAreas[0]?.id || null);
             const [selectedGroupId, setSelectedGroupId] = useState(() => localStorage.getItem('selectedGroupId') || null);
-            const [activePointId, setActivePointId] = useState(null);
+            const [activePointId, setActivePointId] = useState(null); // النقطة النشطة حالياً (المحددة على الخريطة أو في الجدول)
             const [isMapFullScreen, setIsMapFullScreen] = useState(false);
             const [isSidebarOpen, setIsSidebarOpen] = useState(false);
             const [isDeleteMode, setIsDeleteMode] = useState(false);
-            const [isCoordinatesViewActive, setIsCoordinatesViewActive] = useState(false);
+            const [isCoordinatesViewActive, setIsCoordinatesViewActive] = useState(false); // هل جدول الإحداثيات مكبر؟
             const [currentZoom, setCurrentZoom] = useState(DEFAULT_MAP_ZOOM);
             const { utmZone, setUtmZone, addToast, setModal, closeModal } = useAppContext();
-            const mapApiRef = useRef(null);
+            const mapApiRef = useRef(null); // مرجع للوصول إلى دوال مكون الخريطة
             
             const isZoomedInEnough = currentZoom >= LABEL_VISIBILITY_ZOOM_THRESHOLD;
 
-            // Effect to handle selection logic when workAreas change
+            // تأثير للتعامل مع منطق الاختيار عند تغيير مناطق العمل (مثل حذف منطقة)
             useEffect(() => {
                 if (workAreas.length > 0 && !workAreas.some(a => a.id === selectedWorkAreaId)) {
                     const firstAreaId = workAreas[0].id;
@@ -1527,18 +1485,21 @@
                 }
             }, [workAreas, selectedWorkAreaId]);
             
+            // استخدام useMemo لتحسين أداء حساب المنطقة والمجموعة المحددة
             const selectedArea = useMemo(() => workAreas.find(a => a.id === selectedWorkAreaId), [workAreas, selectedWorkAreaId]);
             const selectedGroup = useMemo(() => selectedArea?.groups.find(g => g.id === selectedGroupId), [selectedArea, selectedGroupId]);
 
-            // Save to localStorage whenever state changes
+            // تأثيرات لحفظ الحالة في التخزين المحلي (localStorage) عند تغييرها
             useEffect(() => { localStorage.setItem('workAreas', JSON.stringify(workAreas)); }, [workAreas]);
             useEffect(() => { if (selectedWorkAreaId) localStorage.setItem('selectedWorkAreaId', selectedWorkAreaId); else localStorage.removeItem('selectedWorkAreaId'); }, [selectedWorkAreaId]);
             useEffect(() => { if (selectedGroupId) localStorage.setItem('selectedGroupId', selectedGroupId); else localStorage.removeItem('selectedGroupId'); }, [selectedGroupId]);
             
+            // دالة مساعدة لتحديث منطقة عمل معينة
             const updateWorkArea = (areaId, updateFn) => {
                 setWorkAreas(prevAreas => prevAreas.map(a => a.id === areaId ? updateFn(a) : a));
             };
             
+            // معالج حدث اختيار منطقة عمل
             const handleSelectArea = (areaId) => {
                 setSelectedWorkAreaId(areaId);
                 const area = workAreas.find(a => a.id === areaId);
@@ -1552,6 +1513,7 @@
                 }
             };
 
+            // معالج حدث إضافة منطقة عمل جديدة
             const handleAddNewArea = (name) => {
                 const newAreaId = generateUniqueId();
                 const newGroupId = generateUniqueId();
@@ -1568,20 +1530,15 @@
                 mapApiRef.current?.resetView();
             };
             
-            const handleDeleteArea = (id) => {
-                setWorkAreas(p => p.filter(a => a.id !== id));
-            };
-            
-            const handleRenameArea = (id, name) => {
-                updateWorkArea(id, a => ({...a, name}));
-            };
+            const handleDeleteArea = (id) => { setWorkAreas(p => p.filter(a => a.id !== id)); };
+            const handleRenameArea = (id, name) => { updateWorkArea(id, a => ({...a, name})); };
 
+            // معالجات الأحداث الخاصة بمجموعات النقاط
             const handleAddNewGroup = (areaId, name) => {
                 const newGroup = {id: generateUniqueId(), name, color: POINT_GROUP_COLORS[workAreas.length % POINT_GROUP_COLORS.length], points:[], ...DEFAULT_GROUP_SETTINGS};
                 updateWorkArea(areaId, a => ({...a, groups: [...a.groups, newGroup]}));
                 setSelectedGroupId(newGroup.id);
             };
-            
             const handleDeleteGroup = (areaId, groupId) => {
                 updateWorkArea(areaId, area => {
                     const newGroups = area.groups.filter(g => g.id !== groupId);
@@ -1592,19 +1549,18 @@
                     return {...area, groups: newGroups};
                 });
             };
-            
             const handleRenameGroup = (areaId, groupId, name) => {
                  updateWorkArea(areaId, a => ({...a, groups: a.groups.map(g => g.id === groupId ? {...g, name} : g)}));
             };
 
+            // معالج حدث إضافة نقطة جديدة (من الخريطة أو الموقع الحالي)
             const handleAddPoint = useCallback(async (lat, lng) => {
-                if (isDeleteMode) {
-                    addToast('وضع الحذف مفعل. قم بإلغاء تفعيله لإضافة نقاط.', 'info');
-                    return;
-                }
+                if (isDeleteMode) { addToast('وضع الحذف مفعل. قم بإلغاء تفعيله لإضافة نقاط.', 'info'); return; }
                 if (!selectedArea) { addToast('الرجاء تحديد منطقة عمل أولاً.', 'error'); return; }
                 
                 let finalLat = lat, finalLng = lng, finalElevation = null, finalUtm = null, snapped = false;
+                
+                // منطق الالتقاط (Snapping)
                 const allPoints = selectedArea.groups.flatMap(g => g.points);
                 if (selectedGroup?.snapEnabled && allPoints.length > 0) {
                     const clickLatLng = new window.google.maps.LatLng(lat, lng);
@@ -1633,6 +1589,7 @@
 
                 const newPoint = { id: generateUniqueId(), name: '', lat: finalLat, lng: finalLng, elevation: finalElevation ?? 0.00, utm: finalUtm, description: '', markerIcon: 'default', createdAt: new Date().toISOString() };
                 
+                // إضافة النقطة إلى المجموعة المحددة
                 setWorkAreas(prevAreas => {
                     return prevAreas.map(area => {
                         if (area.id !== selectedArea.id) return area;
@@ -1646,9 +1603,10 @@
                             return g;
                         });
                         
+                        // إذا لم تكن هناك مجموعة محددة، أضف إلى أول مجموعة
                         if (!targetGroupFound && updatedGroups.length > 0) {
                             updatedGroups[0].points.push(newPoint);
-                        } else if (updatedGroups.length === 0) {
+                        } else if (updatedGroups.length === 0) { // إذا لم تكن هناك مجموعات على الإطلاق
                             const newGroupId = generateUniqueId();
                             updatedGroups.push({ id: newGroupId, name: 'مجموعة نقاط 1', color: POINT_GROUP_COLORS[0], points: [newPoint], ...DEFAULT_GROUP_SETTINGS });
                             setSelectedGroupId(newGroupId);
@@ -1661,17 +1619,18 @@
                 if (!snapped) addToast('تمت إضافة النقطة.', 'success');
             }, [selectedArea, selectedGroupId, utmZone, addToast, selectedGroup, setWorkAreas, isDeleteMode]);
 
+            // معالج حدث تحديث بيانات نقطة (بعد السحب أو التعديل في الجدول)
             const handleUpdatePoint = useCallback(async (areaId, groupId, pointId, field, value) => {
                 const pointToUpdate = workAreas.find(a => a.id === areaId)?.groups.find(g => g.id === groupId)?.points.find(p => p.id === pointId);
                 if (!pointToUpdate) return;
             
                 let newPointData = { ...pointToUpdate };
             
-                if (field === 'latlng') {
+                if (field === 'latlng') { // إذا تم تحديث الموقع
                     const { elevation, status } = await getElevation(value);
                     if (status !== 'OK') addToast(`تعذر تحديث المنسوب (${status}). سيتم الاحتفاظ بالمنسوب القديم.`, 'error', 5000);
                     newPointData = { ...newPointData, lat: value.lat, lng: value.lng, utm: convertLatLngToUtm(value.lat, value.lng, utmZone), elevation: elevation ?? newPointData.elevation };
-                } else {
+                } else { // إذا تم تحديث حقل آخر (مثل الاسم أو الوصف)
                     newPointData[field] = value;
                 }
             
@@ -1688,6 +1647,7 @@
                 updateWorkArea(areaId, area => ({ ...area, groups: area.groups.map(g => g.id === groupId ? {...g, color} : g) }));
             };
 
+            // معالج حدث تحميل ملف
             const handleFileLoad = (file) => {
                 const reader = new FileReader();
                 const fileName = file.name;
@@ -1695,7 +1655,7 @@
                 reader.onload = (e) => {
                     const content = e.target.result;
                     try {
-                        if (fileName.endsWith('.hemap')) {
+                        if (fileName.endsWith('.hemap')) { // تحميل ملف مشروع
                             const decodedData = decodeURIComponent(escape(atob(content)));
                             const projectData = JSON.parse(decodedData);
 
@@ -1703,50 +1663,29 @@
                                 throw new Error('ملف المشروع غير صالح أو تالف.');
                             }
                             
-                            setWorkAreas(projectData.workAreas.map(area => ({
-                                ...area,
-                                groups: area.groups.map(g => ({...DEFAULT_GROUP_SETTINGS, ...g}))
-                            })));
+                            setWorkAreas(projectData.workAreas.map(area => ({ ...area, groups: area.groups.map(g => ({...DEFAULT_GROUP_SETTINGS, ...g})) })));
                             setSelectedWorkAreaId(projectData.selectedWorkAreaId);
                             setSelectedGroupId(projectData.selectedGroupId);
-                            if (projectData.utmZone) {
-                                setUtmZone(projectData.utmZone);
-                            }
+                            if (projectData.utmZone) setUtmZone(projectData.utmZone);
                             addToast('تم تحميل المشروع بنجاح.', 'success');
-
+                            
+                            // تكبير الخريطة لتناسب المشروع المحمل
                             setTimeout(() => {
                                 const loadedArea = projectData.workAreas.find(a => a.id === projectData.selectedWorkAreaId);
                                 const allPoints = loadedArea?.groups.flatMap(g => g.points) || [];
-                                 if (allPoints.length > 0) {
-                                    mapApiRef.current?.zoomToBounds(allPoints);
-                                }
+                                 if (allPoints.length > 0) mapApiRef.current?.zoomToBounds(allPoints);
                             }, 200);
 
-                        } else if (fileName.endsWith('.json')) {
+                        } else if (fileName.endsWith('.json')) { // تحميل ملف JSON قديم
                             const projectData = JSON.parse(content);
                             const dataToLoad = projectData.workAreas ? projectData.workAreas : projectData;
-
                             if (!Array.isArray(dataToLoad)) throw new Error('صيغة ملف JSON غير معروفة.');
-
-                            setWorkAreas(dataToLoad.map(area => ({
-                                ...area,
-                                groups: area.groups.map(g => ({...DEFAULT_GROUP_SETTINGS, ...g}))
-                            })));
-                            setSelectedWorkAreaId(projectData.selectedWorkAreaId || dataToLoad[0]?.id || null);
-                            setSelectedGroupId(projectData.selectedGroupId || dataToLoad[0]?.groups[0]?.id || null);
-                            if (projectData.utmZone) setUtmZone(projectData.utmZone);
+                            setWorkAreas(dataToLoad.map(area => ({ ...area, groups: area.groups.map(g => ({...DEFAULT_GROUP_SETTINGS, ...g})) })));
                             addToast('تم تحميل مشروع JSON بنجاح.', 'success');
-
-                        } else { // Handle CSV/TXT
-                            if (!selectedArea) {
-                                addToast('الرجاء تحديد منطقة عمل أولاً لاستيراد النقاط.', 'error');
-                                return;
-                            }
+                        } else { // تحميل ملف نصي (CSV/TXT)
+                            if (!selectedArea) { addToast('الرجاء تحديد منطقة عمل أولاً لاستيراد النقاط.', 'error'); return; }
                             const parsedData = parseDelimitedText(content);
-                            if (parsedData.error && !parsedData.data.length) {
-                                addToast(parsedData.error, 'error');
-                                return;
-                            }
+                            if (parsedData.error && !parsedData.data.length) { addToast(parsedData.error, 'error'); return; }
                             setModal(<ImportPointsModal fileData={{...parsedData, fileName}} onClose={closeModal} onImport={handleProcessImport} utmZone={utmZone} />);
                         }
                     } catch (err) {
@@ -1758,6 +1697,7 @@
                 reader.readAsText(file, 'UTF-8');
             };
             
+            // معالج إتمام عملية الاستيراد من النافذة المنبثقة
             const handleProcessImport = (groupName, points) => {
                 const newGroup = { id: generateUniqueId(), name: groupName, color: POINT_GROUP_COLORS[workAreas.length % POINT_GROUP_COLORS.length], points, ...DEFAULT_GROUP_SETTINGS };
                 updateWorkArea(selectedArea.id, area => ({ ...area, groups: [...area.groups, newGroup], lastModifiedAt: new Date().toISOString() }));
@@ -1766,36 +1706,20 @@
                 setTimeout(() => mapApiRef.current?.zoomToBounds(points), 100);
             };
 
+            // معالج إتمام عملية اللصق المباشر
             const handleProcessDirectPaste = (points) => {
                 if (!selectedArea || !selectedGroup) return;
-
-                updateWorkArea(selectedArea.id, area => ({
-                    ...area,
-                    groups: area.groups.map(g => {
-                        if (g.id === selectedGroup.id) {
-                            return { ...g, points: [...g.points, ...points] };
-                        }
-                        return g;
-                    }),
-                    lastModifiedAt: new Date().toISOString()
-                }));
-                
+                updateWorkArea(selectedArea.id, area => ({ ...area, groups: area.groups.map(g => g.id === selectedGroup.id ? { ...g, points: [...g.points, ...points] } : g), lastModifiedAt: new Date().toISOString() }));
                 addToast(`تم إضافة ${points.length} نقطة بنجاح.`, 'success');
                 setTimeout(() => mapApiRef.current?.zoomToBounds(points), 100);
             };
 
             const handleOpenDirectPasteModal = () => {
-                if (!selectedArea || !selectedGroup) {
-                    addToast('الرجاء تحديد منطقة عمل ومجموعة نقاط أولاً.', 'error');
-                    return;
-                }
-                setModal(<DirectPasteModal 
-                    onClose={closeModal} 
-                    onProcessPaste={handleProcessDirectPaste}
-                    utmZone={utmZone}
-                />);
+                if (!selectedArea || !selectedGroup) { addToast('الرجاء تحديد منطقة عمل ومجموعة نقاط أولاً.', 'error'); return; }
+                setModal(<DirectPasteModal onClose={closeModal} onProcessPaste={handleProcessDirectPaste} utmZone={utmZone} />);
             };
             
+            // معالج عملية تصدير البيانات
             const handleExportData = (options) => {
                 const { selectedIds, exportFormat, delimiter, fileExtension, acadScriptType, addCsvDescription } = options;
                 
@@ -1803,10 +1727,7 @@
                     area.groups.filter(group => selectedIds[area.id] || selectedIds[`group-${group.id}`])
                 );
 
-                if (selectedGroups.flatMap(g => g.points).length === 0) {
-                    addToast('لم يتم تحديد نقاط صالحة للتصدير.', 'error');
-                    return null;
-                }
+                if (selectedGroups.flatMap(g => g.points).length === 0) { addToast('لم يتم تحديد نقاط صالحة للتصدير.', 'error'); return null; }
 
                 let content = '';
                 let fileName = 'export';
@@ -1814,8 +1735,7 @@
                 
                 const safeToFixed = (num, digits = 3) => (typeof num === 'number' ? num.toFixed(digits) : '0.000');
                 
-                const pointsToExport = selectedGroups.flatMap(g => g.points)
-                    .filter(p => p && p.utm && typeof p.utm.easting === 'number' && typeof p.utm.northing === 'number');
+                const pointsToExport = selectedGroups.flatMap(g => g.points).filter(p => p && p.utm && typeof p.utm.easting === 'number' && typeof p.utm.northing === 'number');
 
                 switch(exportFormat) {
                     case 'csv':
@@ -1829,13 +1749,9 @@
                         break;
                     case 'acad_script':
                         if (acadScriptType === 'pline') {
-                           content = selectedGroups.map(group => 
-                                "PLINE\n" + group.points.map(p => `${safeToFixed(p.utm?.easting)},${safeToFixed(p.utm?.northing)}`).join('\n')
-                            ).join('\n \n');
+                            content = selectedGroups.map(group => "PLINE\n" + group.points.map(p => `${safeToFixed(p.utm?.easting)},${safeToFixed(p.utm?.northing)}`).join('\n')).join('\n \n');
                         } else { // points
-                            content = pointsToExport.map(p => 
-                                `_POINT ${safeToFixed(p.utm?.easting)},${safeToFixed(p.utm?.northing)},${safeToFixed(p.elevation)}`
-                            ).join('\n');
+                            content = pointsToExport.map(p => `_POINT ${safeToFixed(p.utm?.easting)},${safeToFixed(p.utm?.northing)},${safeToFixed(p.elevation)}`).join('\n');
                         }
                         fileName = `acad_script_${acadScriptType}.scr`;
                         mimeType = 'application/octet-stream';
@@ -1845,6 +1761,7 @@
                 return null;
             };
 
+            // معالج طلب الموقع الحالي
             const triggerGetCurrentLocation = async () => {
                 if (!selectedArea) { addToast('الرجاء تحديد منطقة عمل أولاً.', 'error'); return; }
                 addToast('جاري جلب موقعك الحالي...', 'info');
@@ -1856,15 +1773,13 @@
             const handleToggleDeleteMode = () => {
                 setIsDeleteMode(prev => {
                     const newMode = !prev;
-                    if (newMode) {
-                        addToast('وضع الحذف مفعل. انقر على أي نقطة لحذفها.', 'info', 4000);
-                    } else {
-                        addToast('تم إلغاء تفعيل وضع الحذف.', 'info', 4000);
-                    }
+                    if (newMode) addToast('وضع الحذف مفعل. انقر على أي نقطة لحذفها.', 'info', 4000);
+                    else addToast('تم إلغاء تفعيل وضع الحذف.', 'info', 4000);
                     return newMode;
                 });
             };
 
+            // معالج تحديث إعدادات المجموعة النشطة
             const handleUpdateGroupSettings = (settingKey, value) => {
                 if (!selectedGroupId) return;
                 updateWorkArea(selectedArea.id, area => ({
@@ -1873,18 +1788,9 @@
                 }));
             };
             
+            // حساب إعدادات العرض للمجموعة الحالية
             const displaySettings = useMemo(() => {
-                if(selectedGroup) {
-                    return {
-                        showPolylines: selectedGroup.showPolylines,
-                        showElevations: selectedGroup.showElevations,
-                        showLabels: selectedGroup.showLabels,
-                        labelContent: selectedGroup.labelContent,
-                        isMeasuring: selectedGroup.isMeasuring,
-                        isAreaMeasuring: selectedGroup.isAreaMeasuring,
-                        snapEnabled: selectedGroup.snapEnabled,
-                    }
-                }
+                if(selectedGroup) return { ...DEFAULT_GROUP_SETTINGS, ...selectedGroup };
                 return DEFAULT_GROUP_SETTINGS;
             }, [selectedGroup]);
 
@@ -1892,31 +1798,25 @@
                 setModal(<GenericModal type="prompt" title={title} message={message} inputLabel={inputLabel} initialValue={initialValue} onConfirm={onConfirm} onClose={closeModal} />);
             };
 
+            // معالج حفظ المشروع بالكامل
             const handleSaveProject = () => {
                 promptAction("حفظ المشروع", "أدخل اسم الملف:", "اسم الملف", "مشروعي_الهندسي", (fileName) => {
-                    if (!fileName || fileName.trim() === '') {
-                        addToast('تم إلغاء الحفظ. اسم الملف فارغ.', 'error');
-                        return;
-                    }
+                    if (!fileName || fileName.trim() === '') { addToast('تم إلغاء الحفظ. اسم الملف فارغ.', 'error'); return; }
 
                     const projectData = {
-                        format: 'EngineeringMapProject',
-                        version: '1.1.0',
-                        savedAt: new Date().toISOString(),
-                        workAreas: workAreas,
-                        selectedWorkAreaId: selectedWorkAreaId,
-                        selectedGroupId: selectedGroupId,
-                        utmZone: utmZone
+                        format: 'EngineeringMapProject', version: '1.2.0', savedAt: new Date().toISOString(),
+                        workAreas: workAreas, selectedWorkAreaId: selectedWorkAreaId, selectedGroupId: selectedGroupId, utmZone: utmZone
                     };
 
-                    const jsonString = JSON.stringify(projectData);
-                    const encodedData = btoa(unescape(encodeURIComponent(jsonString)));
+                    const jsonString = JSON.stringify(projectData, null, 2);
+                    const encodedData = btoa(unescape(encodeURIComponent(jsonString))); // ترميز خاص لضمان سلامة البيانات
 
                     downloadFile(encodedData, `${fileName.trim()}.hemap`, 'application/octet-stream');
                     addToast('تم حفظ المشروع بنجاح.', 'success');
                 });
             };
             
+            // العرض النهائي للتطبيق (JSX)
             return (
                 <div className="h-screen w-screen flex flex-col bg-slate-100 dark:bg-slate-900">
                     <Header onToggleFullScreen={() => setIsMapFullScreen(f => !f)} isFullScreen={isMapFullScreen} onToggleSidebar={() => setIsSidebarOpen(o => !o)} />
@@ -2012,10 +1912,19 @@
 
         // ====================================================================
         //  FILE: src/main.js (Entry Point)
+        //  نقطة البداية لتشغيل التطبيق
         // ====================================================================
         const container = document.getElementById('root');
         const root = createRoot(container);
-        window.initMap = () => root.render(<AppProvider><App /></AppProvider>);
+        
+        // هذه الدالة يتم استدعاؤها بواسطة Google Maps API بعد تحميل المكتبة بنجاح
+        window.initMap = () => root.render(
+            <AppProvider>
+                <App />
+            </AppProvider>
+        );
+        
+        // في حالة كانت مكتبة خرائط جوجل محملة بالفعل، قم بتشغيل التطبيق فوراً
         if (window.google && window.google.maps) window.initMap();
 
     </script>
