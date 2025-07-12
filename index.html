@@ -116,8 +116,8 @@
         const MAX_ZOOM_FOR_SNAP = 21; // أقصى مستوى تقريب (Zoom) يتم فيه تفعيل الالتقاط
         const LABEL_VISIBILITY_ZOOM_THRESHOLD = 17; // مستوى التقريب الذي تبدأ عنده التسميات (Labels) بالظهور
         const MARKER_VISIBILITY_ZOOM_THRESHOLD = 15;
-        const DISTANCE_LABEL_VISIBILITY_ZOOM_THRESHOLD = 16; // **جديد:** مستوى تقريب إظهار الأطوال
-        const AREA_LABEL_VISIBILITY_ZOOM_THRESHOLD = 14;     // **جديد:** مستوى تقريب إظهار المساحات
+        const DISTANCE_LABEL_VISIBILITY_ZOOM_THRESHOLD = 16;
+        const AREA_LABEL_VISIBILITY_ZOOM_THRESHOLD = 14;
         const POINT_GROUP_COLORS = ['#3b82f6', '#22c55e', '#f97316', '#8b5cf6', '#ef4444', '#ec4899', '#14b8a6', '#6b7280']; // مصفوفة الألوان الافتراضية لمجموعات النقاط
         
         const DEFAULT_GROUP_SETTINGS = {
@@ -536,8 +536,15 @@
                                             </label>
                                             <span className="text-xs text-slate-500 dark:text-slate-400">{selectedGroup.points.length} نقاط</span>
                                         </div>
-                                        <div className="flex items-center space-x-2 space-x-reverse">
-                                            {/* **جديد:** زر تغيير رمز كل نقاط المجموعة */}
+                                        <div className="flex items-center space-x-1 space-x-reverse">
+                                            {/* **تعديل:** تم نقل زر العين إلى هنا */}
+                                            <button 
+                                                onClick={() => onToggleGroupVisibility(selectedArea.id, selectedGroup.id)} 
+                                                className={`icon-button flex-shrink-0 ${selectedGroup.isVisible ? 'active' : ''}`} 
+                                                title={selectedGroup.isVisible ? 'إخفاء المجموعة' : 'إظهار المجموعة'}
+                                            >
+                                                <Icon name={selectedGroup.isVisible ? 'eye' : 'eye-off'} size={18} />
+                                            </button>
                                             <button onClick={openGroupMarkerPicker} className="icon-button" title="تغيير رمز كل النقاط في المجموعة">
                                                 <Icon name="shapes" size={18}/>
                                             </button>
@@ -549,34 +556,6 @@
                             </div>
                         )}
                         
-                        {/* **جديد:** قسم الطبقات (Layers) */}
-                        {selectedArea && (
-                            <div className="border-t pt-4 mt-4 dark:border-slate-700">
-                                <h2 className="text-lg font-bold mb-2">الطبقات (Layers)</h2>
-                                <div className="space-y-2 max-h-40 overflow-y-auto pr-2">
-                                    {selectedArea.groups.map(group => (
-                                        <div key={group.id} className="flex items-center justify-between p-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700">
-                                            <div className="flex items-center gap-2 flex-grow">
-                                                {/* **تعديل:** تم تغيير شكل زر العين عند تفعيله */}
-                                                <button 
-                                                    onClick={() => onToggleGroupVisibility(selectedArea.id, group.id)} 
-                                                    className={`icon-button flex-shrink-0 ${group.isVisible ? 'active' : ''}`} 
-                                                    title={group.isVisible ? 'إخفاء الطبقة' : 'إظهار الطبقة'}
-                                                >
-                                                    <Icon name={group.isVisible ? 'eye' : 'eye-off'} size={18} />
-                                                </button>
-                                                <span className="w-4 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: group.color }}></span>
-                                                <span className="text-sm truncate" title={group.name}>{group.name}</span>
-                                            </div>
-                                            <button onClick={() => onZoomToGroup(selectedArea.id, group.id)} className="icon-button flex-shrink-0" title="تكبير إلى المجموعة">
-                                                <Icon name="zoom-in" size={18} />
-                                            </button>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
                         {/* قسم الأدوات والإعدادات */}
                         <div className="border-t pt-4 mt-4 dark:border-slate-700">
                             <h3 className="font-semibold mb-2">الإعدادات والأدوات</h3>
@@ -922,7 +901,7 @@
                 { id: 'measure', icon: 'ruler', title: 'قياس المسافة', action: () => onUpdateSettings('isMeasuring', !isMeasuring), active: isMeasuring },
                 { id: 'area', icon: 'square', title: 'قياس المساحة', action: () => onUpdateSettings('isAreaMeasuring', !isAreaMeasuring), active: isAreaMeasuring },
                 { id: 'polyline', icon: 'git-commit', title: 'إظهار/إخفاء الخطوط', action: () => onUpdateSettings('showPolylines', !showPolylines), active: showPolylines },
-                { id: 'elevation', icon: 'text', title: 'إظهار/إخفاء المناسيب', action: () => onUpdateSettings('showElevations', !showElevations), active: showElevations },
+                { id: 'elevation', icon: 'text', title: isZoomedInEnough ? 'إظهار/إخفاء المناسيب' : 'قرّب لرؤية المناسيب', action: () => onUpdateSettings('showElevations', !showElevations), active: showElevations, disabled: !isZoomedInEnough },
                 { id: 'showLabels', icon: 'hash', title: isZoomedInEnough ? 'إظهار/إخفاء التسميات' : 'قرّب لرؤية التسميات', action: () => onUpdateSettings('showLabels', !showLabels), active: showLabels, disabled: !isZoomedInEnough },
                 { id: 'labelContent', icon: 'type', title: isZoomedInEnough ? 'تبديل محتوى التسمية (رقم/اسم)' : 'قرّب لتبديل التسميات', action: () => onUpdateSettings('labelContent', labelContent === 'number' ? 'name' : 'number'), active: labelContent === 'name', disabled: !isZoomedInEnough },
                 { id: 'snap', icon: 'magnet', title: 'تفعيل/إلغاء الالتقاط', action: () => onUpdateSettings('snapEnabled', !snapEnabled), active: snapEnabled },
@@ -1052,7 +1031,7 @@
                     selectedArea.groups.filter(group => group.isVisible).forEach(group => {
                         const { showPolylines, showElevations, showLabels, labelContent, isMeasuring, isAreaMeasuring } = group;
                         const path = [];
-                        const labelsAreVisible = showLabels && currentZoom >= LABEL_VISIBILITY_ZOOM_THRESHOLD;
+                        const canShowAnyLabel = currentZoom >= LABEL_VISIBILITY_ZOOM_THRESHOLD;
 
                         (group.points || []).forEach((point, index) => {
                             const latLng = new window.google.maps.LatLng(point.lat, point.lng);
@@ -1075,15 +1054,26 @@
                             });
                             markersRef.current[point.id] = marker;
                             
-                            // إعداد نص التسمية
+                            // **تعديل:** منطق جديد لإنشاء التسميات بناءً على الزوم
                             let labelText = '';
-                            if (labelsAreVisible) {
-                                labelText = (labelContent === 'name') ? (point.name || `${index + 1}`) : `${index + 1}`;
+                            if (canShowAnyLabel) {
+                                let pointLabel = '';
+                                let elevationLabel = '';
+
+                                if (showLabels) {
+                                    pointLabel = (labelContent === 'name') ? (point.name || `${index + 1}`) : `${index + 1}`;
+                                }
+                                if (showElevations && point.elevation != null) {
+                                    elevationLabel = point.elevation.toFixed(2);
+                                }
+
+                                if (pointLabel && elevationLabel) {
+                                    labelText = `${pointLabel} (${elevationLabel})`;
+                                } else {
+                                    labelText = pointLabel || elevationLabel;
+                                }
                             }
-                            if (showElevations && point.elevation != null) {
-                                const elevationLabel = point.elevation.toFixed(2);
-                                labelText = labelText ? `${labelText} (${elevationLabel})` : elevationLabel;
-                            }
+
                             if (labelText) {
                                 newOverlays.push({ id: `point-${point.id}`, position: latLng, text: labelText, styleProps: { transform: 'translate(-50%, -50px)', background: group.color, color: 'white', padding: '4px 10px', borderRadius: '16px', fontSize: '24px', fontWeight: 'bold', border: '1px solid rgba(255,255,255,0.75)', boxShadow: '0 1px 4px rgba(0,0,0,0.4)' } });
                             }
