@@ -2,77 +2,56 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>تطبيق الخرائط الهندسية - تطوير م. حمدي وحيد</title>
     
     <!-- BLOCK: STYLES & LIBRARIES -->
-    <!-- هذا القسم يحتوي على جميع الروابط للمكتبات الخارجية والأنماط (CSS) التي يحتاجها التطبيق -->
-
-    <!-- Google Fonts - Cairo: لاستخدام خط "كايرو" في التطبيق -->
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Tailwind CSS CDN: مكتبة لتنسيق واجهة المستخدم بسرعة وسهولة عبر فئات CSS جاهزة -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- React & ReactDOM CDN: المكتبات الأساسية لتشغيل تطبيق React في المتصفح -->
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    
-    <!-- Babel Standalone: لتحويل كود JSX (الذي يدمج HTML مع JavaScript) إلى JavaScript عادي يفهمه المتصفح -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
-    <!-- Lucide Icons CDN: مكتبة أيقونات خفيفة وسهلة الاستخدام -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    
-    <!-- Proj4js: مكتبة متخصصة في تحويل الإحداثيات بين أنظمة الإسقاط المختلفة (مثل WGS84 و UTM) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.8.0/proj4.js"></script>
-
-    <!-- html2canvas: مكتبة لأخذ لقطات شاشة (screenshot) لعناصر HTML -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-
-    <!-- Google Maps API: واجهة برمجة تطبيقات خرائط جوجل. لاحظ أنه يجب استبدال "YOUR_API_KEY" بمفتاحك الخاص -->
-    <!-- Libraries: geometry (للحسابات الهندسية), places (للأماكن), elevation (للحصول على المناسيب) -->
     <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAKXVuJsf0vANjBtlUIWcPj-wNWPkOc-S4&libraries=geometry,places,elevation&callback=initMap"></script>
 
     <style>
-        /* أنماط CSS مخصصة لتكملة Tailwind CSS */
-        body { font-family: 'Cairo', sans-serif; overscroll-behavior: none; }
+        /* [إصلاح] منع التمرير على مستوى الصفحة والسماح به داخل العناصر فقط */
+        html, body { height: 100%; overflow: hidden; }
+        body { font-family: 'Cairo', sans-serif; overscroll-behavior: none; -webkit-tap-highlight-color: transparent; }
         .dark-mode { background-color: #020617; color: #e2e8f0; }
         .dark-mode body { background-color: #020617; }
 
-        /* أنماط النافذة المنبثقة (Modal) */
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.7); display: flex; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(4px); animation: fade-in 0.3s ease-out forwards; }
-        .modal-content { background-color: white; padding: 2rem; border-radius: 0.75rem; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); width: 90%; max-width: 800px; max-height: 90vh; overflow-y: auto; animation: slide-in-down 0.3s ease-out forwards; transform-origin: center; }
+        .modal-content { background-color: white; padding: 1.5rem; border-radius: 0.75rem; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); width: 95%; max-width: 800px; max-height: 90vh; overflow-y: auto; animation: slide-in-down 0.3s ease-out forwards; transform-origin: center; }
         .dark-mode .modal-content { background-color: #1e293b; }
         
-        /* أنماط الأزرار الرئيسية والثانوية */
-        .button-primary { background-color: #2563eb; color: white; padding: 0.5rem 1.25rem; border-radius: 0.5rem; font-weight: 600; transition: all 0.2s; box-shadow: 0 1px 3px 0 rgba(0,0,0,0.1), 0 1px 2px 0 rgba(0,0,0,0.06); }
+        .button-primary { background-color: #2563eb; color: white; padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: 600; transition: all 0.2s; box-shadow: 0 1px 3px 0 rgba(0,0,0,0.1), 0 1px 2px 0 rgba(0,0,0,0.06); }
         .button-primary:hover { background-color: #1d4ed8; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); transform: translateY(-1px); }
-        .button-secondary { background-color: #64748b; color: white; padding: 0.5rem 1.25rem; border-radius: 0.5rem; font-weight: 600; transition: all 0.2s; }
+        .button-secondary { background-color: #64748b; color: white; padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: 600; transition: all 0.2s; }
         .button-secondary:hover { background-color: #475569; transform: translateY(-1px); }
 
-        /* أنماط أزرار الأيقونات */
-        .icon-button { background: transparent; border: none; cursor: pointer; padding: 0.5rem; border-radius: 9999px; transition: background-color 0.2s, transform 0.2s; line-height: 1; display: flex; align-items: center; justify-content: center; }
+        .icon-button { background: transparent; border: none; cursor: pointer; padding: 0.75rem; width: 48px; height: 48px; border-radius: 9999px; transition: background-color 0.2s, transform 0.2s; line-height: 1; display: flex; align-items: center; justify-content: center; }
         .icon-button:hover { background-color: rgba(0,0,0,0.1); transform: scale(1.1); }
         .dark-mode .icon-button:hover { background-color: rgba(255,255,255,0.1); }
         .icon-button.active { background-color: #2563eb; color: white; }
         .icon-button.danger.active { background-color: #ef4444; color: white; }
         .icon-button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; background-color: transparent !important; }
 
-        /* أنماط شريط التمرير (Scrollbar) */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; }
         .dark-mode ::-webkit-scrollbar-track { background: #0f172a; }
         ::-webkit-scrollbar-thumb { background: #a8a29e; border-radius: 4px; }
         .dark-mode ::-webkit-scrollbar-thumb { background: #475569; }
         
-        /* تأثيرات الحركة (Animations) */
         @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slide-in-down { from { opacity: 0; transform: translateY(-20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        @keyframes slide-in-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        @keyframes slide-out-down { from { transform: translateY(0); } to { transform: translateY(100%); } }
 
-        /* أنماط الإشعارات (Toasts) */
-        .toast-container { position: fixed; top: 1rem; left: 1rem; z-index: 1001; display: flex; flex-direction: column; gap: 0.5rem; }
-        .toast { background-color: white; color: #333; padding: 0.75rem 1rem; border-radius: 0.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: space-between; min-width: 250px; animation: slide-in-right 0.3s ease-out forwards, fade-out 0.5s ease-in 2.5s forwards; }
+        .toast-container { position: fixed; top: 1rem; left: 1rem; right: 1rem; z-index: 1001; display: flex; flex-direction: column; gap: 0.5rem; align-items: center; }
+        .toast { background-color: white; color: #333; padding: 0.75rem 1rem; border-radius: 0.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: space-between; width: 100%; max-width: 400px; animation: slide-in-down 0.3s ease-out forwards, fade-out 0.5s ease-in 2.5s forwards; }
         .dark-mode .toast { background-color: #1e293b; color: #e2e8f0; }
         .toast.success { border-right: 4px solid #10b981; }
         .toast.error { border-right: 4px solid #ef4444; }
@@ -83,42 +62,36 @@
         @keyframes slide-in-right { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
         @keyframes fade-out { from { opacity: 1; } to { opacity: 0; } }
         
-        /* أنماط منتقي الألوان (Color Picker) */
-        .color-picker-label { position: relative; display: inline-block; width: 20px; height: 20px; border-radius: 50%; cursor: pointer; border: 2px solid white; box-shadow: 0 0 0 1px rgba(0,0,0,0.2); transition: transform 0.2s; }
+        .color-picker-label { position: relative; display: inline-block; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; border: 2px solid white; box-shadow: 0 0 0 1px rgba(0,0,0,0.2); transition: transform 0.2s; }
         .color-picker-label:hover { transform: scale(1.2); }
         .color-picker-label input[type="color"] { position: absolute; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
         
-        /* أنماط القائمة المنسدلة المخصصة (Custom Select) */
         .custom-select { -webkit-appearance: none; -moz-appearance: none; appearance: none; background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: left 0.5rem center; background-repeat: no-repeat; background-size: 1.5em 1.5em; padding-left: 2.5rem; }
         .dark-mode .custom-select { background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); }
     </style>
 </head>
 <body>
-    <!-- هذا هو العنصر الجذر الذي سيتم عرض تطبيق React بداخله -->
     <div id="root"></div>
 
-    <!-- هذا الوسم يخبر Babel بتحويل كل ما بداخله من JSX إلى JavaScript -->
     <script type="text/babel">
         // ====================================================================
         //  BLOCK: IMPORTS & SETUP
-        //  هنا يتم استيراد الوظائف الأساسية من مكتبة React و ReactDOM
         // ====================================================================
         const { useState, useEffect, useRef, useCallback, useMemo, createContext, useContext, forwardRef, useImperativeHandle } = React;
         const { createRoot } = ReactDOM;
 
         // ====================================================================
         //  FILE: src/constants.js
-        //  هذا الملف يحتوي على الثوابت التي تستخدم في جميع أنحاء التطبيق
         // ====================================================================
-        const Maps_API_KEY = 'AIzaSyAKXVuJsf0vANjBtlUIWcPj-wNWPkOc-S4'; // مفتاح API لخرائط جوجل
-        const DEFAULT_UTM_ZONE = 35; // منطقة UTM الافتراضية
-        const SNAP_TOLERANCE_METERS = 10; // مسافة الالتقاط (Snap) بالـمتر
-        const MAX_ZOOM_FOR_SNAP = 21; // أقصى مستوى تقريب (Zoom) يتم فيه تفعيل الالتقاط
-        const LABEL_VISIBILITY_ZOOM_THRESHOLD = 17; // مستوى التقريب الذي تبدأ عنده التسميات (Labels) بالظهور
+        const Maps_API_KEY = 'AIzaSyAKXVuJsf0vANjBtlUIWcPj-wNWPkOc-S4';
+        const DEFAULT_UTM_ZONE = 35;
+        const SNAP_TOLERANCE_METERS = 10;
+        const MAX_ZOOM_FOR_SNAP = 21;
+        const LABEL_VISIBILITY_ZOOM_THRESHOLD = 17;
         const MARKER_VISIBILITY_ZOOM_THRESHOLD = 15;
         const DISTANCE_LABEL_VISIBILITY_ZOOM_THRESHOLD = 16;
         const AREA_LABEL_VISIBILITY_ZOOM_THRESHOLD = 14;
-        const POINT_GROUP_COLORS = ['#3b82f6', '#22c55e', '#f97316', '#8b5cf6', '#ef4444', '#ec4899', '#14b8a6', '#6b7280']; // مصفوفة الألوان الافتراضية لمجموعات النقاط
+        const POINT_GROUP_COLORS = ['#3b82f6', '#22c55e', '#f97316', '#8b5cf6', '#ef4444', '#ec4899', '#14b8a6', '#6b7280'];
         
         const DEFAULT_GROUP_SETTINGS = {
             showPolylines: true,
@@ -132,46 +105,33 @@
         };
         
         const MARKER_ICONS = {
-            // Basic Shapes
             default: { type: 'default', label: 'دائرة', path: 'M 0, 0 m -10, 0 a 10,10 0 1,0 20,0 a 10,10 0 1,0 -20,0', scale: 0.8, strokeWeight: 2.5 },
             square: { type: 'custom', label: 'مربع', path: 'M -8 -8 L 8 -8 L 8 8 L -8 8 Z', anchor: { x: 0, y: 0 }, scale: 1.2, strokeWeight: 2.5 },
             triangle: { type: 'custom', label: 'مثلث', path: 'M 0 -10 L 11.5 8 L -11.5 8 Z', anchor: { x: 0, y: 0 }, scale: 1.1, strokeWeight: 2.5 },
             cross: { type: 'custom', label: 'تقاطع (+)', path: 'M -10,0 L 10,0 M 0,-10 L 0,10', scale: 1.2, strokeWeight: 3 },
             x_cross: { type: 'custom', label: 'اكس (X)', path: 'M -9,-9 L 9,9 M 9,-9 L -9,9', scale: 1.2, strokeWeight: 3 },
-
-            // Surveying Symbols
-            benchmark: { type: 'custom', label: 'روبير', path: 'M 0 -12 L 12 6 L -12 6 Z M -12 6 L 12 6', anchor: { x: 0, y: 0 }, scale: 1, strokeWeight: 2.5 }, // Triangle with base
-            station: { type: 'custom', label: 'نقطة محطة', path: 'M 0,0 m -10,0 a 10,10 0 1,0 20,0 a 10,10 0 1,0 -20,0 M 0,-12 L 0,12 M -12,0 L 12,0', anchor: { x: 0, y: 0 }, scale: 1, strokeWeight: 2 }, // Circle with crosshairs
-            control_point: { type: 'custom', label: 'نقطة تحكم', path: 'M -10 -10 L 10 -10 L 10 10 L -10 10 Z M 0,0 m -3,0 a 3,3 0 1,0 6,0 a 3,3 0 1,0 -6,0', anchor: { x: 0, y: 0 }, scale: 1.1, strokeWeight: 2.5 }, // Square with dot
-
-            // Utility Symbols
-            manhole: { type: 'custom', label: 'مانهول', path: 'M 0,0 m -12,0 a 12,12 0 1,0 24,0 a 12,12 0 1,0 -24,0 M 0,0 m -8,0 a 8,8 0 1,0 16,0 a 8,8 0 1,0 -16,0', anchor: { x: 0, y: 0 }, scale: 0.9, strokeWeight: 2 }, // Concentric circles
-            valve: { type: 'custom', label: 'صمام', path: 'M -8,-8 L 8,8 M 8,-8 L -8,8', anchor: { x: 0, y: 0 }, scale: 1.2, strokeWeight: 4 }, // Bold X
-            hydrant: { type: 'custom', label: 'حنفية حريق', path: 'M 0,0 m -8,0 a 8,8 0 1,0 16,0 a 8,8 0 1,0 -16,0 M -12, -4 L -12, 4 L -8,0 z M 12,-4 L 12,4 L 8,0 z', anchor: { x: 0, y: 0 }, scale: 1, strokeWeight: 2.5 }, // Circle with side triangles
-            pole: { type: 'custom', label: 'عمود', path: 'M 0, 0 m -8, 0 a 8,8 0 1,0 16,0 a 8,8 0 1,0 -16,0 M 0,0 l 0, -12', anchor: { x: 0, y: 0 }, scale: 1, strokeWeight: 2 }, // Circle with line on top
-            
-            // Natural Features
+            benchmark: { type: 'custom', label: 'روبير', path: 'M 0 -12 L 12 6 L -12 6 Z M -12 6 L 12 6', anchor: { x: 0, y: 0 }, scale: 1, strokeWeight: 2.5 },
+            station: { type: 'custom', label: 'نقطة محطة', path: 'M 0,0 m -10,0 a 10,10 0 1,0 20,0 a 10,10 0 1,0 -20,0 M 0,-12 L 0,12 M -12,0 L 12,0', anchor: { x: 0, y: 0 }, scale: 1, strokeWeight: 2 },
+            control_point: { type: 'custom', label: 'نقطة تحكم', path: 'M -10 -10 L 10 -10 L 10 10 L -10 10 Z M 0,0 m -3,0 a 3,3 0 1,0 6,0 a 3,3 0 1,0 -6,0', anchor: { x: 0, y: 0 }, scale: 1.1, strokeWeight: 2.5 },
+            manhole: { type: 'custom', label: 'مانهول', path: 'M 0,0 m -12,0 a 12,12 0 1,0 24,0 a 12,12 0 1,0 -24,0 M 0,0 m -8,0 a 8,8 0 1,0 16,0 a 8,8 0 1,0 -16,0', anchor: { x: 0, y: 0 }, scale: 0.9, strokeWeight: 2 },
+            valve: { type: 'custom', label: 'صمام', path: 'M -8,-8 L 8,8 M 8,-8 L -8,8', anchor: { x: 0, y: 0 }, scale: 1.2, strokeWeight: 4 },
+            hydrant: { type: 'custom', label: 'حنفية حريق', path: 'M 0,0 m -8,0 a 8,8 0 1,0 16,0 a 8,8 0 1,0 -16,0 M -12, -4 L -12, 4 L -8,0 z M 12,-4 L 12,4 L 8,0 z', anchor: { x: 0, y: 0 }, scale: 1, strokeWeight: 2.5 },
+            pole: { type: 'custom', label: 'عمود', path: 'M 0, 0 m -8, 0 a 8,8 0 1,0 16,0 a 8,8 0 1,0 -16,0 M 0,0 l 0, -12', anchor: { x: 0, y: 0 }, scale: 1, strokeWeight: 2 },
             tree: { type: 'custom', label: 'شجرة', path: 'M 0 -5 Q 5 -15 10 -5 T 0 5 Q -5 -5 -10 -5 T 0 -5 Z M 0 5 L 0 15', anchor: { x: 0, y: 15 }, scale: 1, strokeWeight: 2 },
         };
 
-
         // ====================================================================
         //  FILE: src/utils.js
-        //  هذا الملف يحتوي على الدوال المساعدة التي تستخدم في مهام متكررة
         // ====================================================================
-        
-        // دالة لإنشاء معرف فريد (unique ID)
         const generateUniqueId = () => Math.random().toString(36).substring(2, 9);
         
-        // تعريف أنظمة الإسقاط UTM باستخدام مكتبة Proj4js
         if (window.proj4) {
-            proj4.defs("EPSG:4326", "+proj=longlat +datum=WGS84 +no_defs"); // نظام الإحداثيات الجغرافي العالمي
+            proj4.defs("EPSG:4326", "+proj=longlat +datum=WGS84 +no_defs");
             for (let i = 30; i <= 40; i++) {
-                proj4.defs(`EPSG:326${i}`, `+proj=utm +zone=${i} +datum=WGS84 +units=m +no_defs`); // تعريف مناطق UTM من 30 إلى 40
+                proj4.defs(`EPSG:326${i}`, `+proj=utm +zone=${i} +datum=WGS84 +units=m +no_defs`);
             }
         }
 
-        // دالة لتحويل الإحداثيات من خطوط الطول والعرض (Lat/Lng) إلى UTM
         const convertLatLngToUtm = (lat, lng, zone) => {
             try {
                 const utmProjection = `EPSG:326${zone}`;
@@ -181,7 +141,6 @@
             } catch (error) { console.error("Conversion error:", error); return null; }
         };
 
-        // دالة لتحويل الإحداثيات من UTM إلى خطوط الطول والعرض (Lat/Lng)
         const convertUtmToLatLng = (easting, northing, zone) => {
             try {
                 const utmProjection = `EPSG:326${zone}`;
@@ -191,13 +150,11 @@
             } catch (error) { console.error("Conversion error:", error); return null; }
         };
         
-        // حساب الإحداثيات الأولية لمركز الخريطة
         const initialCoords = convertUtmToLatLng(765898.785, 3449300.220, DEFAULT_UTM_ZONE);
         const DEFAULT_MAP_CENTER_LAT = initialCoords ? initialCoords.lat : 31.20;
         const DEFAULT_MAP_CENTER_LNG = initialCoords ? initialCoords.lng : 29.91;
         const DEFAULT_MAP_ZOOM = 20;
 
-        // دالة لجلب المنسوب (Elevation) من خرائط جوجل لنقطة معينة (مع محاولة إعادة الطلب في حالة الفشل)
         const getElevation = async (latLng, retries = 3, delay = 1000) => {
             if (!window.google || !window.google.maps || !window.google.maps.ElevationService) {
                 console.warn("Google Maps Elevation Service not available.");
@@ -228,7 +185,6 @@
             return { elevation: null, status: lastStatus };
         };
 
-        // دالة لجلب الموقع الجغرافي الحالي للمستخدم من المتصفح
         const getCurrentLocation = () => {
             return new Promise(resolve => {
                 if (!navigator.geolocation) {
@@ -249,13 +205,11 @@
             });
         };
 
-        // دالة لتحليل نص يحتوي على بيانات مفصولة (مثل CSV)
         const parseDelimitedText = (text) => {
             if (!text || typeof text !== 'string') return { data: [], error: "المحتوى فارغ أو غير صالح." };
             const lines = text.trim().split(/\r?\n/).filter(line => line.trim() !== '');
             if (lines.length === 0) return { data: [], error: "الملف فارغ." };
             
-            // محاولة اكتشاف الفاصل المستخدم تلقائياً
             const delimiters = [',', '\t', ';', ' '];
             let bestDelimiter = ',';
             let maxCols = 0;
@@ -273,7 +227,6 @@
                  return { data, error: "بعض الصفوف لا تتطابق مع عدد الأعمدة." };
             }
             
-            // محاولة اكتشاف هل يحتوي الملف على ترويسة (Header)
             let hasHeader = false;
             const firstRow = data[0];
             if (firstRow) {
@@ -286,7 +239,6 @@
             return { data, error: null, hasHeader };
         };
 
-        // دالة لتنزيل محتوى كنص في ملف
         const downloadFile = (content, fileName, mimeType) => {
             const blob = new Blob([content], { type: mimeType });
             const link = document.createElement('a');
@@ -300,18 +252,16 @@
 
         // ====================================================================
         //  FILE: src/hooks/useHistoryState.js
-        //  هذا هوك (Hook) مخصص لإدارة حالة التطبيق مع إضافة إمكانية التراجع (Undo) والإعادة (Redo)
         // ====================================================================
         const useHistoryState = (initialState) => {
             const historyRef = useRef({ past: [], present: initialState, future: [] });
-            const [, forceUpdate] = useState({}); // مجرد دالة لإجبار إعادة العرض
+            const [, forceUpdate] = useState({});
 
-            // دالة لتحديث الحالة الحالية وإضافتها إلى سجل التغييرات
             const setState = useCallback((action) => {
                 const { past, present } = historyRef.current;
                 const newPresent = typeof action === 'function' ? action(present) : action;
                 
-                if (JSON.stringify(present) === JSON.stringify(newPresent)) return; // لا تقم بأي شيء إذا لم تتغير الحالة
+                if (JSON.stringify(present) === JSON.stringify(newPresent)) return;
 
                 historyRef.current = {
                     past: [...past, present],
@@ -321,7 +271,6 @@
                 forceUpdate({});
             }, []);
 
-            // دالة التراجع
             const undo = useCallback(() => {
                 const { past, present, future } = historyRef.current;
                 if (past.length === 0) return;
@@ -335,7 +284,6 @@
                 forceUpdate({});
             }, []);
 
-            // دالة الإعادة
             const redo = useCallback(() => {
                 const { past, present, future } = historyRef.current;
                 if (future.length === 0) return;
@@ -350,20 +298,18 @@
             }, []);
 
             return [
-                historyRef.current.present, // الحالة الحالية
-                setState, // دالة تحديث الحالة
-                undo, // دالة التراجع
-                redo, // دالة الإعادة
-                historyRef.current.past.length > 0, // هل يمكن التراجع؟
-                historyRef.current.future.length > 0 // هل يمكن الإعادة؟
+                historyRef.current.present,
+                setState,
+                undo,
+                redo,
+                historyRef.current.past.length > 0,
+                historyRef.current.future.length > 0
             ];
         };
 
 
         // ====================================================================
         //  FILE: src/contexts/AppContext.js
-        //  هذا الملف يوفر "سياق" (Context) لمشاركة الحالة العامة بين المكونات المختلفة
-        //  مثل (الوضع الداكن، منطقة UTM، الإشعارات، النوافذ المنبثقة)
         // ====================================================================
         const AppContext = createContext();
         const AppProvider = ({ children }) => {
@@ -382,7 +328,6 @@
             
             const closeModal = useCallback(() => setModal(null), []);
 
-            // **تصحيح:** إضافة `modal` إلى كائن السياق
             const value = useMemo(() => ({
                 darkMode, setDarkMode, utmZone, setUtmZone, addToast, closeModal, setModal, modal
             }), [darkMode, utmZone, addToast, closeModal, setModal, modal]);
@@ -397,11 +342,10 @@
                 </AppContext.Provider>
             );
         };
-        const useAppContext = () => useContext(AppContext); // هوك مخصص للوصول السريع إلى السياق
+        const useAppContext = () => useContext(AppContext);
 
         // ====================================================================
         //  FILE: src/components/common/Toast.js, Icon.js
-        //  مكونات واجهة مستخدم عامة: الإشعارات والأيقونات
         // ====================================================================
         const Toast = ({ id, message, type, onDismiss }) => (
             <div className={`toast ${type}`}>
@@ -411,31 +355,29 @@
         );
         
         const Icon = ({ name, ...props }) => {
-            // هذا التأثير يضمن إعادة رسم الأيقونات عند تغييرها
-            useEffect(() => { window.lucide?.createIcons(); }, [name]);
+            useEffect(() => { window.lucide?.createIcons(); }, [name, props]);
             return <i data-lucide={name} {...props}></i>;
         };
 
         // ====================================================================
         //  FILE: src/components/layout/Header.js, Sidebar.js
-        //  مكونات التخطيط الرئيسية: الشريط العلوي (Header) والشريط الجانبي (Sidebar)
         // ====================================================================
         const Header = ({ onToggleFullScreen, isFullScreen, onToggleSidebar }) => {
             const { darkMode, setDarkMode } = useAppContext();
             return (
-                <header className="flex-shrink-0 bg-white shadow-md z-20 p-2 dark:bg-slate-800 dark:border-b dark:border-slate-700">
+                <header className="flex-shrink-0 bg-white shadow-md z-30 p-2 dark:bg-slate-800 dark:border-b dark:border-slate-700">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-4 space-x-reverse">
                             <button onClick={onToggleSidebar} className="icon-button lg:hidden"><Icon name="menu" /></button>
                             <Icon name="map-pin" className="text-blue-600" size={32} />
                             <div>
-                                <h1 className="text-lg font-bold">تطبيق الخرائط الهندسية</h1>
+                                <h1 className="text-md sm:text-lg font-bold">تطبيق الخرائط الهندسية</h1>
                                 <p className="text-xs text-slate-500 dark:text-slate-400">تطوير: م. حمدي وحيد</p>
                             </div>
                         </div>
-                        <div className="flex items-center space-x-2 space-x-reverse">
+                        <div className="flex items-center space-x-1 sm:space-x-2 space-x-reverse">
                             <button onClick={() => setDarkMode(d => !d)} className="icon-button" title="الوضع الداكن/الفاتح"><Icon name={darkMode ? 'sun' : 'moon'} /></button>
-                            <button onClick={onToggleFullScreen} className="icon-button" title="ملء الشاشة"><Icon name={isFullScreen ? 'minimize' : 'maximize'} /></button>
+                            <button onClick={onToggleFullScreen} className="icon-button hidden sm:flex" title="ملء الشاشة"><Icon name={isFullScreen ? 'minimize' : 'maximize'} /></button>
                         </div>
                     </div>
                 </header>
@@ -448,7 +390,6 @@
             const selectedArea = workAreas.find(area => area.id === selectedAreaId);
             const selectedGroup = selectedArea?.groups.find(group => group.id === selectedGroupId);
 
-            // دوال مساعدة لفتح نوافذ منبثقة (prompt, confirm)
             const promptAction = (title, message, inputLabel, initialValue, onConfirm) => {
                 setModal(<GenericModal type="prompt" title={title} message={message} inputLabel={inputLabel} initialValue={initialValue} onConfirm={onConfirm} onClose={closeModal} />);
             };
@@ -456,14 +397,12 @@
                 setModal(<GenericModal type="confirm" title={title} message={message} onConfirm={onConfirm} onClose={closeModal} />);
             };
 
-            // معالج حدث اختيار ملف من الجهاز
             const handleFileSelect = (event) => {
                 const file = event.target.files[0];
                 if (file) onFileLoad(file);
-                event.target.value = null; // إعادة تعيين الحقل للسماح باختيار نفس الملف مرة أخرى
+                event.target.value = null;
             };
 
-            // **جديد:** دالة لفتح نافذة اختيار رمز المجموعة
             const openGroupMarkerPicker = () => {
                 if (!selectedArea || !selectedGroup) return;
                 setModal(
@@ -473,7 +412,7 @@
                             onSetGroupMarker(selectedArea.id, selectedGroup.id, iconKey);
                             closeModal();
                         }}
-                        currentIconKey={selectedGroup.points[0]?.markerIcon || 'default'} // Use first point's icon as a hint
+                        currentIconKey={selectedGroup.points[0]?.markerIcon || 'default'}
                         previewColor={selectedGroup.color}
                     />
                 );
@@ -504,7 +443,7 @@
                             {selectedArea && (
                                 <div className="flex justify-between items-center mt-1">
                                     <span className="text-xs text-slate-500 dark:text-slate-400">{selectedArea.groups.length} مجموعات</span>
-                                    <div className="flex items-center space-x-2 space-x-reverse">
+                                    <div className="flex items-center space-x-0 space-x-reverse">
                                         <button onClick={() => promptAction("تعديل الاسم", "أدخل الاسم الجديد:", "الاسم", selectedArea.name, newName => newName && onRenameArea(selectedArea.id, newName.trim()))} className="icon-button" title="تعديل"><Icon name="file-pen-line" size={18}/></button>
                                         <button onClick={() => confirmAction("تأكيد الحذف", `هل تريد حذف "${selectedArea.name}"؟`, () => onDeleteArea(selectedArea.id))} className="icon-button text-red-500" title="حذف"><Icon name="trash-2" size={18}/></button>
                                     </div>
@@ -536,8 +475,7 @@
                                             </label>
                                             <span className="text-xs text-slate-500 dark:text-slate-400">{selectedGroup.points.length} نقاط</span>
                                         </div>
-                                        <div className="flex items-center space-x-1 space-x-reverse">
-                                            {/* **تعديل:** تم نقل زر العين إلى هنا */}
+                                        <div className="flex items-center space-x-0 space-x-reverse">
                                             <button 
                                                 onClick={() => onToggleGroupVisibility(selectedArea.id, selectedGroup.id)} 
                                                 className={`icon-button flex-shrink-0 ${selectedGroup.isVisible ? 'active' : ''}`} 
@@ -564,12 +502,12 @@
                                 {Array.from({ length: 11 }, (_, i) => 30 + i).map(zone => <option key={zone} value={zone}>{zone}N</option>)}
                             </select>
                             <div className="mt-4 flex flex-col space-y-2">
-                                <button onClick={onGetCurrentLocation} className="button-secondary flex items-center justify-center"><Icon name="crosshair" className="ml-2" size={18} />موقعي الحالي</button>
-                                <button onClick={onOpenDirectPasteModal} className="button-secondary flex items-center justify-center"><Icon name="clipboard-paste" className="ml-2" size={18} />لصق احداثيات</button>
+                                <button onClick={onGetCurrentLocation} className="button-secondary flex items-center justify-center text-sm"><Icon name="crosshair" className="ml-2" size={18} />موقعي الحالي</button>
+                                <button onClick={onOpenDirectPasteModal} className="button-secondary flex items-center justify-center text-sm"><Icon name="clipboard-paste" className="ml-2" size={18} />لصق احداثيات</button>
                                 <input type="file" ref={fileInputRef} onChange={handleFileSelect} style={{ display: 'none' }} accept=".txt,.csv,.tsv,.json,.hemap" />
-                                <button onClick={() => fileInputRef.current.click()} className="button-secondary flex items-center justify-center"><Icon name="upload" className="ml-2" size={18} />تحميل / استيراد</button>
-                                <button onClick={onOpenExportModal} className="button-secondary flex items-center justify-center"><Icon name="download" className="ml-2" size={18} />تصدير نقاط</button>
-                                <button onClick={onSaveProject} className="button-primary flex items-center justify-center"><Icon name="save" className="ml-2" size={18} />حفظ المشروع</button>
+                                <button onClick={() => fileInputRef.current.click()} className="button-secondary flex items-center justify-center text-sm"><Icon name="upload" className="ml-2" size={18} />تحميل / استيراد</button>
+                                <button onClick={onOpenExportModal} className="button-secondary flex items-center justify-center text-sm"><Icon name="download" className="ml-2" size={18} />تصدير نقاط</button>
+                                <button onClick={onSaveProject} className="button-primary flex items-center justify-center text-sm"><Icon name="save" className="ml-2" size={18} />حفظ المشروع</button>
                             </div>
                         </div>
                     </aside>
@@ -577,7 +515,6 @@
             );
         };
         
-        // مكون النافذة المنبثقة العام (Generic Modal)
         const GenericModal = ({ type, title, message, inputLabel, initialValue, onConfirm, onClose, onCancel, children, confirmText = "تأكيد" }) => {
             const [inputValue, setInputValue] = useState(initialValue || '');
             const inputRef = useRef(null);
@@ -612,20 +549,17 @@
 
         // ====================================================================
         //  FILE: src/components/table/PointsTable.js
-        //  مكون جدول عرض الإحداثيات والتحكم فيها
         // ====================================================================
         const PointsTable = ({ selectedArea, selectedGroupId, onUpdatePoint, onDeletePoint, onZoomToPoint, onActivateGroup, activePointId, setActivePointId }) => {
             const { addToast, setModal, closeModal } = useAppContext();
             const [selectedPointIds, setSelectedPointIds] = useState(new Set());
-            const rowRefs = useRef({}); // لتخزين مراجع لصفوف الجدول للتحكم في التمرير
-            const groupHeaderRefs = useRef({}); // **جديد:** لتخزين مراجع لترويسات المجموعات
+            const rowRefs = useRef({});
+            const groupHeaderRefs = useRef({});
         
-            // إعادة تعيين النقاط المحددة عند تغيير منطقة العمل
             useEffect(() => {
                 setSelectedPointIds(new Set());
             }, [selectedArea]);
             
-            // التمرير التلقائي إلى النقطة النشطة في الجدول
             useEffect(() => {
                 if (activePointId && rowRefs.current[activePointId]) {
                     rowRefs.current[activePointId].scrollIntoView({
@@ -635,7 +569,6 @@
                 }
             }, [activePointId]);
 
-            // **جديد:** التمرير التلقائي إلى المجموعة النشطة في الجدول
             useEffect(() => {
                 if (selectedGroupId && groupHeaderRefs.current[selectedGroupId]) {
                     groupHeaderRefs.current[selectedGroupId].scrollIntoView({
@@ -645,7 +578,6 @@
                 }
             }, [selectedGroupId]);
 
-            // معالج لتحديد/إلغاء تحديد كل النقاط في مجموعة
             const handleSelectAll = (group, isChecked) => {
                 const pointIds = group.points.map(p => p.id);
                 setSelectedPointIds(prev => {
@@ -659,7 +591,6 @@
                 });
             };
 
-            // معالج لتحديد/إلغاء تحديد نقطة واحدة
             const handleSelectPoint = (pointId) => {
                 setSelectedPointIds(prev => {
                     const newSet = new Set(prev);
@@ -672,7 +603,6 @@
                 });
             };
 
-            // معالج لفتح نافذة اختيار رمز العلامة (Marker)
             const handleOpenMarkerPicker = (e, point, group) => {
                 e.stopPropagation();
                 setModal(
@@ -688,7 +618,6 @@
                 );
             };
 
-            // دالة لنسخ نص إلى الحافظة
             const copyToClipboard = (text, message) => {
                 const textArea = document.createElement("textarea");
                 textArea.value = text;
@@ -706,7 +635,6 @@
                 document.body.removeChild(textArea);
             };
 
-            // دالة لنسخ إحداثيات UTM المحددة
             const copyUtmToClipboard = (points) => {
                 if (points.length === 0) return;
                 const safeToFixed = (num, digits = 3) => (typeof num === 'number' ? num.toFixed(digits) : '0.000');
@@ -714,7 +642,6 @@
                 copyToClipboard(textToCopy, `تم نسخ ${points.length} نقطة (UTM).`);
             };
             
-            // دالة لنسخ إحداثيات Lat/Lng لنقطة واحدة
             const copyLatLngToClipboard = (point) => {
                 const textToCopy = `${point.lat.toFixed(8)},${point.lng.toFixed(8)}`;
                 copyToClipboard(textToCopy, 'تم نسخ إحداثيات Lat/Lng.');
@@ -727,87 +654,133 @@
             
             const coordInputClasses = "w-full p-1 border rounded bg-slate-50 text-slate-800 font-mono dark:bg-slate-700 dark:text-slate-200 dark:border-slate-600 focus:ring-2 focus:ring-blue-500 transition-colors";
 
+            const PointCard = ({ point, group, index }) => (
+                <div 
+                    key={point.id}
+                    ref={el => (rowRefs.current[point.id] = el)}
+                    onClick={() => {
+                        onZoomToPoint(selectedArea.id, group.id, point.id);
+                        onActivateGroup(group.id);
+                        setActivePointId(point.id);
+                    }}
+                    className={`p-3 border-b dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors duration-200 ${point.id === activePointId ? 'bg-blue-100 dark:bg-blue-900/50 ring-2 ring-blue-500 z-10' : ''}`}
+                >
+                    <div className="flex items-start gap-3">
+                        <input type="checkbox" checked={selectedPointIds.has(point.id)} onChange={e => {e.stopPropagation(); handleSelectPoint(point.id);}} className="mt-1.5" />
+                        <div className="flex-grow">
+                            <div className="flex justify-between items-center mb-2">
+                                <div className="flex items-center gap-2">
+                                    <span className="font-bold text-slate-700 dark:text-slate-200">{point.name || `نقطة ${index + 1}`}</span>
+                                    <span className="text-xs px-2 py-0.5 rounded-full" style={{backgroundColor: group.color, color: 'white'}}>{group.name}</span>
+                                </div>
+                                <div className="flex items-center space-x-1 space-x-reverse">
+                                    <button onClick={(e) => { e.stopPropagation(); onDeletePoint(group.id, point.id);}} className="icon-button text-red-500 !w-8 !h-8" title="حذف"><Icon name="trash-2" size={16}/></button>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm font-mono">
+                                <div className="text-slate-500 dark:text-slate-400">X: <span className="text-slate-800 dark:text-slate-100">{point.utm?.easting?.toFixed(2) || 'N/A'}</span></div>
+                                <div className="text-slate-500 dark:text-slate-400">Y: <span className="text-slate-800 dark:text-slate-100">{point.utm?.northing?.toFixed(2) || 'N/A'}</span></div>
+                                <div className="text-slate-500 dark:text-slate-400">Z: <span className="text-slate-800 dark:text-slate-100">{point.elevation?.toFixed(2) || 'N/A'}</span></div>
+                            </div>
+                            {point.description && <p className="text-xs text-slate-600 dark:text-slate-400 mt-2">{point.description}</p>}
+                        </div>
+                    </div>
+                </div>
+            );
+
             return (
-                <div className="flex-grow p-4 overflow-auto h-full bg-white dark:bg-slate-800 flex flex-col">
-                    <div className="flex justify-between items-center mb-2">
-                        <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100">نقاط منطقة: {selectedArea.name}</h3>
+                <div className="flex-grow overflow-auto h-full bg-white dark:bg-slate-800 flex flex-col">
+                    <div className="flex-shrink-0 p-2 flex justify-between items-center border-b dark:border-slate-700">
+                        <h3 className="font-bold text-md text-slate-800 dark:text-slate-100">نقاط: {selectedArea.name}</h3>
                         {selectedPoints.length > 0 && (
                             <button onClick={() => copyUtmToClipboard(selectedPoints)} className="button-primary text-sm py-1 px-3">
                                 <Icon name="copy" size={14} className="inline-block ml-1" />
-                                نسخ {selectedPoints.length} نقاط
+                                نسخ {selectedPoints.length}
                             </button>
                         )}
                     </div>
                     <div className="flex-grow overflow-y-auto">
-                        {selectedArea.groups.map(group => (
-                            <div key={group.id} className="mb-4" ref={el => (groupHeaderRefs.current[group.id] = el)}>
-                                <div className="flex items-center mb-2 p-2 rounded-lg bg-slate-100 dark:bg-slate-800">
-                                    <input type="checkbox" onChange={e => { e.stopPropagation(); handleSelectAll(group, e.target.checked); }} className="ml-2" />
-                                    <span className="w-4 h-4 rounded-full ml-2" style={{ backgroundColor: group.color }}></span>
-                                    <h4 className="font-semibold text-slate-700 dark:text-slate-200">{group.name}</h4>
+                        <div className="lg:hidden">
+                            {selectedArea.groups.map(group => (
+                                <div key={group.id} className="mb-2" ref={el => (groupHeaderRefs.current[group.id] = el)}>
+                                    {(group.points || []).map((point, i) => (
+                                        <PointCard key={point.id} point={point} group={group} index={i} />
+                                    ))}
                                 </div>
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-sm text-left rtl:text-right">
-                                        <thead className="text-xs text-gray-700 uppercase bg-slate-200 dark:bg-slate-700 dark:text-gray-400"><tr>
-                                            <th className="px-1 py-2"></th>
-                                            <th className="px-2 py-2">#</th>
-                                            <th className="px-4 py-2">الاسم</th>
-                                            <th className="px-4 py-2">Easting (X)</th>
-                                            <th className="px-4 py-2">Northing (Y)</th>
-                                            <th className="px-4 py-2">Elevation (Z)</th>
-                                            <th className="px-4 py-2">الوصف</th>
-                                            <th className="px-2 py-2 text-center">إجراءات</th>
-                                        </tr></thead>
-                                        <tbody>
-                                        {(group.points || []).map((point, i) => (
-                                            <tr 
-                                                key={point.id} 
-                                                ref={el => (rowRefs.current[point.id] = el)}
-                                                onClick={() => {
-                                                    onZoomToPoint(selectedArea.id, group.id, point.id);
-                                                    onActivateGroup(group.id);
-                                                    setActivePointId(point.id);
-                                                }} 
-                                                className={`border-b dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors duration-200 even:bg-slate-50 dark:even:bg-slate-800/50 ${point.id === activePointId ? 'bg-blue-100 dark:bg-blue-900/50 ring-2 ring-blue-500 z-10' : ''}`}
-                                            >
-                                                <td className="px-1 py-2"><input type="checkbox" checked={selectedPointIds.has(point.id)} onChange={() => {}} onClick={e => {e.stopPropagation(); handleSelectPoint(point.id);}} /></td>
-                                                <td className="px-2 py-2 font-medium text-slate-500 dark:text-slate-400">{i + 1}</td>
-                                                <td className="px-4 py-2">
-                                                    <input 
-                                                        type="text" 
-                                                        value={point.name || ''} 
-                                                        onChange={(e) => onUpdatePoint(selectedArea.id, group.id, point.id, 'name', e.target.value)}
-                                                        onClick={e => e.stopPropagation()}
-                                                        className="w-24 p-1 border rounded bg-transparent dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-blue-500"
-                                                        placeholder={`نقطة ${i + 1}`}
-                                                    />
-                                                </td>
-                                                <td className="px-4 py-2"><input type="number" value={point.utm?.easting?.toFixed(3) || ''} readOnly className={coordInputClasses} /></td>
-                                                <td className="px-4 py-2"><input type="number" value={point.utm?.northing?.toFixed(3) || ''} readOnly className={coordInputClasses} /></td>
-                                                <td className="px-4 py-2"><input type="number" value={point.elevation?.toFixed(3) || '0.000'} readOnly className={coordInputClasses} /></td>
-                                                <td className="px-4 py-2">
-                                                    <input 
-                                                        type="text" 
-                                                        value={point.description || ''} 
-                                                        onChange={(e) => onUpdatePoint(selectedArea.id, group.id, point.id, 'description', e.target.value)}
-                                                        onClick={e => e.stopPropagation()}
-                                                        className="w-full p-1 border rounded bg-transparent dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-blue-500"
-                                                        placeholder="وصف..."
-                                                    />
-                                                </td>
-                                                <td className="px-2 py-2"><div className="flex items-center justify-center space-x-1 space-x-reverse">
-                                                    <button onClick={(e) => handleOpenMarkerPicker(e, point, group)} className="icon-button" title="تغيير الرمز"><Icon name="map-pin" size={16}/></button>
-                                                    <button onClick={(e) => { e.stopPropagation(); copyLatLngToClipboard(point); }} className="icon-button" title="نسخ Lat/Lng"><Icon name="globe-2" size={16}/></button>
-                                                    <button onClick={(e) => { e.stopPropagation(); copyUtmToClipboard([point]); }} className="icon-button" title="نسخ UTM"><Icon name="copy" size={16}/></button>
-                                                    <button onClick={e => {e.stopPropagation(); onDeletePoint(group.id, point.id);}} className="icon-button text-red-500" title="حذف"><Icon name="trash-2" size={16}/></button>
-                                                </div></td>
-                                            </tr>
-                                        ))}
-                                        </tbody>
-                                    </table>
+                            ))}
+                        </div>
+
+                        <div className="hidden lg:block">
+                             {selectedArea.groups.map(group => (
+                                <div key={group.id} className="mb-4" ref={el => (groupHeaderRefs.current[group.id] = el)}>
+                                    <div className="flex items-center mb-2 p-2 rounded-lg bg-slate-100 dark:bg-slate-800 sticky top-0 z-10">
+                                        <input type="checkbox" onChange={e => { e.stopPropagation(); handleSelectAll(group, e.target.checked); }} className="ml-2" />
+                                        <span className="w-4 h-4 rounded-full ml-2" style={{ backgroundColor: group.color }}></span>
+                                        <h4 className="font-semibold text-slate-700 dark:text-slate-200">{group.name}</h4>
+                                    </div>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-sm text-left rtl:text-right">
+                                            <thead className="text-xs text-gray-700 uppercase bg-slate-200 dark:bg-slate-700 dark:text-gray-400"><tr>
+                                                <th className="px-1 py-2"></th>
+                                                <th className="px-2 py-2">#</th>
+                                                <th className="px-4 py-2">الاسم</th>
+                                                <th className="px-4 py-2">Easting (X)</th>
+                                                <th className="px-4 py-2">Northing (Y)</th>
+                                                <th className="px-4 py-2">Elevation (Z)</th>
+                                                <th className="px-4 py-2">الوصف</th>
+                                                <th className="px-2 py-2 text-center">إجراءات</th>
+                                            </tr></thead>
+                                            <tbody>
+                                            {(group.points || []).map((point, i) => (
+                                                <tr 
+                                                    key={point.id} 
+                                                    ref={el => (rowRefs.current[point.id] = el)}
+                                                    onClick={() => {
+                                                        onZoomToPoint(selectedArea.id, group.id, point.id);
+                                                        onActivateGroup(group.id);
+                                                        setActivePointId(point.id);
+                                                    }} 
+                                                    className={`border-b dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors duration-200 even:bg-slate-50 dark:even:bg-slate-800/50 ${point.id === activePointId ? 'bg-blue-100 dark:bg-blue-900/50 ring-2 ring-blue-500 z-10' : ''}`}
+                                                >
+                                                    <td className="px-1 py-2"><input type="checkbox" checked={selectedPointIds.has(point.id)} onChange={e => {e.stopPropagation(); handleSelectPoint(point.id);}} /></td>
+                                                    <td className="px-2 py-2 font-medium text-slate-500 dark:text-slate-400">{i + 1}</td>
+                                                    <td className="px-4 py-2">
+                                                        <input 
+                                                            type="text" 
+                                                            value={point.name || ''} 
+                                                            onChange={(e) => onUpdatePoint(selectedArea.id, group.id, point.id, 'name', e.target.value)}
+                                                            onClick={e => e.stopPropagation()}
+                                                            className="w-24 p-1 border rounded bg-transparent dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-blue-500"
+                                                            placeholder={`نقطة ${i + 1}`}
+                                                        />
+                                                    </td>
+                                                    <td className="px-4 py-2"><input type="number" value={point.utm?.easting?.toFixed(3) || ''} readOnly className={coordInputClasses} /></td>
+                                                    <td className="px-4 py-2"><input type="number" value={point.utm?.northing?.toFixed(3) || ''} readOnly className={coordInputClasses} /></td>
+                                                    <td className="px-4 py-2"><input type="number" value={point.elevation?.toFixed(3) || '0.000'} readOnly className={coordInputClasses} /></td>
+                                                    <td className="px-4 py-2">
+                                                        <input 
+                                                            type="text" 
+                                                            value={point.description || ''} 
+                                                            onChange={(e) => onUpdatePoint(selectedArea.id, group.id, point.id, 'description', e.target.value)}
+                                                            onClick={e => e.stopPropagation()}
+                                                            className="w-full p-1 border rounded bg-transparent dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-blue-500"
+                                                            placeholder="وصف..."
+                                                        />
+                                                    </td>
+                                                    <td className="px-2 py-2"><div className="flex items-center justify-center space-x-1 space-x-reverse">
+                                                        <button onClick={(e) => handleOpenMarkerPicker(e, point, group)} className="icon-button !w-8 !h-8" title="تغيير الرمز"><Icon name="map-pin" size={16}/></button>
+                                                        <button onClick={(e) => { e.stopPropagation(); copyLatLngToClipboard(point); }} className="icon-button !w-8 !h-8" title="نسخ Lat/Lng"><Icon name="globe-2" size={16}/></button>
+                                                        <button onClick={(e) => { e.stopPropagation(); copyUtmToClipboard([point]); }} className="icon-button !w-8 !h-8" title="نسخ UTM"><Icon name="copy" size={16}/></button>
+                                                        <button onClick={e => {e.stopPropagation(); onDeletePoint(group.id, point.id);}} className="icon-button text-red-500 !w-8 !h-8" title="حذف"><Icon name="trash-2" size={16}/></button>
+                                                    </div></td>
+                                                </tr>
+                                            ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
                     </div>
                 </div>
             );
@@ -815,13 +788,11 @@
 
         // ====================================================================
         //  FILE: src/components/map/CustomLabel.js
-        //  مكون لإنشاء تسميات (Labels) مخصصة على الخريطة باستخدام Google Maps OverlayView
         // ====================================================================
         const CustomLabel = ({ map, position, text, styleProps }) => {
             const overlay = useRef(null);
 
             useEffect(() => {
-                // تعريف فئة (Class) للتسمية المخصصة التي ترث من OverlayView
                 class CustomLabelOverlay extends window.google.maps.OverlayView {
                     constructor(position, text, styleProps) {
                         super();
@@ -831,7 +802,6 @@
                         this.div = null;
                     }
 
-                    // دالة onAdd: يتم استدعاؤها عند إضافة التسمية إلى الخريطة لأول مرة
                     onAdd() {
                         const div = document.createElement('div');
                         div.style.position = 'absolute';
@@ -839,21 +809,19 @@
                         this.div = div;
                         this.updateText();
                         this.updateStyle();
-                        this.getPanes().floatPane.appendChild(this.div); // إضافة العنصر إلى طبقة floatPane
+                        this.getPanes().floatPane.appendChild(this.div);
                     }
 
-                    // دالة draw: يتم استدعاؤها عند الحاجة لإعادة رسم التسمية (عند تحريك الخريطة أو تغيير التقريب)
                     draw() {
                         const proj = this.getProjection();
                         if (!proj || !this.div) return;
-                        const point = proj.fromLatLngToDivPixel(this.position); // تحويل إحداثيات LatLng إلى بكسل على الشاشة
+                        const point = proj.fromLatLngToDivPixel(this.position);
                         if (point) {
                             this.div.style.left = point.x + 'px';
                             this.div.style.top = point.y + 'px';
                         }
                     }
 
-                    // دالة onRemove: يتم استدعاؤها عند إزالة التسمية من الخريطة
                     onRemove() {
                         if (this.div) {
                             this.div.parentNode.removeChild(this.div);
@@ -861,7 +829,6 @@
                         }
                     }
                     
-                    // دوال مساعدة لتحديث خصائص التسمية
                     updateText(text) { if(this.div) this.div.innerHTML = text || this.text; }
                     updatePosition(position) { this.position = position; this.draw(); }
                     updateStyle(styleProps) {
@@ -874,102 +841,57 @@
                 overlay.current = new CustomLabelOverlay(position, text, styleProps);
                 overlay.current.setMap(map);
                 
-                return () => overlay.current?.setMap(null); // تنظيف: إزالة التسمية عند إزالة المكون
+                return () => overlay.current?.setMap(null);
             }, [map]);
 
-            // تأثيرات لتحديث التسمية عند تغيير الخصائص
             useEffect(() => { overlay.current?.updatePosition(position); }, [position]);
             useEffect(() => { overlay.current?.updateText(text); }, [text]);
             useEffect(() => { overlay.current?.updateStyle(styleProps); }, [styleProps]);
 
-            return null; // هذا المكون لا يعرض أي شيء مباشرة في DOM الخاص بـ React
+            return null;
         };
 
         // ====================================================================
         //  FILE: src/components/map/MapToolbar.js, MapComponent.js, and new UI elements
-        //  المكونات الأساسية للخريطة: شريط الأدوات، مكون الخريطة نفسه، وعناصر واجهة مستخدم إضافية
         // ====================================================================
         
-        // مكون شريط الأدوات العائم على الخريطة
-        const FloatingToolbar = ({ settings, onUpdateSettings, onAddPointFromCurrentLocation, isDeleteMode, onToggleDeleteMode, isZoomedInEnough, onTakeScreenshot }) => {
-            const [isOpen, setIsOpen] = useState(false);
-            const { showPolylines, showElevations, showLabels, labelContent, isMeasuring, isAreaMeasuring, snapEnabled } = settings;
-            
-            const tools = [
-                { id: 'screenshot', icon: 'camera', title: 'أخذ لقطة شاشة', action: onTakeScreenshot, active: false },
-                { id: 'location', icon: 'crosshair', title: 'إضافة نقطة من موقعي', action: onAddPointFromCurrentLocation, active: false },
-                { id: 'measure', icon: 'ruler', title: 'قياس المسافة', action: () => onUpdateSettings('isMeasuring', !isMeasuring), active: isMeasuring },
-                { id: 'area', icon: 'square', title: 'قياس المساحة', action: () => onUpdateSettings('isAreaMeasuring', !isAreaMeasuring), active: isAreaMeasuring },
-                { id: 'polyline', icon: 'git-commit', title: 'إظهار/إخفاء الخطوط', action: () => onUpdateSettings('showPolylines', !showPolylines), active: showPolylines },
-                { id: 'elevation', icon: 'text', title: isZoomedInEnough ? 'إظهار/إخفاء المناسيب' : 'قرّب لرؤية المناسيب', action: () => onUpdateSettings('showElevations', !showElevations), active: showElevations, disabled: !isZoomedInEnough },
-                { id: 'showLabels', icon: 'hash', title: isZoomedInEnough ? 'إظهار/إخفاء التسميات' : 'قرّب لرؤية التسميات', action: () => onUpdateSettings('showLabels', !showLabels), active: showLabels, disabled: !isZoomedInEnough },
-                { id: 'labelContent', icon: 'type', title: isZoomedInEnough ? 'تبديل محتوى التسمية (رقم/اسم)' : 'قرّب لتبديل التسميات', action: () => onUpdateSettings('labelContent', labelContent === 'number' ? 'name' : 'number'), active: labelContent === 'name', disabled: !isZoomedInEnough },
-                { id: 'snap', icon: 'magnet', title: 'تفعيل/إلغاء الالتقاط', action: () => onUpdateSettings('snapEnabled', !snapEnabled), active: snapEnabled },
-                { id: 'delete', icon: 'trash-2', title: 'حذف نقطة بالنقر', action: onToggleDeleteMode, active: isDeleteMode, danger: true },
-            ];
-
+        const MapControls = ({ onUndo, onRedo, canUndo, canRedo, onToggleFullScreen, isFullScreen }) => {
             return (
-                 <div id="floating-toolbar" className="absolute bottom-4 left-4 z-10 flex flex-row-reverse items-center gap-2">
-                    <button 
-                        onClick={() => setIsOpen(o => !o)} 
-                        className="w-14 h-14 bg-blue-600 text-white rounded-full shadow-lg flex items-center justify-center hover:bg-blue-700 transition-all duration-300"
-                    >
-                        <Icon name={isOpen ? 'x' : 'layers'} className={`transition-transform duration-300 ${isOpen ? 'rotate-90' : ''}`} size={28} />
-                    </button>
-                    <div className={`flex flex-row-reverse items-center space-x-2 space-x-reverse transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-                        {tools.map((tool, index) => (
-                             <div 
-                                key={tool.id} 
-                                className={`transition-all duration-300 ease-out ${isOpen ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`}
-                                style={{ transitionDelay: `${isOpen ? index * 40 : (tools.length - index - 1) * 20}ms` }}
-                             >
-                                <button onClick={tool.action} disabled={tool.disabled} className={`icon-button bg-white dark:bg-slate-700 shadow-md ${tool.active ? (tool.danger ? 'danger active' : 'active') : ''}`} title={tool.title}>
-                                    <Icon name={tool.icon} />
-                                </button>
-                             </div>
-                        ))}
+                <div id="map-controls" className="absolute top-4 left-4 z-10 flex flex-col gap-2">
+                    <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm p-1 rounded-full shadow-lg flex border dark:border-slate-700">
+                        <button onClick={onUndo} disabled={!canUndo} className="icon-button !w-10 !h-10" title="تراجع (Ctrl+Z)"><Icon name="undo-2" /></button>
+                        <div className="w-px bg-slate-300 dark:bg-slate-600 my-2"></div>
+                        <button onClick={onRedo} disabled={!canRedo} className="icon-button !w-10 !h-10" title="إعادة (Ctrl+Y)"><Icon name="redo-2" /></button>
                     </div>
                 </div>
             );
         };
-        
-        // مكون أزرار التراجع والإعادة
-        const HistoryControls = ({ undo, redo, canUndo, canRedo }) => (
-            <div id="history-controls" className="absolute top-4 left-4 z-10 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm p-1 rounded-full shadow-lg flex border dark:border-slate-700">
-                <button onClick={undo} disabled={!canUndo} className="icon-button" title="تراجع (Ctrl+Z)"><Icon name="undo-2" /></button>
-                <div className="w-px bg-slate-300 dark:bg-slate-600 my-2"></div>
-                <button onClick={redo} disabled={!canRedo} className="icon-button" title="إعادة (Ctrl+Y)"><Icon name="redo-2" /></button>
-            </div>
-        );
 
-        // **تعديل:** تحديث المكون لقبول خاصية جديدة وتغيير النص
         const ActiveAreaIndicator = ({ areaName, groupName, isTakingScreenshot }) => (
-            <div id="active-area-indicator" className="absolute top-4 right-4 z-10 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm p-2 px-4 rounded-lg shadow-lg border dark:border-slate-700 text-sm">
-                <p><span className="font-semibold">منطقة العمل:</span> {areaName || 'غير محدد'}</p>
-                <p><span className="font-semibold">{isTakingScreenshot ? 'المجموعة:' : 'المجموعة النشطة:'}</span> {groupName || 'غير محدد'}</p>
+            <div id="active-area-indicator" className="absolute top-4 right-4 z-10 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm p-2 px-4 rounded-lg shadow-lg border dark:border-slate-700 text-sm max-w-[calc(100vw-100px)]">
+                <p className="truncate"><span className="font-semibold">منطقة:</span> {areaName || 'غير محدد'}</p>
+                <p className="truncate"><span className="font-semibold">{isTakingScreenshot ? 'مجموعة:' : 'نشطة:'}</span> {groupName || 'غير محدد'}</p>
             </div>
         );
 
-        // مكون الخريطة الرئيسي
         const MapComponent = forwardRef(({ selectedArea, utmZone, onAddPoint, onUpdatePoint, addToast, onUpdateGroupSettings, selectedGroupId, isDeleteMode, onDeletePointById, onActivateGroup, setActivePointId, onZoomChange }, ref) => {
             const { darkMode } = useAppContext();
-            const mapRef = useRef(null); // مرجع لعنصر div الخاص بالخريطة
-            const [map, setMap] = useState(null); // حالة لتخزين كائن الخريطة
-            const [mapOverlays, setMapOverlays] = useState([]); // حالة لتخزين التسميات المخصصة
-            const markersRef = useRef({}); // مرجع لتخزين العلامات (Markers)
-            const polylinesRef = useRef({}); // مرجع لتخزين الخطوط (Polylines)
-            const infoWindowRef = useRef(null); // مرجع لنافذة المعلومات
+            const mapRef = useRef(null);
+            const [map, setMap] = useState(null);
+            const [mapOverlays, setMapOverlays] = useState([]);
+            const markersRef = useRef({});
+            const polylinesRef = useRef({});
+            const infoWindowRef = useRef(null);
             const onAddPointRef = useRef(onAddPoint);
             useEffect(() => { onAddPointRef.current = onAddPoint; }, [onAddPoint]);
 
-            // useImperativeHandle يسمح للمكون الأب باستدعاء دوال داخل هذا المكون
             useImperativeHandle(ref, () => ({
                 zoomToPoint(lat, lng) { map?.setCenter({ lat, lng }); map?.setZoom(21); },
                 zoomToBounds(boundsData) {
                     if (map && boundsData && boundsData.length > 0) {
                         const bounds = new window.google.maps.LatLngBounds();
                         boundsData.forEach(p => bounds.extend(new window.google.maps.LatLng(p.lat, p.lng)));
-                        map.fitBounds(bounds);
+                        map.fitBounds(bounds, 50);
                     }
                 },
                 resetView() {
@@ -978,13 +900,11 @@
                 }
             }));
 
-            // تأثير لتهيئة الخريطة عند تحميل المكون لأول مرة
             useEffect(() => {
                 if (mapRef.current && !map) {
                     const mapInstance = new window.google.maps.Map(mapRef.current, { center: { lat: DEFAULT_MAP_CENTER_LAT, lng: DEFAULT_MAP_CENTER_LNG }, zoom: DEFAULT_MAP_ZOOM, mapTypeId: 'satellite', mapTypeControl: false, streetViewControl: false, fullscreenControl: false, zoomControl: true, clickableIcons: !isDeleteMode });
                     infoWindowRef.current = new window.google.maps.InfoWindow();
                     
-                    // إضافة مستمع لحدث النقر على الخريطة لإضافة نقطة
                     mapInstance.addListener('click', (e) => {
                         if (isDeleteMode) {
                             addToast('وضع الحذف مفعل. انقر على نقطة لحذفها.', 'info');
@@ -993,7 +913,6 @@
                         onAddPointRef.current(e.latLng.lat(), e.latLng.lng());
                     });
                     
-                    // إضافة مستمع لحدث تغيير مستوى التقريب
                     mapInstance.addListener('zoom_changed', () => {
                         const currentZoom = mapInstance.getZoom();
                         onZoomChange(currentZoom);
@@ -1007,17 +926,14 @@
                 }
             }, [mapRef, map, selectedGroupId, onUpdateGroupSettings]);
 
-            // تأثير لتغيير شكل مؤشر الفأرة حسب وضع الحذف
             useEffect(() => {
                 if(map) {
                     map.setOptions({ draggableCursor: isDeleteMode ? 'crosshair' : null, clickableIcons: !isDeleteMode });
                 }
             }, [map, isDeleteMode]);
 
-            // التأثير الرئيسي لرسم كل شيء على الخريطة (علامات، خطوط، تسميات)
             useEffect(() => {
                 if (!map) return;
-                // تنظيف الخريطة قبل إعادة الرسم
                 Object.values(markersRef.current).forEach(m => m.setMap(null));
                 markersRef.current = {};
                 Object.values(polylinesRef.current).forEach(p => p.setMap(null));
@@ -1027,7 +943,6 @@
                 const currentZoom = map.getZoom();
 
                 if (selectedArea) {
-                    // **تعديل:** فلترة المجموعات بناءً على خاصية isVisible
                     selectedArea.groups.filter(group => group.isVisible).forEach(group => {
                         const { showPolylines, showElevations, showLabels, labelContent, isMeasuring, isAreaMeasuring } = group;
                         const path = [];
@@ -1037,12 +952,10 @@
                             const latLng = new window.google.maps.LatLng(point.lat, point.lng);
                             path.push(latLng);
 
-                            // إعداد أيقونة العلامة
                             const iconKey = point.markerIcon || 'default';
                             const iconDefinition = MARKER_ICONS[iconKey] || MARKER_ICONS['default'];
                             const markerIcon = { path: iconDefinition.path, fillColor: group.color, fillOpacity: 1, strokeWeight: iconDefinition.strokeWeight, strokeColor: '#ffffff', scale: iconDefinition.scale, anchor: iconDefinition.anchor ? new window.google.maps.Point(iconDefinition.anchor.x, iconDefinition.anchor.y) : null };
 
-                            // إنشاء العلامة مع خاصية الرؤية المعتمدة على الزوم
                             const marker = new window.google.maps.Marker({ 
                                 position: latLng, 
                                 map, 
@@ -1050,11 +963,10 @@
                                 title: `نقطة ${index + 1} (${group.name})`, 
                                 icon: markerIcon, 
                                 cursor: isDeleteMode ? 'pointer' : 'grab',
-                                visible: currentZoom >= MARKER_VISIBILITY_ZOOM_THRESHOLD // **جديد:** التحكم برؤية العلامة
+                                visible: currentZoom >= MARKER_VISIBILITY_ZOOM_THRESHOLD
                             });
                             markersRef.current[point.id] = marker;
                             
-                            // **تعديل:** منطق جديد لإنشاء التسميات بناءً على الزوم
                             let labelText = '';
                             if (canShowAnyLabel) {
                                 let pointLabel = '';
@@ -1075,14 +987,12 @@
                             }
 
                             if (labelText) {
-                                newOverlays.push({ id: `point-${point.id}`, position: latLng, text: labelText, styleProps: { transform: 'translate(-50%, -50px)', background: group.color, color: 'white', padding: '4px 10px', borderRadius: '16px', fontSize: '24px', fontWeight: 'bold', border: '1px solid rgba(255,255,255,0.75)', boxShadow: '0 1px 4px rgba(0,0,0,0.4)' } });
+                                newOverlays.push({ id: `point-${point.id}`, position: latLng, text: labelText, styleProps: { transform: 'translate(-50%, -40px)', background: group.color, color: 'white', padding: '2px 8px', borderRadius: '12px', fontSize: '14px', fontWeight: 'bold', border: '1px solid rgba(255,255,255,0.75)', boxShadow: '0 1px 4px rgba(0,0,0,0.4)' } });
                             }
 
-                            // إعداد محتوى نافذة المعلومات
                             const utm = convertLatLngToUtm(point.lat, point.lng, utmZone);
                             const infoContent = `<div dir="rtl"><h4>نقطة ${index + 1} (${group.name})</h4><p>Lat: ${point.lat.toFixed(6)}</p><p>Lng: ${point.lng.toFixed(6)}</p>${utm ? `<p>Easting: ${utm.easting.toFixed(2)}</p><p>Northing: ${utm.northing.toFixed(2)}</p>` : ''}<p>Elevation: ${point.elevation != null ? point.elevation.toFixed(2) : 'N/A'}</p>${point.description ? `<p>الوصف: ${point.description}</p>` : ''}</div>`;
                             
-                            // إضافة مستمع لحدث النقر على العلامة
                             marker.addListener('click', () => { 
                                 onActivateGroup(group.id);
                                 setActivePointId(point.id);
@@ -1094,12 +1004,10 @@
                                 }
                             });
                             
-                            // إضافة مستمع لحدث سحب العلامة
                             marker.addListener('dragend', (event) => {
                                 const newLatLng = event.latLng;
                                 let finalLat = newLatLng.lat(), finalLng = newLatLng.lng();
                                 
-                                // منطق الالتقاط (Snapping)
                                 const allOtherPoints = selectedArea.groups.flatMap(g => g.points).filter(p => p.id !== point.id);
                                 if (group.snapEnabled && allOtherPoints.length > 0) {
                                     const closestPoint = allOtherPoints.reduce((closest, current) => {
@@ -1118,12 +1026,10 @@
                             });
                         });
 
-                        // رسم الخطوط (Polylines)
                         if (showPolylines && path.length > 1) {
-                            // **جديد:** تحسين بصري للخطوط عند التصغير
                             const polylineStyle = currentZoom < MARKER_VISIBILITY_ZOOM_THRESHOLD 
-                                ? { strokeOpacity: 1.0, strokeWeight: 5 } // أكثر سماكة ووضوحًا عند التصغير
-                                : { strokeOpacity: 0.8, strokeWeight: 3 }; // النمط العادي
+                                ? { strokeOpacity: 1.0, strokeWeight: 5 }
+                                : { strokeOpacity: 0.8, strokeWeight: 3 };
 
                             polylinesRef.current[group.id] = new window.google.maps.Polyline({ 
                                 path, 
@@ -1133,7 +1039,6 @@
                                 ...polylineStyle 
                             });
                             
-                            // **تعديل:** إضافة شرط الزوم لعرض الأطوال
                             if (isMeasuring && currentZoom >= DISTANCE_LABEL_VISIBILITY_ZOOM_THRESHOLD) {
                                 for (let i = 0; i < path.length - 1; i++) {
                                     const p1 = path[i], p2 = path[i+1];
@@ -1145,12 +1050,11 @@
                                     } else {
                                         distanceText = `${distance.toFixed(2)} م`;
                                     }
-                                    newOverlays.push({ id: `dist-${group.id}-${i}`, position: midpoint, text: distanceText, styleProps: { transform: 'translate(-50%, -50%)', background: darkMode ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.8)', color: darkMode ? 'white' : 'black', padding: '4px 8px', borderRadius: '6px', fontSize: '14px', fontWeight: 'bold', border: `1px solid ${darkMode ? 'white' : 'black'}` } });
+                                    newOverlays.push({ id: `dist-${group.id}-${i}`, position: midpoint, text: distanceText, styleProps: { transform: 'translate(-50%, -50%)', background: darkMode ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.8)', color: darkMode ? 'white' : 'black', padding: '2px 6px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', border: `1px solid ${darkMode ? 'white' : 'black'}` } });
                                 }
                             }
                         }
                         
-                        // **تعديل:** إضافة شرط الزوم لعرض المساحة
                         if (isAreaMeasuring && path.length >= 3 && currentZoom >= AREA_LABEL_VISIBILITY_ZOOM_THRESHOLD) {
                             const area = window.google.maps.geometry.spherical.computeArea(path);
                             const bounds = new window.google.maps.LatLngBounds();
@@ -1161,7 +1065,7 @@
                             } else {
                                 areaText = `المساحة: ${area.toFixed(2)} م²`;
                             }
-                            newOverlays.push({ id: `area-${group.id}`, position: bounds.getCenter(), text: areaText, styleProps: { transform: 'translate(-50%, -50%)', background: darkMode ? 'rgba(30,41,59,0.9)' : 'rgba(241,245,249,0.9)', color: darkMode ? '#f1f5f9' : '#1e293b', padding: '8px 12px', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', border: `2px solid ${group.color}` } });
+                            newOverlays.push({ id: `area-${group.id}`, position: bounds.getCenter(), text: areaText, styleProps: { transform: 'translate(-50%, -50%)', background: darkMode ? 'rgba(30,41,59,0.9)' : 'rgba(241,245,249,0.9)', color: darkMode ? '#f1f5f9' : '#1e293b', padding: '6px 10px', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', border: `2px solid ${group.color}` } });
                         }
                     });
                 }
@@ -1178,10 +1082,8 @@
 
         // ====================================================================
         //  FILE: src/components/import/ImportExportModals.js
-        //  مكونات النوافذ المنبثقة لعمليات الاستيراد والتصدير واختيار الرموز
         // ====================================================================
         
-        // نافذة منبثقة لاختيار رمز العلامة (Marker)
         const MarkerPickerModal = ({ onClose, onSelect, currentIconKey, previewColor = '#6b7280' }) => {
             return (
                 <div className="modal-overlay" onClick={onClose}>
@@ -1208,7 +1110,6 @@
             );
         };
 
-        // نافذة منبثقة للصق الإحداثيات مباشرة
         const DirectPasteModal = ({ onClose, onProcessPaste, utmZone }) => {
             const { addToast } = useAppContext();
             const [text, setText] = useState('');
@@ -1273,7 +1174,6 @@
             );
         };
         
-        // نافذة منبثقة لاستيراد النقاط من ملف
         const ImportPointsModal = ({ fileData, onClose, onImport, utmZone }) => {
             const { addToast } = useAppContext();
             const [mappings, setMappings] = useState({ easting: '0', northing: '1', elevation: '-1', description: '-1' });
@@ -1290,7 +1190,6 @@
                 return { headers: headerRow, dataRows: dataContent };
             }, [fileData.data, ignoreHeader]);
 
-            // تأثير لاكتشاف أعمدة الإحداثيات تلقائياً من الترويسة
             useEffect(() => {
                 if (ignoreHeader && headers.length > 0) {
                     const lowerCaseHeaders = headers.map(h => h.toLowerCase());
@@ -1387,7 +1286,6 @@
             );
         };
 
-        // نافذة منبثقة لتصدير النقاط
         const ExportPointsModal = ({ workAreas, onClose, onExport }) => {
             const { addToast } = useAppContext();
             const [selectedIds, setSelectedIds] = useState({});
@@ -1577,7 +1475,6 @@
             );
         };
         
-        // **جديد:** نافذة منبثقة لخيارات لقطة الشاشة
         const ScreenshotOptionsModal = ({ onClose, onConfirm }) => {
             const [showPanel, setShowPanel] = useState(true);
             const [showTimestamp, setShowTimestamp] = useState(true);
@@ -1602,19 +1499,127 @@
             );
         };
 
+        const PointDetailSheet = ({ point, group, onClose, onUpdate, onDelete, onOpenMarkerPicker }) => {
+            if (!point || !group) return null;
+
+            const handleSheetClick = (e) => e.stopPropagation();
+
+            return (
+                <>
+                    <div className="fixed inset-0 bg-black/30 z-20 lg:hidden" onClick={onClose} style={{ animation: 'fade-in 0.3s' }}></div>
+                    <div 
+                        className="fixed bottom-0 right-0 left-0 bg-white dark:bg-slate-800 p-4 rounded-t-2xl shadow-2xl z-30 lg:hidden"
+                        style={{ animation: 'slide-in-up 0.3s ease-out forwards' }}
+                        onClick={handleSheetClick}
+                    >
+                        <div className="flex justify-center mb-2">
+                            <div className="w-10 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full"></div>
+                        </div>
+                        <button onClick={onClose} className="absolute top-3 right-3 icon-button !w-10 !h-10"><Icon name="x" /></button>
+
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-10 h-10 flex-shrink-0">
+                                 <svg width="40" height="40" viewBox="-20 -20 40 40" fill={group.color} stroke="white" strokeWidth="1.5">
+                                    <path d={(MARKER_ICONS[point.markerIcon] || MARKER_ICONS['default']).path} />
+                                </svg>
+                            </div>
+                            <div>
+                                <input 
+                                    type="text"
+                                    value={point.name || ''}
+                                    placeholder={`نقطة ${point.number || ''}`}
+                                    onChange={(e) => onUpdate('name', e.target.value)}
+                                    className="text-lg font-bold bg-transparent w-full focus:outline-none focus:bg-slate-100 dark:focus:bg-slate-700 rounded-md p-1 -m-1"
+                                />
+                                <p className="text-sm text-slate-500 dark:text-slate-400">{group.name}</p>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm font-mono mb-4 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-lg">
+                            <div>E (X): <span className="font-semibold text-slate-800 dark:text-slate-200">{point.utm?.easting?.toFixed(2) || 'N/A'}</span></div>
+                            <div>N (Y): <span className="font-semibold text-slate-800 dark:text-slate-200">{point.utm?.northing?.toFixed(2) || 'N/A'}</span></div>
+                            <div>Elev (Z): <span className="font-semibold text-slate-800 dark:text-slate-200">{point.elevation?.toFixed(2) || 'N/A'}</span></div>
+                        </div>
+                        
+                        <div className="mb-4">
+                             <textarea
+                                value={point.description || ''}
+                                onChange={(e) => onUpdate('description', e.target.value)}
+                                placeholder="أضف وصفًا..."
+                                className="w-full p-2 border rounded-md dark:bg-slate-700 dark:border-slate-600 text-sm h-16 resize-none"
+                            />
+                        </div>
+
+                        <div className="flex justify-between items-center gap-2">
+                            <button onClick={onOpenMarkerPicker} className="button-secondary flex-1 flex items-center justify-center text-sm !py-2"><Icon name="shapes" size={16} className="ml-2"/>تغيير الرمز</button>
+                            <button onClick={onDelete} className="button-secondary bg-red-600 hover:bg-red-700 flex-1 flex items-center justify-center text-sm !py-2"><Icon name="trash-2" size={16} className="ml-2"/>حذف</button>
+                        </div>
+                    </div>
+                </>
+            );
+        };
+
+        // [إصلاح] [تفعيل الأدوات] مكون جديد لعرض قائمة الأدوات
+        const ToolsSheet = ({ settings, onClose, onUpdateSettings, onToggleDeleteMode, onOpenScreenshotModal, isZoomedInEnough }) => {
+            const { showPolylines, showElevations, showLabels, labelContent, isMeasuring, isAreaMeasuring, snapEnabled, isDeleteMode } = settings;
+            
+            const handleToolClick = (action) => {
+                action();
+                onClose();
+            };
+
+            const tools = [
+                { id: 'measure', icon: 'ruler', title: 'قياس المسافة', action: () => onUpdateSettings('isMeasuring', !isMeasuring), active: isMeasuring },
+                { id: 'area', icon: 'square', title: 'قياس المساحة', action: () => onUpdateSettings('isAreaMeasuring', !isAreaMeasuring), active: isAreaMeasuring },
+                { id: 'snap', icon: 'magnet', title: 'تفعيل الالتقاط', action: () => onUpdateSettings('snapEnabled', !snapEnabled), active: snapEnabled },
+                { id: 'delete', icon: 'trash-2', title: 'حذف نقطة بالنقر', action: onToggleDeleteMode, active: isDeleteMode, danger: true },
+                { id: 'polyline', icon: 'git-commit', title: 'إظهار الخطوط', action: () => onUpdateSettings('showPolylines', !showPolylines), active: showPolylines },
+                { id: 'elevation', icon: 'text', title: 'إظهار المناسيب', action: () => onUpdateSettings('showElevations', !showElevations), active: showElevations, disabled: !isZoomedInEnough },
+                { id: 'showLabels', icon: 'hash', title: 'إظهار التسميات', action: () => onUpdateSettings('showLabels', !showLabels), active: showLabels, disabled: !isZoomedInEnough },
+                { id: 'labelContent', icon: 'type', title: 'تبديل محتوى التسمية', action: () => onUpdateSettings('labelContent', labelContent === 'number' ? 'name' : 'number'), active: labelContent === 'name', disabled: !isZoomedInEnough },
+                { id: 'screenshot', icon: 'camera', title: 'أخذ لقطة شاشة', action: onOpenScreenshotModal, active: false },
+            ];
+            
+            return (
+                 <>
+                    <div className="fixed inset-0 bg-black/30 z-40" onClick={onClose} style={{ animation: 'fade-in 0.3s' }}></div>
+                    <div 
+                        className="fixed bottom-0 right-0 left-0 bg-white dark:bg-slate-800 p-4 rounded-t-2xl shadow-2xl z-50"
+                        style={{ animation: 'slide-in-up 0.3s ease-out forwards' }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex justify-center mb-4">
+                            <div className="w-10 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full"></div>
+                        </div>
+                        <h3 className="text-lg font-bold text-center mb-4">أدوات الخريطة</h3>
+                        <div className="grid grid-cols-3 gap-4">
+                            {tools.map(tool => (
+                                <button 
+                                    key={tool.id} 
+                                    onClick={() => handleToolClick(tool.action)} 
+                                    disabled={tool.disabled}
+                                    className={`flex flex-col items-center justify-center gap-2 p-3 rounded-lg transition-colors ${tool.active ? (tool.danger ? 'bg-red-500 text-white' : 'bg-blue-600 text-white') : 'bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600'} ${tool.disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                >
+                                    <Icon name={tool.icon} size={28} />
+                                    <span className="text-xs text-center">{tool.title}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </>
+            );
+        };
+
         // ====================================================================
         //  FILE: src/App.js
-        //  هذا هو المكون الرئيسي للتطبيق الذي يجمع كل المكونات الأخرى ويدير الحالة العامة
         // ====================================================================
         function App() {
-            // دالة لتهيئة مناطق العمل، إما من التخزين المحلي (localStorage) أو إنشاء منطقة عمل افتراضية
             const initializeWorkAreas = () => {
                 try {
                     const saved = localStorage.getItem('workAreas');
                     if (saved) {
                         const parsed = JSON.parse(saved);
                         if (Array.isArray(parsed) && parsed.length > 0) {
-                            // **تعديل:** ضمان وجود خاصية isVisible للبيانات القديمة
                             return parsed.map(area => ({
                                 ...area,
                                 groups: area.groups.map(g => ({...DEFAULT_GROUP_SETTINGS, isVisible: g.isVisible !== false, ...g}))
@@ -1630,26 +1635,40 @@
                 }];
             };
 
-            // تعريف الحالات (States) الرئيسية للتطبيق
             const [workAreas, setWorkAreas, undo, redo, canUndo, canRedo] = useHistoryState(initializeWorkAreas());
             const [selectedWorkAreaId, setSelectedWorkAreaId] = useState(() => localStorage.getItem('selectedWorkAreaId') || workAreas[0]?.id || null);
             const [selectedGroupId, setSelectedGroupId] = useState(() => localStorage.getItem('selectedGroupId') || null);
-            const [activePointId, setActivePointId] = useState(null); // النقطة النشطة حالياً (المحددة على الخريطة أو في الجدول)
+            const [activePointId, setActivePointId] = useState(null);
             const [isMapFullScreen, setIsMapFullScreen] = useState(false);
             const [isSidebarOpen, setIsSidebarOpen] = useState(false);
             const [isDeleteMode, setIsDeleteMode] = useState(false);
-            const [isCoordinatesViewActive, setIsCoordinatesViewActive] = useState(false); // هل جدول الإحداثيات مكبر؟
+            const [isTableViewActive, setIsTableViewActive] = useState(false);
+            const [isDesktopTableExpanded, setIsDesktopTableExpanded] = useState(false);
+            const [isToolsSheetOpen, setIsToolsSheetOpen] = useState(false);
             const [currentZoom, setCurrentZoom] = useState(DEFAULT_MAP_ZOOM);
-            const { utmZone, setUtmZone, addToast, setModal, closeModal, modal } = useAppContext(); // **تصحيح:** إضافة modal
-            const mapApiRef = useRef(null); // مرجع للوصول إلى دوال مكون الخريطة
-            const [isTakingScreenshot, setIsTakingScreenshot] = useState(false); // **جديد:** حالة لتتبع عملية أخذ لقطة الشاشة
+            const { utmZone, setUtmZone, addToast, setModal, closeModal, modal } = useAppContext();
+            const mapApiRef = useRef(null);
+            const [isTakingScreenshot, setIsTakingScreenshot] = useState(false);
             
             const isZoomedInEnough = currentZoom >= LABEL_VISIBILITY_ZOOM_THRESHOLD;
 
-            // **جديد:** تأثير لإضافة مستمعي أحداث لوحة المفاتيح
+            const { activePoint, activePointGroup } = useMemo(() => {
+                if (!activePointId) return { activePoint: null, activePointGroup: null };
+                for (const area of workAreas) {
+                    for (const group of area.groups) {
+                        const pointIndex = group.points.findIndex(p => p.id === activePointId);
+                        if (pointIndex !== -1) {
+                            const point = group.points[pointIndex];
+                            const pointWithNumber = {...point, number: pointIndex + 1 };
+                            return { activePoint: pointWithNumber, activePointGroup: group };
+                        }
+                    }
+                }
+                return { activePoint: null, activePointGroup: null };
+            }, [activePointId, workAreas]);
+
             useEffect(() => {
                 const handleKeyDown = (event) => {
-                    // تجاهل الاختصارات إذا كانت نافذة منبثقة أو حقل إدخال نشط
                     if (modal || ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
                         return;
                     }
@@ -1664,15 +1683,12 @@
                         }
                     }
                 };
-
                 window.addEventListener('keydown', handleKeyDown);
-
                 return () => {
                     window.removeEventListener('keydown', handleKeyDown);
                 };
-            }, [undo, redo, modal]); // إضافة modal كعامل تبعية
+            }, [undo, redo, modal]);
 
-            // تأثير للتعامل مع منطق الاختيار عند تغيير مناطق العمل (مثل حذف منطقة)
             useEffect(() => {
                 if (workAreas.length > 0 && !workAreas.some(a => a.id === selectedWorkAreaId)) {
                     const firstAreaId = workAreas[0].id;
@@ -1685,21 +1701,17 @@
                 }
             }, [workAreas, selectedWorkAreaId]);
             
-            // استخدام useMemo لتحسين أداء حساب المنطقة والمجموعة المحددة
             const selectedArea = useMemo(() => workAreas.find(a => a.id === selectedWorkAreaId), [workAreas, selectedWorkAreaId]);
             const selectedGroup = useMemo(() => selectedArea?.groups.find(g => g.id === selectedGroupId), [selectedArea, selectedGroupId]);
 
-            // تأثيرات لحفظ الحالة في التخزين المحلي (localStorage) عند تغييرها
             useEffect(() => { localStorage.setItem('workAreas', JSON.stringify(workAreas)); }, [workAreas]);
             useEffect(() => { if (selectedWorkAreaId) localStorage.setItem('selectedWorkAreaId', selectedWorkAreaId); else localStorage.removeItem('selectedWorkAreaId'); }, [selectedWorkAreaId]);
             useEffect(() => { if (selectedGroupId) localStorage.setItem('selectedGroupId', selectedGroupId); else localStorage.removeItem('selectedGroupId'); }, [selectedGroupId]);
             
-            // دالة مساعدة لتحديث منطقة عمل معينة
             const updateWorkArea = (areaId, updateFn) => {
                 setWorkAreas(prevAreas => prevAreas.map(a => a.id === areaId ? updateFn(a) : a));
             };
             
-            // معالج حدث اختيار منطقة عمل
             const handleSelectArea = (areaId) => {
                 setSelectedWorkAreaId(areaId);
                 const area = workAreas.find(a => a.id === areaId);
@@ -1713,7 +1725,6 @@
                 }
             };
 
-            // معالج حدث إضافة منطقة عمل جديدة
             const handleAddNewArea = (name) => {
                 const newAreaId = generateUniqueId();
                 const newGroupId = generateUniqueId();
@@ -1733,7 +1744,6 @@
             const handleDeleteArea = (id) => { setWorkAreas(p => p.filter(a => a.id !== id)); };
             const handleRenameArea = (id, name) => { updateWorkArea(id, a => ({...a, name})); };
 
-            // معالجات الأحداث الخاصة بمجموعات النقاط
             const handleAddNewGroup = (areaId, name) => {
                 const newGroup = {id: generateUniqueId(), name, color: POINT_GROUP_COLORS[workAreas.length % POINT_GROUP_COLORS.length], points:[], ...DEFAULT_GROUP_SETTINGS};
                 updateWorkArea(areaId, a => ({...a, groups: [...a.groups, newGroup]}));
@@ -1753,14 +1763,12 @@
                  updateWorkArea(areaId, a => ({...a, groups: a.groups.map(g => g.id === groupId ? {...g, name} : g)}));
             };
 
-            // معالج حدث إضافة نقطة جديدة (من الخريطة أو الموقع الحالي)
             const handleAddPoint = useCallback(async (lat, lng) => {
                 if (isDeleteMode) { addToast('وضع الحذف مفعل. قم بإلغاء تفعيله لإضافة نقاط.', 'info'); return; }
                 if (!selectedArea) { addToast('الرجاء تحديد منطقة عمل أولاً.', 'error'); return; }
                 
                 let finalLat = lat, finalLng = lng, finalElevation = null, finalUtm = null, snapped = false;
                 
-                // منطق الالتقاط (Snapping)
                 const allPoints = selectedArea.groups.flatMap(g => g.points);
                 if (selectedGroup?.snapEnabled && allPoints.length > 0) {
                     const clickLatLng = new window.google.maps.LatLng(lat, lng);
@@ -1789,7 +1797,6 @@
 
                 const newPoint = { id: generateUniqueId(), name: '', lat: finalLat, lng: finalLng, elevation: finalElevation ?? 0.00, utm: finalUtm, description: '', markerIcon: 'default', createdAt: new Date().toISOString() };
                 
-                // إضافة النقطة إلى المجموعة المحددة
                 setWorkAreas(prevAreas => {
                     return prevAreas.map(area => {
                         if (area.id !== selectedArea.id) return area;
@@ -1803,10 +1810,9 @@
                             return g;
                         });
                         
-                        // إذا لم تكن هناك مجموعة محددة، أضف إلى أول مجموعة
                         if (!targetGroupFound && updatedGroups.length > 0) {
                             updatedGroups[0].points.push(newPoint);
-                        } else if (updatedGroups.length === 0) { // إذا لم تكن هناك مجموعات على الإطلاق
+                        } else if (updatedGroups.length === 0) {
                             const newGroupId = generateUniqueId();
                             updatedGroups.push({ id: newGroupId, name: 'مجموعة نقاط 1', color: POINT_GROUP_COLORS[0], points: [newPoint], ...DEFAULT_GROUP_SETTINGS });
                             setSelectedGroupId(newGroupId);
@@ -1819,18 +1825,17 @@
                 if (!snapped) addToast('تمت إضافة النقطة.', 'success');
             }, [selectedArea, selectedGroupId, utmZone, addToast, selectedGroup, setWorkAreas, isDeleteMode]);
 
-            // معالج حدث تحديث بيانات نقطة (بعد السحب أو التعديل في الجدول)
             const handleUpdatePoint = useCallback(async (areaId, groupId, pointId, field, value) => {
                 const pointToUpdate = workAreas.find(a => a.id === areaId)?.groups.find(g => g.id === groupId)?.points.find(p => p.id === pointId);
                 if (!pointToUpdate) return;
             
                 let newPointData = { ...pointToUpdate };
             
-                if (field === 'latlng') { // إذا تم تحديث الموقع
+                if (field === 'latlng') {
                     const { elevation, status } = await getElevation(value);
                     if (status !== 'OK') addToast(`تعذر تحديث المنسوب (${status}). سيتم الاحتفاظ بالمنسوب القديم.`, 'error', 5000);
                     newPointData = { ...newPointData, lat: value.lat, lng: value.lng, utm: convertLatLngToUtm(value.lat, value.lng, utmZone), elevation: elevation ?? newPointData.elevation };
-                } else { // إذا تم تحديث حقل آخر (مثل الاسم أو الوصف)
+                } else {
                     newPointData[field] = value;
                 }
             
@@ -1847,7 +1852,6 @@
                 updateWorkArea(areaId, area => ({ ...area, groups: area.groups.map(g => g.id === groupId ? {...g, color} : g) }));
             };
 
-            // معالج حدث تحميل ملف
             const handleFileLoad = (file) => {
                 const reader = new FileReader();
                 const fileName = file.name;
@@ -1855,7 +1859,7 @@
                 reader.onload = (e) => {
                     const content = e.target.result;
                     try {
-                        if (fileName.endsWith('.hemap')) { // تحميل ملف مشروع
+                        if (fileName.endsWith('.hemap')) {
                             const decodedData = decodeURIComponent(escape(atob(content)));
                             const projectData = JSON.parse(decodedData);
 
@@ -1869,20 +1873,19 @@
                             if (projectData.utmZone) setUtmZone(projectData.utmZone);
                             addToast('تم تحميل المشروع بنجاح.', 'success');
                             
-                            // تكبير الخريطة لتناسب المشروع المحمل
                             setTimeout(() => {
                                 const loadedArea = projectData.workAreas.find(a => a.id === projectData.selectedWorkAreaId);
                                 const allPoints = loadedArea?.groups.flatMap(g => g.points) || [];
                                  if (allPoints.length > 0) mapApiRef.current?.zoomToBounds(allPoints);
                             }, 200);
 
-                        } else if (fileName.endsWith('.json')) { // تحميل ملف JSON قديم
+                        } else if (fileName.endsWith('.json')) {
                             const projectData = JSON.parse(content);
                             const dataToLoad = projectData.workAreas ? projectData.workAreas : projectData;
                             if (!Array.isArray(dataToLoad)) throw new Error('صيغة ملف JSON غير معروفة.');
                             setWorkAreas(dataToLoad.map(area => ({ ...area, groups: area.groups.map(g => ({...DEFAULT_GROUP_SETTINGS, isVisible: g.isVisible !== false, ...g})) })));
                             addToast('تم تحميل مشروع JSON بنجاح.', 'success');
-                        } else { // تحميل ملف نصي (CSV/TXT)
+                        } else {
                             if (!selectedArea) { addToast('الرجاء تحديد منطقة عمل أولاً لاستيراد النقاط.', 'error'); return; }
                             const parsedData = parseDelimitedText(content);
                             if (parsedData.error && !parsedData.data.length) { addToast(parsedData.error, 'error'); return; }
@@ -1897,7 +1900,6 @@
                 reader.readAsText(file, 'UTF-8');
             };
             
-            // معالج إتمام عملية الاستيراد من النافذة المنبثقة
             const handleProcessImport = (groupName, points) => {
                 const newGroup = { id: generateUniqueId(), name: groupName, color: POINT_GROUP_COLORS[workAreas.length % POINT_GROUP_COLORS.length], points, ...DEFAULT_GROUP_SETTINGS };
                 updateWorkArea(selectedArea.id, area => ({ ...area, groups: [...area.groups, newGroup], lastModifiedAt: new Date().toISOString() }));
@@ -1906,7 +1908,6 @@
                 setTimeout(() => mapApiRef.current?.zoomToBounds(points), 100);
             };
 
-            // معالج إتمام عملية اللصق المباشر
             const handleProcessDirectPaste = (points) => {
                 if (!selectedArea || !selectedGroup) return;
                 updateWorkArea(selectedArea.id, area => ({ ...area, groups: area.groups.map(g => g.id === selectedGroup.id ? { ...g, points: [...g.points, ...points] } : g), lastModifiedAt: new Date().toISOString() }));
@@ -1919,7 +1920,6 @@
                 setModal(<DirectPasteModal onClose={closeModal} onProcessPaste={handleProcessDirectPaste} utmZone={utmZone} />);
             };
             
-            // معالج عملية تصدير البيانات
             const handleExportData = (options, fileNameFromModal) => {
                 const { selectedIds, exportFormat, delimiter, fileExtension, acadScriptType, addCsvDescription } = options;
                 
@@ -1948,7 +1948,7 @@
                     const finalFileName = `${fileNameFromModal}.${fileExtension}`;
                     const mimeType = fileExtension === 'csv' ? 'text/csv' : 'text/plain';
                     downloadFile(content, finalFileName, mimeType);
-                    return null; // Download is handled
+                    return null;
                 } 
                 else if (exportFormat === 'acad_script') {
                     if (acadScriptType === 'pline') {
@@ -1960,13 +1960,12 @@
                             `_POINT ${safeToFixed(p.utm?.easting)},${safeToFixed(p.utm?.northing)},${safeToFixed(p.elevation)}`
                         ).join('\n');
                     }
-                    return content; // Return script content for the modal
+                    return content;
                 }
 
                 return null;
             };
 
-            // معالج طلب الموقع الحالي
             const triggerGetCurrentLocation = async () => {
                 if (!selectedArea) { addToast('الرجاء تحديد منطقة عمل أولاً.', 'error'); return; }
                 addToast('جاري جلب موقعك الحالي...', 'info');
@@ -1984,7 +1983,6 @@
                 });
             };
 
-            // **تعديل:** تحديث منطق إعدادات المجموعة
             const handleUpdateGroupSettings = (settingKey, value) => {
                 if (!selectedGroupId || !selectedArea) return;
                 updateWorkArea(selectedArea.id, area => ({
@@ -1992,7 +1990,6 @@
                     groups: area.groups.map(g => {
                         if (g.id === selectedGroupId) {
                             const newSettings = { ...g, [settingKey]: value };
-                            // إذا تم تغيير محتوى التسمية وكانت التسميات مخفية، قم بإظهارها
                             if (settingKey === 'labelContent' && !g.showLabels) {
                                 newSettings.showLabels = true;
                             }
@@ -2003,7 +2000,6 @@
                 }));
             };
 
-            // **جديد:** معالج تبديل رؤية الطبقة
             const handleToggleGroupVisibility = (areaId, groupId) => {
                 updateWorkArea(areaId, area => ({
                     ...area,
@@ -2013,7 +2009,6 @@
                 }));
             };
             
-            // **جديد:** معالج لتغيير رمز كل النقاط في مجموعة
             const handleSetGroupMarker = (areaId, groupId, iconKey) => {
                 updateWorkArea(areaId, area => ({
                     ...area,
@@ -2030,7 +2025,6 @@
                 addToast('تم تحديث رموز المجموعة بنجاح.', 'success');
             };
 
-            // حساب إعدادات العرض للمجموعة الحالية
             const displaySettings = useMemo(() => {
                 if(selectedGroup) return { ...DEFAULT_GROUP_SETTINGS, ...selectedGroup };
                 return DEFAULT_GROUP_SETTINGS;
@@ -2040,7 +2034,6 @@
                 setModal(<GenericModal type="prompt" title={title} message={message} inputLabel={inputLabel} initialValue={initialValue} onConfirm={onConfirm} onClose={closeModal} />);
             };
 
-            // معالج حفظ المشروع بالكامل
             const handleSaveProject = () => {
                 promptAction("حفظ المشروع", "أدخل اسم الملف:", "اسم الملف", "مشروعي_الهندسي", (fileName) => {
                     if (!fileName || fileName.trim() === '') { addToast('تم إلغاء الحفظ. اسم الملف فارغ.', 'error'); return; }
@@ -2051,35 +2044,32 @@
                     };
 
                     const jsonString = JSON.stringify(projectData, null, 2);
-                    const encodedData = btoa(unescape(encodeURIComponent(jsonString))); // ترميز خاص لضمان سلامة البيانات
+                    const encodedData = btoa(unescape(encodeURIComponent(jsonString)));
 
                     downloadFile(encodedData, `${fileName.trim()}.hemap`, 'application/octet-stream');
                     addToast('تم حفظ المشروع بنجاح.', 'success');
                 });
             };
 
-            // **تعديل:** دالة فتح نافذة خيارات لقطة الشاشة
             const handleOpenScreenshotModal = () => {
                 setModal(
                     <ScreenshotOptionsModal
                         onClose={closeModal}
                         onConfirm={(options) => {
                             closeModal();
-                            // تأخير بسيط لضمان إغلاق النافذة قبل التقاط الصورة
                             setTimeout(() => executeScreenshot(options), 100);
                         }}
                     />
                 );
             };
 
-            // **تعديل:** دالة تنفيذ أخذ لقطة الشاشة مع الخيارات
             const executeScreenshot = (options) => {
                 const captureArea = document.getElementById('capture-area');
                 if (!captureArea) return;
 
                 const elementsToHide = [
-                    document.getElementById('floating-toolbar'),
-                    document.getElementById('history-controls'),
+                    document.getElementById('map-controls'),
+                    document.getElementById('bottom-nav-bar')
                 ];
                 
                 const timestamp = document.createElement('div');
@@ -2087,7 +2077,6 @@
                 timestamp.className = 'absolute bottom-4 right-4 z-10 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm p-2 px-4 rounded-lg shadow-lg border dark:border-slate-700 text-sm font-mono';
                 timestamp.innerText = new Date().toLocaleString('ar-EG', { dateStyle: 'medium', timeStyle: 'short' });
 
-                // --- Prepare UI for screenshot ---
                 setIsTakingScreenshot(true);
                 elementsToHide.forEach(el => { if (el) el.style.visibility = 'hidden'; });
 
@@ -2102,7 +2091,6 @@
                 
                 addToast('جاري أخذ لقطة شاشة...', 'info', 2000);
 
-                // --- Take screenshot ---
                 html2canvas(captureArea, {
                     useCORS: true,
                     allowTaint: true,
@@ -2117,7 +2105,6 @@
                     console.error("Screenshot error:", err);
                     addToast('فشل أخذ لقطة الشاشة.', 'error');
                 }).finally(() => {
-                    // --- Cleanup UI after screenshot ---
                     elementsToHide.forEach(el => { if (el) el.style.visibility = 'visible'; });
                     const panel = document.getElementById('active-area-indicator');
                     if (panel) panel.style.visibility = 'visible';
@@ -2128,46 +2115,64 @@
                     setIsTakingScreenshot(false);
                 });
             };
+
+            const handleOpenMarkerPickerForPoint = (point, group) => {
+                if (!point || !group || !selectedArea) return;
+                setModal(
+                    <MarkerPickerModal
+                        onClose={closeModal}
+                        onSelect={(iconKey) => {
+                            handleUpdatePoint(selectedArea.id, group.id, point.id, 'markerIcon', iconKey);
+                            closeModal();
+                        }}
+                        currentIconKey={point.markerIcon || 'default'}
+                        previewColor={group.color}
+                    />
+                );
+            };
             
-            // العرض النهائي للتطبيق (JSX)
             return (
                 <div className="h-screen w-screen flex flex-col bg-slate-100 dark:bg-slate-900">
-                    <Header onToggleFullScreen={() => setIsMapFullScreen(f => !f)} isFullScreen={isMapFullScreen} onToggleSidebar={() => setIsSidebarOpen(o => !o)} />
+                    <Header onToggleFullScreen={() => setIsMapFullScreen(f => !f)} isFullScreen={isMapFullScreen} onToggleSidebar={() => setIsSidebarOpen(true)} />
                     <div className="flex flex-grow overflow-hidden">
-                        <Sidebar 
-                            isOpen={isSidebarOpen}
-                            onClose={() => setIsSidebarOpen(false)}
-                            workAreas={workAreas} 
-                            selectedAreaId={selectedWorkAreaId}
-                            selectedGroupId={selectedGroupId}
-                            onSelectArea={handleSelectArea}
-                            onSelectGroup={setSelectedGroupId}
-                            onAddNewArea={handleAddNewArea}
-                            onRenameArea={handleRenameArea}
-                            onDeleteArea={handleDeleteArea}
-                            onFileLoad={handleFileLoad}
-                            onZoomToWorkArea={id => mapApiRef.current?.zoomToBounds(workAreas.find(a=>a.id===id)?.groups.flatMap(g=>g.points))}
-                            onGetCurrentLocation={triggerGetCurrentLocation}
-                            onAddNewGroup={handleAddNewGroup}
-                            onRenameGroup={handleRenameGroup}
-                            onDeleteGroup={handleDeleteGroup}
-                            onZoomToGroup={(areaId, groupId) => {
-                                const group = workAreas.find(a => a.id === areaId)?.groups.find(g => g.id === groupId);
-                                if (group && group.points.length > 0) {
-                                    mapApiRef.current?.zoomToBounds(group.points);
-                                } else if (group) {
-                                    addToast(`مجموعة "${group.name}" فارغة، لا يمكن التقريب.`, 'info');
-                                }
-                            }}
-                            onUpdateGroupColor={handleUpdateGroupColor}
-                            onOpenExportModal={() => setModal(<ExportPointsModal workAreas={workAreas} onClose={closeModal} onExport={handleExportData} />)}
-                            onSaveProject={handleSaveProject}
-                            onOpenDirectPasteModal={handleOpenDirectPasteModal}
-                            onToggleGroupVisibility={handleToggleGroupVisibility}
-                            onSetGroupMarker={handleSetGroupMarker}
-                        />
-                        <main className="flex-grow flex flex-col">
-                           <div id="capture-area" className="flex-grow relative">
+                        <div className={`${isMapFullScreen ? 'hidden' : ''} lg:block`}>
+                            <Sidebar 
+                                isOpen={isSidebarOpen}
+                                onClose={() => setIsSidebarOpen(false)}
+                                workAreas={workAreas} 
+                                selectedAreaId={selectedWorkAreaId}
+                                selectedGroupId={selectedGroupId}
+                                onSelectArea={handleSelectArea}
+                                onSelectGroup={setSelectedGroupId}
+                                onAddNewArea={handleAddNewArea}
+                                onRenameArea={handleRenameArea}
+                                onDeleteArea={handleDeleteArea}
+                                onFileLoad={handleFileLoad}
+                                onZoomToWorkArea={id => mapApiRef.current?.zoomToBounds(workAreas.find(a=>a.id===id)?.groups.flatMap(g=>g.points))}
+                                onGetCurrentLocation={triggerGetCurrentLocation}
+                                onAddNewGroup={handleAddNewGroup}
+                                onRenameGroup={handleRenameGroup}
+                                onDeleteGroup={handleDeleteGroup}
+                                onZoomToGroup={(areaId, groupId) => {
+                                    const group = workAreas.find(a => a.id === areaId)?.groups.find(g => g.id === groupId);
+                                    if (group && group.points.length > 0) {
+                                        mapApiRef.current?.zoomToBounds(group.points);
+                                    } else if (group) {
+                                        addToast(`مجموعة "${group.name}" فارغة، لا يمكن التقريب.`, 'info');
+                                    }
+                                }}
+                                onUpdateGroupColor={handleUpdateGroupColor}
+                                onOpenExportModal={() => setModal(<ExportPointsModal workAreas={workAreas} onClose={closeModal} onExport={handleExportData} />)}
+                                onSaveProject={handleSaveProject}
+                                onOpenDirectPasteModal={handleOpenDirectPasteModal}
+                                onToggleGroupVisibility={handleToggleGroupVisibility}
+                                onSetGroupMarker={handleSetGroupMarker}
+                            />
+                        </div>
+                        
+                        {/* [إصلاح] إزالة overflow-hidden من هنا للسماح بالتمرير الداخلي */}
+                        <main className="flex-grow flex flex-col relative">
+                            <div id="capture-area" className="flex-grow relative">
                                 <MapComponent
                                     ref={mapApiRef}
                                     selectedArea={selectedArea}
@@ -2185,34 +2190,33 @@
                                 />
                                 {selectedArea && (
                                     <>
-                                        <HistoryControls undo={undo} redo={redo} canUndo={canUndo} canRedo={canRedo} />
+                                        <MapControls undo={undo} redo={redo} canUndo={canUndo} canRedo={canRedo} />
                                         <ActiveAreaIndicator 
                                             areaName={selectedArea?.name} 
                                             groupName={selectedGroup?.name} 
                                             isTakingScreenshot={isTakingScreenshot}
                                         />
-                                        <FloatingToolbar 
-                                            settings={displaySettings}
-                                            onUpdateSettings={handleUpdateGroupSettings}
-                                            onAddPointFromCurrentLocation={triggerGetCurrentLocation}
-                                            isDeleteMode={isDeleteMode}
-                                            onToggleDeleteMode={handleToggleDeleteMode}
-                                            isZoomedInEnough={isZoomedInEnough}
-                                            onTakeScreenshot={handleOpenScreenshotModal}
-                                        />
+                                        {/* [إصلاح] زر أدوات جديد لشاشات الحاسوب */}
+                                        <div className="hidden lg:block absolute bottom-4 right-4 z-10">
+                                            <button onClick={() => setIsToolsSheetOpen(true)} className="w-16 h-16 bg-blue-600 text-white rounded-full shadow-lg flex items-center justify-center hover:bg-blue-700 transition-all duration-300">
+                                                <Icon name="wrench" size={32} />
+                                            </button>
+                                        </div>
                                     </>
                                 )}
                             </div>
+                            
                             {!isMapFullScreen && (
-                                <div className={`flex-shrink-0 border-t-2 dark:border-slate-700 transition-all duration-300 ease-in-out ${isCoordinatesViewActive ? 'h-5/6' : 'h-1/3'} flex flex-col`}>
+                                <div className={`hidden lg:flex flex-col flex-shrink-0 border-t-2 dark:border-slate-700 transition-all duration-300 ease-in-out ${isDesktopTableExpanded ? 'h-5/6' : 'h-1/3'}`}>
                                     <div className="flex-shrink-0 p-2 flex justify-center items-center border-b dark:border-slate-700 bg-slate-100 dark:bg-slate-800/50">
                                         <button
-                                            onClick={() => setIsCoordinatesViewActive(p => !p)}
-                                            className={`font-bold py-2 px-8 rounded-lg shadow-md transition-all duration-300 flex items-center gap-2 ${isCoordinatesViewActive ? 'bg-blue-600 text-white scale-105' : 'bg-white dark:bg-slate-700'}`}
-                                            title={isCoordinatesViewActive ? 'تصغير جدول الإحداثيات' : 'تكبير جدول الإحداثيات'}
+                                            onClick={() => setIsDesktopTableExpanded(p => !p)}
+                                            className="font-bold py-1 px-4 rounded-lg shadow-sm transition-all duration-300 flex items-center gap-2 bg-white dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600"
+                                            title={isDesktopTableExpanded ? 'تصغير الجدول' : 'تكبير الجدول'}
                                         >
-                                            <Icon name="list-ordered" />
-                                            إحداثيات
+                                            <Icon name="list-ordered" size={20} />
+                                            <span>إحداثيات</span>
+                                            <Icon name={isDesktopTableExpanded ? 'chevrons-down-up' : 'chevrons-up-down'} size={16} />
                                         </button>
                                     </div>
                                     <div className="flex-grow overflow-auto">
@@ -2232,6 +2236,73 @@
                                     </div>
                                 </div>
                             )}
+
+                            {/* حاوية جدول النقاط للجوال */}
+                            <div className={`lg:hidden flex flex-col h-full bg-white dark:bg-slate-900 absolute inset-0 z-20 transition-transform duration-300 ease-out ${isTableViewActive ? 'translate-x-0' : 'translate-x-full'}`}>
+                               <PointsTable 
+                                    selectedArea={selectedArea} 
+                                    selectedGroupId={selectedGroupId}
+                                    onUpdatePoint={handleUpdatePoint}
+                                    onDeletePoint={handleDeletePointById}
+                                    onActivateGroup={setSelectedGroupId}
+                                    activePointId={activePointId}
+                                    setActivePointId={setActivePointId}
+                                    onZoomToPoint={(areaId, groupId, pointId) => {
+                                        const point = workAreas.find(a=>a.id===areaId)?.groups.find(g=>g.id===groupId)?.points.find(p=>p.id===pointId);
+                                        if(point) {
+                                            setIsTableViewActive(false);
+                                            setActivePointId(point.id);
+                                            setTimeout(() => mapApiRef.current?.zoomToPoint(point.lat, point.lng), 100);
+                                        }
+                                    }}
+                                />
+                            </div>
+                            
+                            <div id="bottom-nav-bar" className="lg:hidden fixed bottom-0 left-0 right-0 h-16 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm shadow-t-lg border-t dark:border-slate-700 flex justify-around items-center z-20">
+                                <button onClick={() => setIsTableViewActive(false)} className={`flex flex-col items-center gap-1 ${!isTableViewActive ? 'text-blue-600' : 'text-slate-500'}`}>
+                                    <Icon name="map" />
+                                    <span className="text-xs">الخريطة</span>
+                                </button>
+                                <button onClick={() => setIsTableViewActive(true)} className={`flex flex-col items-center gap-1 ${isTableViewActive ? 'text-blue-600' : 'text-slate-500'}`}>
+                                    <Icon name="list-ordered" />
+                                    <span className="text-xs">النقاط</span>
+                                </button>
+                                <button onClick={triggerGetCurrentLocation} className="h-14 w-14 -mt-8 bg-blue-600 rounded-full text-white flex items-center justify-center shadow-lg"><Icon name="plus" size={28}/></button>
+                                <button onClick={() => setIsSidebarOpen(true)} className="flex flex-col items-center gap-1 text-slate-500">
+                                    <Icon name="folder-kanban" />
+                                    <span className="text-xs">الطبقات</span>
+                                </button>
+                                <button onClick={() => setIsToolsSheetOpen(true)} className="flex flex-col items-center gap-1 text-slate-500">
+                                    <Icon name="wrench" />
+                                    <span className="text-xs">الأدوات</span>
+                                </button>
+                            </div>
+
+                            {activePoint && activePointGroup && (
+                                <PointDetailSheet 
+                                    point={activePoint}
+                                    group={activePointGroup}
+                                    onClose={() => setActivePointId(null)}
+                                    onUpdate={(field, value) => handleUpdatePoint(selectedArea.id, activePointGroup.id, activePoint.id, field, value)}
+                                    onDelete={() => {
+                                        handleDeletePointById(activePointGroup.id, activePoint.id);
+                                        setActivePointId(null);
+                                    }}
+                                    onOpenMarkerPicker={() => handleOpenMarkerPickerForPoint(activePoint, activePointGroup)}
+                                />
+                            )}
+                            
+                            {/* [إصلاح] [تفعيل الأدوات] */}
+                            {isToolsSheetOpen && (
+                                <ToolsSheet
+                                    settings={{...displaySettings, isDeleteMode}}
+                                    onClose={() => setIsToolsSheetOpen(false)}
+                                    onUpdateSettings={handleUpdateGroupSettings}
+                                    onToggleDeleteMode={handleToggleDeleteMode}
+                                    onOpenScreenshotModal={handleOpenScreenshotModal}
+                                    isZoomedInEnough={isZoomedInEnough}
+                                />
+                            )}
                         </main>
                     </div>
                 </div>
@@ -2240,19 +2311,16 @@
 
         // ====================================================================
         //  FILE: src/main.js (Entry Point)
-        //  نقطة البداية لتشغيل التطبيق
         // ====================================================================
         const container = document.getElementById('root');
         const root = createRoot(container);
         
-        // هذه الدالة يتم استدعاؤها بواسطة Google Maps API بعد تحميل المكتبة بنجاح
         window.initMap = () => root.render(
             <AppProvider>
                 <App />
             </AppProvider>
         );
         
-        // في حالة كانت مكتبة خرائط جوجل محملة بالفعل، قم بتشغيل التطبيق فوراً
         if (window.google && window.google.maps) window.initMap();
 
     </script>
