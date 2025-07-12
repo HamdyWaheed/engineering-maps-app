@@ -17,9 +17,8 @@
     <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAKXVuJsf0vANjBtlUIWcPj-wNWPkOc-S4&libraries=geometry,places,elevation&callback=initMap"></script>
 
     <style>
-        /* [إصلاح] إزالة القيد العام للسماح بالتمرير داخل العناصر */
         html, body { height: 100%; }
-        body { font-family: 'Cairo', sans-serif; overscroll-behavior: none; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Cairo', sans-serif; overscroll-behavior: none; -webkit-tap-highlight-color: transparent; overflow: hidden; }
         .dark-mode { background-color: #020617; color: #e2e8f0; }
         .dark-mode body { background-color: #020617; }
 
@@ -384,9 +383,8 @@
             );
         };
         
-        const Sidebar = ({ isOpen, onClose, workAreas, selectedAreaId, selectedGroupId, onSelectArea, onSelectGroup, onAddNewArea, onRenameArea, onFileLoad, onDeleteArea, onZoomToWorkArea, onGetCurrentLocation, onAddNewGroup, onRenameGroup, onDeleteGroup, onZoomToGroup, onUpdateGroupColor, onOpenExportModal, onSaveProject, onOpenDirectPasteModal, onToggleGroupVisibility, onSetGroupMarker }) => {
+        const Sidebar = ({ isOpen, onClose, workAreas, selectedAreaId, selectedGroupId, onSelectArea, onSelectGroup, onAddNewArea, onRenameArea, onDeleteArea, onZoomToWorkArea, onAddNewGroup, onRenameGroup, onDeleteGroup, onZoomToGroup, onUpdateGroupColor, onOpenExportModal, onToggleGroupVisibility, onSetGroupMarker, onOpenImportModal }) => {
             const { utmZone, setUtmZone, setModal, closeModal } = useAppContext();
-            const fileInputRef = useRef(null);
             const selectedArea = workAreas.find(area => area.id === selectedAreaId);
             const selectedGroup = selectedArea?.groups.find(group => group.id === selectedGroupId);
 
@@ -395,12 +393,6 @@
             };
             const confirmAction = (title, message, onConfirm) => {
                 setModal(<GenericModal type="confirm" title={title} message={message} onConfirm={onConfirm} onClose={closeModal} />);
-            };
-
-            const handleFileSelect = (event) => {
-                const file = event.target.files[0];
-                if (file) onFileLoad(file);
-                event.target.value = null;
             };
 
             const openGroupMarkerPicker = () => {
@@ -494,20 +486,15 @@
                             </div>
                         )}
                         
-                        {/* قسم الأدوات والإعدادات */}
                         <div className="border-t pt-4 mt-4 dark:border-slate-700">
-                            <h3 className="font-semibold mb-2">الإعدادات والأدوات</h3>
+                            <h3 className="font-semibold mb-2">الإعدادات وإدارة البيانات</h3>
                             <label htmlFor="utm-zone-select" className="block text-sm font-medium mb-1">UTM Zone</label>
                             <select id="utm-zone-select" value={utmZone} onChange={e => setUtmZone(parseInt(e.target.value))} className="block w-full p-2 border rounded-md dark:bg-slate-700 dark:border-slate-600 custom-select">
                                 {Array.from({ length: 11 }, (_, i) => 30 + i).map(zone => <option key={zone} value={zone}>{zone}N</option>)}
                             </select>
                             <div className="mt-4 flex flex-col space-y-2">
-                                <button onClick={onGetCurrentLocation} className="button-secondary flex items-center justify-center text-sm"><Icon name="crosshair" className="ml-2" size={18} />موقعي الحالي</button>
-                                <button onClick={onOpenDirectPasteModal} className="button-secondary flex items-center justify-center text-sm"><Icon name="clipboard-paste" className="ml-2" size={18} />لصق احداثيات</button>
-                                <input type="file" ref={fileInputRef} onChange={handleFileSelect} style={{ display: 'none' }} accept=".txt,.csv,.tsv,.json,.hemap" />
-                                <button onClick={() => fileInputRef.current.click()} className="button-secondary flex items-center justify-center text-sm"><Icon name="upload" className="ml-2" size={18} />تحميل / استيراد</button>
-                                <button onClick={onOpenExportModal} className="button-secondary flex items-center justify-center text-sm"><Icon name="download" className="ml-2" size={18} />تصدير نقاط</button>
-                                <button onClick={onSaveProject} className="button-primary flex items-center justify-center text-sm"><Icon name="save" className="ml-2" size={18} />حفظ المشروع</button>
+                                <button onClick={onOpenImportModal} className="button-secondary flex items-center justify-center text-sm"><Icon name="upload" className="ml-2" size={18} />استيراد / تحميل</button>
+                                <button onClick={onOpenExportModal} className="button-primary flex items-center justify-center text-sm"><Icon name="download" className="ml-2" size={18} />تصدير / حفظ</button>
                             </div>
                         </div>
                     </aside>
@@ -515,7 +502,7 @@
             );
         };
         
-        const GenericModal = ({ type, title, message, inputLabel, initialValue, onConfirm, onClose, onCancel, children, confirmText = "تأكيد" }) => {
+        const GenericModal = ({ type, title, message, inputLabel, initialValue, onConfirm, onClose, onCancel, children, confirmText = "تأكيد", showConfirm = true, showCancel = true }) => {
             const [inputValue, setInputValue] = useState(initialValue || '');
             const inputRef = useRef(null);
             useEffect(() => { 
@@ -539,8 +526,8 @@
                         )}
                         {children}
                         <div className="flex justify-end space-x-3 space-x-reverse mt-6">
-                            <button onClick={handleCancel} className="button-secondary">إلغاء</button>
-                            <button onClick={handleConfirm} className="button-primary">{confirmText}</button>
+                            {showCancel && <button onClick={handleCancel} className="button-secondary">إلغاء</button>}
+                            {showConfirm && <button onClick={handleConfirm} className="button-primary">{confirmText}</button>}
                         </div>
                     </div>
                 </div>
@@ -550,7 +537,7 @@
         // ====================================================================
         //  FILE: src/components/table/PointsTable.js
         // ====================================================================
-        const PointsTable = ({ selectedArea, selectedGroupId, onUpdatePoint, onDeletePoint, onZoomToPoint, onActivateGroup, activePointId, setActivePointId }) => {
+        const PointsTable = ({ selectedArea, selectedGroupId, onUpdatePoint, onDeletePoint, onZoomToPoint, onActivateGroup, activePointId, setActivePointId, onOpenMarkerPicker, onDeleteMultiple, onUpdateMarkerForMultiple }) => {
             const { addToast, setModal, closeModal } = useAppContext();
             const [selectedPointIds, setSelectedPointIds] = useState(new Set());
             const rowRefs = useRef({});
@@ -558,7 +545,7 @@
         
             useEffect(() => {
                 setSelectedPointIds(new Set());
-            }, [selectedArea]);
+            }, [selectedArea, selectedGroupId]);
             
             useEffect(() => {
                 if (activePointId && rowRefs.current[activePointId]) {
@@ -647,6 +634,37 @@
                 copyToClipboard(textToCopy, 'تم نسخ إحداثيات Lat/Lng.');
             };
 
+            const handleDeleteSelected = () => {
+                if (selectedPointIds.size === 0) return;
+                setModal(
+                    <GenericModal
+                        type="confirm"
+                        title="تأكيد الحذف"
+                        message={`هل أنت متأكد من حذف ${selectedPointIds.size} نقطة محددة؟ هذا الإجراء لا يمكن التراجع عنه.`}
+                        onConfirm={() => {
+                            onDeleteMultiple(selectedPointIds);
+                            setSelectedPointIds(new Set());
+                        }}
+                        onClose={closeModal}
+                    />
+                );
+            };
+
+            const handleUpdateMarkerForSelected = () => {
+                if (selectedPointIds.size === 0) return;
+                setModal(
+                    <MarkerPickerModal
+                        onClose={closeModal}
+                        onSelect={(iconKey) => {
+                            onUpdateMarkerForMultiple(selectedPointIds, iconKey);
+                            closeModal();
+                        }}
+                        currentIconKey={'default'}
+                        previewColor={'#6b7280'}
+                    />
+                );
+            };
+
             if (!selectedArea) return <div className="p-4 text-center text-slate-500 h-full flex items-center justify-center">الرجاء تحديد منطقة عمل.</div>;
             
             const allPoints = selectedArea.groups.flatMap(g => g.points);
@@ -673,7 +691,8 @@
                                     <span className="font-bold text-slate-700 dark:text-slate-200">{point.name || `نقطة ${index + 1}`}</span>
                                     <span className="text-xs px-2 py-0.5 rounded-full" style={{backgroundColor: group.color, color: 'white'}}>{group.name}</span>
                                 </div>
-                                <div className="flex items-center space-x-1 space-x-reverse">
+                                <div className="flex items-center space-x-0 space-x-reverse">
+                                    <button onClick={(e) => { e.stopPropagation(); onOpenMarkerPicker(point, group); }} className="icon-button text-slate-500 !w-8 !h-8" title="تغيير الرمز"><Icon name="palette" size={16}/></button>
                                     <button onClick={(e) => { e.stopPropagation(); onDeletePoint(group.id, point.id);}} className="icon-button text-red-500 !w-8 !h-8" title="حذف"><Icon name="trash-2" size={16}/></button>
                                 </div>
                             </div>
@@ -693,10 +712,17 @@
                     <div className="flex-shrink-0 p-2 flex justify-between items-center border-b dark:border-slate-700">
                         <h3 className="font-bold text-md text-slate-800 dark:text-slate-100">نقاط: {selectedArea.name}</h3>
                         {selectedPoints.length > 0 && (
-                            <button onClick={() => copyUtmToClipboard(selectedPoints)} className="button-primary text-sm py-1 px-3">
-                                <Icon name="copy" size={14} className="inline-block ml-1" />
-                                نسخ {selectedPoints.length}
-                            </button>
+                            <div className="flex items-center gap-1">
+                                <button onClick={() => copyUtmToClipboard(selectedPoints)} className="button-primary text-sm p-2" title={`نسخ ${selectedPoints.length} نقاط`}>
+                                    <Icon name="copy" size={16} />
+                                </button>
+                                <button onClick={handleUpdateMarkerForSelected} className="button-secondary text-sm p-2" title="تغيير رمز المحدد">
+                                    <Icon name="shapes" size={16} />
+                                </button>
+                                <button onClick={handleDeleteSelected} className="button-secondary bg-red-600 hover:bg-red-700 text-sm p-2" title="حذف المحدد">
+                                    <Icon name="trash-2" size={16} />
+                                </button>
+                            </div>
                         )}
                     </div>
                     <div className="flex-grow overflow-y-auto">
@@ -715,7 +741,6 @@
                                 <div key={group.id} className="mb-4" ref={el => (groupHeaderRefs.current[group.id] = el)}>
                                     <div className="flex items-center mb-2 p-2 rounded-lg bg-slate-100 dark:bg-slate-800 sticky top-0 z-10">
                                         <input type="checkbox" onChange={e => { e.stopPropagation(); handleSelectAll(group, e.target.checked); }} className="ml-2" />
-                                        <span className="w-4 h-4 rounded-full ml-2" style={{ backgroundColor: group.color }}></span>
                                         <h4 className="font-semibold text-slate-700 dark:text-slate-200">{group.name}</h4>
                                     </div>
                                     <div className="overflow-x-auto">
@@ -1286,6 +1311,54 @@
             );
         };
 
+        const ImportChoiceModal = ({ onClose, onPasteClick, onFileClick }) => {
+            return (
+                <GenericModal
+                    title="استيراد / تحميل"
+                    onClose={onClose}
+                    showConfirm={false}
+                    showCancel={true}
+                    confirmText="إغلاق"
+                >
+                    <div className="flex flex-col space-y-4">
+                        <p className="text-slate-600 dark:text-slate-300">اختر طريقة إدخال البيانات:</p>
+                        <button onClick={onPasteClick} className="button-secondary flex items-center justify-center w-full !py-3 text-base">
+                            <Icon name="clipboard-paste" className="ml-2" />
+                            لصق الإحداثيات مباشرة
+                        </button>
+                        <button onClick={onFileClick} className="button-primary flex items-center justify-center w-full !py-3 text-base">
+                            <Icon name="upload" className="ml-2" />
+                            تحميل ملف
+                        </button>
+                    </div>
+                </GenericModal>
+            );
+        };
+        
+        const ExportChoiceModal = ({ onClose, onExportClick, onSaveClick }) => {
+            return (
+                <GenericModal
+                    title="تصدير / حفظ"
+                    onClose={onClose}
+                    showConfirm={false}
+                    showCancel={true}
+                    confirmText="إغلاق"
+                >
+                    <div className="flex flex-col space-y-4">
+                        <p className="text-slate-600 dark:text-slate-300">اختر الإجراء المطلوب:</p>
+                        <button onClick={onExportClick} className="button-secondary flex items-center justify-center w-full !py-3 text-base">
+                            <Icon name="file-output" className="ml-2" />
+                            تصدير النقاط (CSV, SCR...)
+                        </button>
+                        <button onClick={onSaveClick} className="button-primary flex items-center justify-center w-full !py-3 text-base">
+                            <Icon name="save-all" className="ml-2" />
+                            حفظ المشروع بالكامل (.hemap)
+                        </button>
+                    </div>
+                </GenericModal>
+            );
+        };
+
         const ExportPointsModal = ({ workAreas, onClose, onExport }) => {
             const { addToast } = useAppContext();
             const [selectedIds, setSelectedIds] = useState({});
@@ -1559,7 +1632,6 @@
             );
         };
 
-        // [إصلاح] [تفعيل الأدوات] مكون جديد لعرض قائمة الأدوات
         const ToolsSheet = ({ settings, onClose, onUpdateSettings, onToggleDeleteMode, onOpenScreenshotModal, isZoomedInEnough }) => {
             const { showPolylines, showElevations, showLabels, labelContent, isMeasuring, isAreaMeasuring, snapEnabled, isDeleteMode } = settings;
             
@@ -1649,6 +1721,7 @@
             const { utmZone, setUtmZone, addToast, setModal, closeModal, modal } = useAppContext();
             const mapApiRef = useRef(null);
             const [isTakingScreenshot, setIsTakingScreenshot] = useState(false);
+            const fileInputRef = useRef(null);
             
             const isZoomedInEnough = currentZoom >= LABEL_VISIBILITY_ZOOM_THRESHOLD;
 
@@ -1852,7 +1925,10 @@
                 updateWorkArea(areaId, area => ({ ...area, groups: area.groups.map(g => g.id === groupId ? {...g, color} : g) }));
             };
 
-            const handleFileLoad = (file) => {
+            const handleFileLoad = (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+
                 const reader = new FileReader();
                 const fileName = file.name;
 
@@ -2130,11 +2206,51 @@
                     />
                 );
             };
+
+            const handleOpenImportModal = () => {
+                if (!selectedArea) {
+                    addToast('الرجاء تحديد منطقة عمل أولاً.', 'error');
+                    return;
+                }
+                setModal(
+                    <ImportChoiceModal
+                        onClose={closeModal}
+                        onPasteClick={() => {
+                            closeModal();
+                            setTimeout(() => {
+                                handleOpenDirectPasteModal();
+                            }, 50);
+                        }}
+                        onFileClick={() => {
+                            closeModal();
+                            fileInputRef.current.click();
+                        }}
+                    />
+                );
+            };
+
+            const handleOpenExportModal = () => {
+                setModal(
+                    <ExportChoiceModal
+                        onClose={closeModal}
+                        onExportClick={() => {
+                            closeModal();
+                            setTimeout(() => {
+                                setModal(<ExportPointsModal workAreas={workAreas} onClose={closeModal} onExport={handleExportData} />);
+                            }, 50);
+                        }}
+                        onSaveClick={() => {
+                            closeModal();
+                            handleSaveProject();
+                        }}
+                    />
+                );
+            };
             
             return (
                 <div className="h-screen w-screen flex flex-col bg-slate-100 dark:bg-slate-900">
+                    <input type="file" ref={fileInputRef} onChange={handleFileLoad} style={{ display: 'none' }} accept=".txt,.csv,.tsv,.json,.hemap" />
                     <Header onToggleFullScreen={() => setIsMapFullScreen(f => !f)} isFullScreen={isMapFullScreen} onToggleSidebar={() => setIsSidebarOpen(true)} />
-                    {/* [إصلاح] تعديل الحاوية للسماح بالتمرير الداخلي */}
                     <div className="flex flex-grow min-h-0"> 
                         <div className={`${isMapFullScreen ? 'hidden' : ''} lg:block`}>
                             <Sidebar 
@@ -2148,9 +2264,6 @@
                                 onAddNewArea={handleAddNewArea}
                                 onRenameArea={handleRenameArea}
                                 onDeleteArea={handleDeleteArea}
-                                onFileLoad={handleFileLoad}
-                                onZoomToWorkArea={id => mapApiRef.current?.zoomToBounds(workAreas.find(a=>a.id===id)?.groups.flatMap(g=>g.points))}
-                                onGetCurrentLocation={triggerGetCurrentLocation}
                                 onAddNewGroup={handleAddNewGroup}
                                 onRenameGroup={handleRenameGroup}
                                 onDeleteGroup={handleDeleteGroup}
@@ -2163,9 +2276,8 @@
                                     }
                                 }}
                                 onUpdateGroupColor={handleUpdateGroupColor}
-                                onOpenExportModal={() => setModal(<ExportPointsModal workAreas={workAreas} onClose={closeModal} onExport={handleExportData} />)}
-                                onSaveProject={handleSaveProject}
-                                onOpenDirectPasteModal={handleOpenDirectPasteModal}
+                                onOpenExportModal={handleOpenExportModal}
+                                onOpenImportModal={handleOpenImportModal}
                                 onToggleGroupVisibility={handleToggleGroupVisibility}
                                 onSetGroupMarker={handleSetGroupMarker}
                             />
@@ -2206,7 +2318,7 @@
                             </div>
                             
                             {!isMapFullScreen && (
-                                <div className={`hidden lg:flex flex-col flex-shrink-0 border-t-2 dark:border-slate-700 transition-all duration-300 ease-in-out ${isDesktopTableExpanded ? 'h-5/6' : 'h-1/3'}`}>
+                                <div className={`hidden lg:flex flex-col flex-shrink-0 border-t-2 dark:border-slate-700 transition-all duration-300 ease-in-out ${isDesktopTableExpanded ? 'flex-grow' : 'h-1/3'}`}>
                                     <div className="flex-shrink-0 p-2 flex justify-center items-center border-b dark:border-slate-700 bg-slate-100 dark:bg-slate-800/50">
                                         <button
                                             onClick={() => setIsDesktopTableExpanded(p => !p)}
@@ -2218,7 +2330,7 @@
                                             <Icon name={isDesktopTableExpanded ? 'chevrons-down-up' : 'chevrons-up-down'} size={16} />
                                         </button>
                                     </div>
-                                    <div className="flex-grow overflow-auto">
+                                    <div className="flex-grow overflow-auto min-h-0">
                                         <PointsTable 
                                             selectedArea={selectedArea} 
                                             selectedGroupId={selectedGroupId}
@@ -2231,6 +2343,7 @@
                                                 const point = workAreas.find(a=>a.id===areaId)?.groups.find(g=>g.id===groupId)?.points.find(p=>p.id===pointId);
                                                 if(point) mapApiRef.current?.zoomToPoint(point.lat, point.lng);
                                             }}
+                                            onOpenMarkerPicker={handleOpenMarkerPickerForPoint}
                                         />
                                     </div>
                                 </div>
@@ -2254,6 +2367,7 @@
                                             setTimeout(() => mapApiRef.current?.zoomToPoint(point.lat, point.lng), 100);
                                         }
                                     }}
+                                    onOpenMarkerPicker={handleOpenMarkerPickerForPoint}
                                 />
                             </div>
                             
