@@ -5,31 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>تطبيق الخرائط الهندسية - تطوير م. حمدي وحيد</title>
     
-    {/* <!-- BLOCK: STYLES & LIBRARIES --> */}
-    {/* <!-- تحميل الخطوط والمكتبات الأساسية للتطبيق --> */}
-    <link href="[https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap](https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap)" rel="stylesheet">
-    <script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script> {/* <!-- مكتبة Tailwind CSS لتنسيق الواجهة بسرعة --> */}
-    <script src="[https://unpkg.com/react@18/umd/react.development.js](https://unpkg.com/react@18/umd/react.development.js)"></script> {/* <!-- مكتبة React لإنشاء واجهة المستخدم --> */}
-    <script src="[https://unpkg.com/react-dom@18/umd/react-dom.development.js](https://unpkg.com/react-dom@18/umd/react-dom.development.js)"></script> {/* <!-- مكتبة ReactDOM لربط React بالـ DOM --> */}
-    <script src="[https://unpkg.com/@babel/standalone/babel.min.js](https://unpkg.com/@babel/standalone/babel.min.js)"></script> {/* <!-- مترجم Babel لتحويل JSX إلى JavaScript عادي في المتصفح --> */}
-    <script src="[https://unpkg.com/lucide@latest](https://unpkg.com/lucide@latest)"></script> {/* <!-- مكتبة الأيقونات Lucide --> */}
-    <script src="[https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.8.0/proj4.js](https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.8.0/proj4.js)"></script> {/* <!-- مكتبة Proj4js لتحويل الإحداثيات بين أنظمة الإسقاط المختلفة --> */}
-    <script src="[https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js](https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js)"></script> {/* <!-- مكتبة html2canvas لأخذ لقطات شاشة من الصفحة --> */}
-    <script async defer src="[https://maps.googleapis.com/maps/api/js?key=AIzaSyAKXVuJsf0vANjBtlUIWcPj-wNWPkOc-S4&libraries=geometry,places,elevation&callback=initMap](https://maps.googleapis.com/maps/api/js?key=AIzaSyAKXVuJsf0vANjBtlUIWcPj-wNWPkOc-S4&libraries=geometry,places,elevation&callback=initMap)"></script> {/* <!-- واجهة برمجة تطبيقات خرائط جوجل مع مكتبات إضافية --> */}
+    <!-- BLOCK: STYLES & LIBRARIES -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.8.0/proj4.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAKXVuJsf0vANjBtlUIWcPj-wNWPkOc-S4&libraries=geometry,places,elevation&callback=initMap"></script>
 
     <style>
-        /* <!-- تنسيقات CSS مخصصة لتكملة Tailwind --> */
         html, body { height: 100%; }
         body { font-family: 'Cairo', sans-serif; overscroll-behavior: none; -webkit-tap-highlight-color: transparent; overflow: hidden; }
-        .dark-mode { background-color: #020617; color: #e2e8f0; } /* <!-- تنسيقات الوضع الداكن --> */
+        .dark-mode { background-color: #020617; color: #e2e8f0; }
         .dark-mode body { background-color: #020617; }
 
-        /* <!-- تنسيقات النافذة المنبثقة (Modal) --> */
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.7); display: flex; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(4px); animation: fade-in 0.3s ease-out forwards; }
         .modal-content { background-color: white; padding: 1.5rem; border-radius: 0.75rem; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); width: 95%; max-width: 800px; max-height: 90vh; overflow-y: auto; animation: slide-in-down 0.3s ease-out forwards; transform-origin: center; }
         .dark-mode .modal-content { background-color: #1e293b; }
         
-        /* <!-- تنسيقات الأزرار الرئيسية والثانوية --> */
         .button-primary { background-color: #2563eb; color: white; padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: 600; transition: all 0.2s; box-shadow: 0 1px 3px 0 rgba(0,0,0,0.1), 0 1px 2px 0 rgba(0,0,0,0.06); }
         .button-primary:hover { background-color: #1d4ed8; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); transform: translateY(-1px); }
         .button-secondary { background-color: #64748b; color: white; padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: 600; transition: all 0.2s; }
@@ -37,7 +33,7 @@
         .button-tertiary { background-color: #1e293b; color: white; padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: 600; transition: all 0.2s; }
         .button-tertiary:hover { background-color: #334155; transform: translateY(-1px); }
 
-        /* <!-- تنسيقات أزرار الأيقونات --> */
+
         .icon-button { background: transparent; border: none; cursor: pointer; padding: 0.75rem; width: 48px; height: 48px; border-radius: 9999px; transition: background-color 0.2s, transform 0.2s; line-height: 1; display: flex; align-items: center; justify-content: center; }
         .icon-button:hover { background-color: rgba(0,0,0,0.1); transform: scale(1.1); }
         .dark-mode .icon-button:hover { background-color: rgba(255,255,255,0.1); }
@@ -45,20 +41,17 @@
         .icon-button.danger.active { background-color: #ef4444; color: white; }
         .icon-button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; background-color: transparent !important; }
 
-        /* <!-- تنسيقات شريط التمرير --> */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; }
         .dark-mode ::-webkit-scrollbar-track { background: #0f172a; }
         ::-webkit-scrollbar-thumb { background: #a8a29e; border-radius: 4px; }
         .dark-mode ::-webkit-scrollbar-thumb { background: #475569; }
         
-        /* <!-- حركات CSS (Animations) --> */
         @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slide-in-down { from { opacity: 0; transform: translateY(-20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
         @keyframes slide-in-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
         @keyframes slide-out-down { from { transform: translateY(0); } to { transform: translateY(100%); } }
 
-        /* <!-- تنسيقات رسائل التنبيه (Toast) --> */
         .toast-container { position: fixed; top: 1rem; left: 1rem; right: 1rem; z-index: 1001; display: flex; flex-direction: column; gap: 0.5rem; align-items: center; }
         .toast { background-color: white; color: #333; padding: 0.75rem 1rem; border-radius: 0.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: space-between; width: 100%; max-width: 400px; animation: slide-in-down 0.3s ease-out forwards, fade-out 0.5s ease-in 2.5s forwards; }
         .dark-mode .toast { background-color: #1e293b; color: #e2e8f0; }
@@ -71,28 +64,26 @@
         @keyframes slide-in-right { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
         @keyframes fade-out { from { opacity: 1; } to { opacity: 0; } }
         
-        /* <!-- تنسيقات منتقي الألوان --> */
         .color-picker-label { position: relative; display: inline-block; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; border: 2px solid white; box-shadow: 0 0 0 1px rgba(0,0,0,0.2); transition: transform 0.2s; }
         .color-picker-label:hover { transform: scale(1.2); }
         .color-picker-label input[type="color"] { position: absolute; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
         
-        /* <!-- تنسيق مخصص لقائمة الاختيار (Select) --> */
-        .custom-select { -webkit-appearance: none; -moz-appearance: none; appearance: none; background-image: url("data:image/svg+xml,%3csvg xmlns='[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: left 0.5rem center; background-repeat: no-repeat; background-size: 1.5em 1.5em; padding-left: 2.5rem; }
-        .dark-mode .custom-select { background-image: url("data:image/svg+xml,%3csvg xmlns='[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); }
+        .custom-select { -webkit-appearance: none; -moz-appearance: none; appearance: none; background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: left 0.5rem center; background-repeat: no-repeat; background-size: 1.5em 1.5em; padding-left: 2.5rem; }
+        .dark-mode .custom-select { background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); }
     </style>
 </head>
 <body>
-    <div id="root"></div> {/* <!-- العنصر الجذر الذي سيتم عرض تطبيق React بداخله --> */}
+    <div id="root"></div>
 
     <script type="text/babel">
         // ====================================================================
-        //  BLOCK: IMPORTS & SETUP - استيراد وتهيئة المكتبات
+        //  BLOCK: IMPORTS & SETUP
         // ====================================================================
         const { useState, useEffect, useRef, useCallback, useMemo, createContext, useContext, forwardRef, useImperativeHandle } = React;
         const { createRoot } = ReactDOM;
 
         // ====================================================================
-        //  FILE: src/constants.js - ملف الثوابت
+        //  FILE: src/constants.js
         // ====================================================================
         const Maps_API_KEY = 'AIzaSyAKXVuJsf0vANjBtlUIWcPj-wNWPkOc-S4';
         const DEFAULT_UTM_ZONE = 35;
@@ -132,7 +123,7 @@
         };
 
         // ====================================================================
-        //  FILE: src/utils.js - ملف الدوال المساعدة
+        //  FILE: src/utils.js
         // ====================================================================
         const generateUniqueId = () => Math.random().toString(36).substring(2, 9);
         
@@ -262,7 +253,7 @@
         };
 
         // ====================================================================
-        //  FILE: src/hooks/useHistoryState.js - خطاف مخصص لإدارة سجل التعديلات (Undo/Redo)
+        //  FILE: src/hooks/useHistoryState.js
         // ====================================================================
         const useHistoryState = (initialState) => {
             const historyRef = useRef({ past: [], present: initialState, future: [] });
@@ -320,7 +311,7 @@
 
 
         // ====================================================================
-        //  FILE: src/contexts/AppContext.js - سياق التطبيق (App Context)
+        //  FILE: src/contexts/AppContext.js
         // ====================================================================
         const AppContext = createContext();
         const AppProvider = ({ children }) => {
@@ -356,7 +347,7 @@
         const useAppContext = () => useContext(AppContext);
 
         // ====================================================================
-        //  FILE: src/components/common/Toast.js, Icon.js - مكونات واجهة مستخدم عامة
+        //  FILE: src/components/common/Toast.js, Icon.js
         // ====================================================================
         const Toast = ({ id, message, type, onDismiss }) => (
             <div className={`toast ${type}`}>
@@ -371,7 +362,7 @@
         };
 
         // ====================================================================
-        //  FILE: src/components/layout/Header.js, Sidebar.js - مكونات التخطيط
+        //  FILE: src/components/layout/Header.js, Sidebar.js
         // ====================================================================
         const Header = ({ onToggleFullScreen, isFullScreen, onToggleSidebar }) => {
             const { darkMode, setDarkMode } = useAppContext();
@@ -395,8 +386,8 @@
             );
         };
         
-        const Sidebar = ({ isOpen, onClose, workAreas, selectedAreaId, selectedGroupId, onSelectArea, onSelectGroup, onAddNewArea, onRenameArea, onDeleteArea, onZoomToWorkArea, onAddNewGroup, onRenameGroup, onDeleteGroup, onZoomToGroup, onUpdateGroupColor, onOpenExportModal, onToggleGroupVisibility, onSetGroupMarker, onOpenImportModal }) => {
-            const { utmZone, setUtmZone, setModal, closeModal, addToast } = useAppContext();
+        const Sidebar = ({ isOpen, onClose, workAreas, selectedAreaId, selectedGroupId, onSelectArea, onSelectGroup, onAddNewArea, onRenameArea, onDeleteArea, onZoomToWorkArea, onAddNewGroup, onRenameGroup, onDeleteGroup, onZoomToGroup, onUpdateGroupColor, onOpenExportModal, onToggleGroupVisibility, onSetGroupMarker, onOpenImportModal, onGeneratePDF }) => {
+            const { utmZone, setUtmZone, setModal, closeModal } = useAppContext();
             const selectedArea = workAreas.find(area => area.id === selectedAreaId);
             const selectedGroup = selectedArea?.groups.find(group => group.id === selectedGroupId);
 
@@ -498,7 +489,6 @@
                             </div>
                         )}
                         
-                        {/* قسم الإعدادات وإدارة البيانات */}
                         <div className="border-t pt-4 mt-4 dark:border-slate-700">
                             <h3 className="font-semibold mb-2">الإعدادات وإدارة البيانات</h3>
                             <label htmlFor="utm-zone-select" className="block text-sm font-medium mb-1">UTM Zone</label>
@@ -508,10 +498,7 @@
                             <div className="mt-4 flex flex-col space-y-2">
                                 <button onClick={onOpenImportModal} className="button-secondary flex items-center justify-center text-sm"><Icon name="upload" className="ml-2" size={18} />استيراد / تحميل</button>
                                 <button onClick={onOpenExportModal} className="button-primary flex items-center justify-center text-sm"><Icon name="download" className="ml-2" size={18} />تصدير / حفظ</button>
-                                <button onClick={() => addToast('هذه الميزة قيد التطوير حاليًا.', 'info')} className="button-tertiary flex items-center justify-center text-sm bg-teal-600 hover:bg-teal-700">
-                                    <Icon name="file-text" className="ml-2" size={18} />
-                                    تقرير PDF
-                                </button>
+                                <button onClick={onGeneratePDF} className="button-tertiary flex items-center justify-center text-sm"><Icon name="file-text" className="ml-2" size={18} />تقرير PDF</button>
                             </div>
                         </div>
                     </aside>
@@ -552,10 +539,10 @@
         };
 
         // ====================================================================
-        //  FILE: src/components/table/PointsTable.js - مكون جدول عرض النقاط
+        //  FILE: src/components/table/PointsTable.js
         // ====================================================================
         const PointsTable = ({ selectedArea, selectedGroupId, onUpdatePoint, onDeletePoint, onZoomToPoint, onActivateGroup, activePointId, setActivePointId, onOpenMarkerPicker }) => {
-            const { addToast } = useAppContext();
+            const { addToast, setModal, closeModal } = useAppContext();
             const rowRefs = useRef({});
             const groupHeaderRefs = useRef({});
         
@@ -576,6 +563,21 @@
                     });
                 }
             }, [selectedGroupId]);
+
+            const handleOpenMarkerPicker = (e, point, group) => {
+                e.stopPropagation();
+                setModal(
+                    <MarkerPickerModal
+                        onClose={closeModal}
+                        onSelect={(iconKey) => {
+                            onUpdatePoint(selectedArea.id, group.id, point.id, 'markerIcon', iconKey);
+                            closeModal();
+                        }}
+                        currentIconKey={point.markerIcon || 'default'}
+                        previewColor={group.color}
+                    />
+                );
+            };
 
             const copyToClipboard = (text, message) => {
                 const textArea = document.createElement("textarea");
@@ -598,7 +600,7 @@
                 if (!point) return;
                 const safeToFixed = (num, digits = 3) => (typeof num === 'number' ? num.toFixed(digits) : '0.000');
                 const textToCopy = `${safeToFixed(point.utm?.easting)},${safeToFixed(point.utm?.northing)},${safeToFixed(point.elevation)}`;
-                copyToClipboard(textToCopy, `تم نسخ نقطة (UTM).`);
+                copyToClipboard(textToCopy, 'تم نسخ إحداثيات UTM.');
             };
             
             const copyLatLngToClipboard = (point) => {
@@ -610,31 +612,34 @@
             
             const coordInputClasses = "w-full p-1 border rounded bg-slate-50 text-slate-800 font-mono dark:bg-slate-700 dark:text-slate-200 dark:border-slate-600 focus:ring-2 focus:ring-blue-500 transition-colors";
 
-            // مكون بطاقة النقطة (لشاشات الجوال) - تم تبسيطه لإزالة التحديد المتعدد
             const PointCard = ({ point, group, index }) => (
                 <div 
                     key={point.id}
                     ref={el => (rowRefs.current[point.id] = el)}
                     onClick={() => {
+                        onZoomToPoint(selectedArea.id, group.id, point.id);
                         onActivateGroup(group.id);
                         setActivePointId(point.id);
                     }}
                     className={`p-3 border-b dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors duration-200 ${point.id === activePointId ? 'bg-blue-100 dark:bg-blue-900/50 ring-2 ring-blue-500 z-10' : ''}`}
                 >
                     <div className="flex items-center gap-3">
+                         <div className="flex-shrink-0">
+                            <svg width="24" height="24" viewBox="-15 -15 30 30" fill={group.color} stroke="white" strokeWidth="2">
+                                <path d={(MARKER_ICONS[point.markerIcon] || MARKER_ICONS['default']).path} />
+                            </svg>
+                        </div>
                         <div className="flex-grow">
-                            <div className="flex justify-between items-center mb-2">
-                                <div className="flex items-center gap-2">
-                                    <span className="font-bold text-slate-700 dark:text-slate-200">{point.name || `نقطة ${index + 1}`}</span>
-                                    <span className="text-xs px-2 py-0.5 rounded-full" style={{backgroundColor: group.color, color: 'white'}}>{group.name}</span>
-                                </div>
-                                <button onClick={(e) => { e.stopPropagation(); onZoomToPoint(selectedArea.id, group.id, point.id); }} className="icon-button text-blue-500 !w-8 !h-8" title="تقريب إلى النقطة"><Icon name="zoom-in" size={16}/></button>
+                            <div className="flex justify-between items-center mb-1">
+                                <span className="font-bold text-slate-700 dark:text-slate-200">{point.name || `نقطة ${index + 1}`}</span>
+                                <span className="text-xs px-2 py-0.5 rounded-full" style={{backgroundColor: group.color, color: 'white'}}>{group.name}</span>
                             </div>
-                            <div className="grid grid-cols-3 gap-x-2 gap-y-1 text-sm font-mono text-center">
-                                <div><span className="text-slate-500 dark:text-slate-400">X:</span> <span className="text-slate-800 dark:text-slate-100">{point.utm?.easting?.toFixed(2) || 'N/A'}</span></div>
-                                <div><span className="text-slate-500 dark:text-slate-400">Y:</span> <span className="text-slate-800 dark:text-slate-100">{point.utm?.northing?.toFixed(2) || 'N/A'}</span></div>
-                                <div><span className="text-slate-500 dark:text-slate-400">Z:</span> <span className="text-slate-800 dark:text-slate-100">{point.elevation?.toFixed(2) || 'N/A'}</span></div>
-                            </div>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                                {point.description || 'لا يوجد وصف'}
+                            </p>
+                        </div>
+                        <div className="flex items-center space-x-0 space-x-reverse">
+                            <button onClick={(e) => { e.stopPropagation(); onOpenMarkerPicker(point, group); }} className="icon-button text-slate-500 !w-10 !h-10" title="تغيير الرمز"><Icon name="palette" size={18}/></button>
                         </div>
                     </div>
                 </div>
@@ -646,7 +651,6 @@
                         <h3 className="font-bold text-md text-slate-800 dark:text-slate-100">نقاط: {selectedArea.name}</h3>
                     </div>
                     <div className="flex-grow overflow-y-auto">
-                        {/* عرض البطاقات للجوال */}
                         <div className="lg:hidden">
                             {selectedArea.groups.map(group => (
                                 <div key={group.id} className="mb-2" ref={el => (groupHeaderRefs.current[group.id] = el)}>
@@ -657,7 +661,6 @@
                             ))}
                         </div>
 
-                        {/* عرض الجدول للشاشات الكبيرة */}
                         <div className="hidden lg:block">
                              {selectedArea.groups.map(group => (
                                 <div key={group.id} className="mb-4" ref={el => (groupHeaderRefs.current[group.id] = el)}>
@@ -712,7 +715,7 @@
                                                         />
                                                     </td>
                                                     <td className="px-2 py-2"><div className="flex items-center justify-center space-x-1 space-x-reverse">
-                                                        <button onClick={(e) => { e.stopPropagation(); onOpenMarkerPicker(point, group); }} className="icon-button !w-8 !h-8" title="تغيير الرمز"><Icon name="map-pin" size={16}/></button>
+                                                        <button onClick={(e) => handleOpenMarkerPicker(e, point, group)} className="icon-button !w-8 !h-8" title="تغيير الرمز"><Icon name="map-pin" size={16}/></button>
                                                         <button onClick={(e) => { e.stopPropagation(); copyLatLngToClipboard(point); }} className="icon-button !w-8 !h-8" title="نسخ Lat/Lng"><Icon name="globe-2" size={16}/></button>
                                                         <button onClick={(e) => { e.stopPropagation(); copyUtmToClipboard(point); }} className="icon-button !w-8 !h-8" title="نسخ UTM"><Icon name="copy" size={16}/></button>
                                                         <button onClick={e => {e.stopPropagation(); onDeletePoint(group.id, point.id);}} className="icon-button text-red-500 !w-8 !h-8" title="حذف"><Icon name="trash-2" size={16}/></button>
@@ -731,7 +734,7 @@
         };
 
         // ====================================================================
-        //  FILE: src/components/map/CustomLabel.js - مكون التسمية المخصصة على الخريطة
+        //  FILE: src/components/map/CustomLabel.js
         // ====================================================================
         const CustomLabel = ({ map, position, text, styleProps }) => {
             const overlay = useRef(null);
@@ -1025,7 +1028,7 @@
         });
 
         // ====================================================================
-        //  FILE: src/components/import/ImportExportModals.js - نوافذ الاستيراد والتصدير
+        //  FILE: src/components/import/ImportExportModals.js
         // ====================================================================
         
         const MarkerPickerModal = ({ onClose, onSelect, currentIconKey, previewColor = '#6b7280' }) => {
@@ -1491,9 +1494,10 @@
             );
         };
 
-        // لوحة تفاصيل النقطة (للجوال) - تصميم جديد ومحسّن
         const PointDetailSheet = ({ point, group, onClose, onUpdate, onDelete, onOpenMarkerPicker }) => {
             if (!point || !group) return null;
+
+            const handleSheetClick = (e) => e.stopPropagation();
 
             return (
                 <>
@@ -1501,7 +1505,7 @@
                     <div 
                         className="fixed bottom-0 right-0 left-0 bg-white dark:bg-slate-800 p-4 rounded-t-2xl shadow-2xl z-30 lg:hidden"
                         style={{ animation: 'slide-in-up 0.3s ease-out forwards' }}
-                        onClick={e => e.stopPropagation()}
+                        onClick={handleSheetClick}
                     >
                         <div className="flex justify-center mb-2">
                             <div className="w-10 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full"></div>
@@ -1526,20 +1530,10 @@
                             </div>
                         </div>
 
-                        {/* تصميم جديد ومدمج للإحداثيات */}
-                        <div className="grid grid-cols-3 gap-2 text-center font-mono mb-4 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-lg">
-                            <div>
-                                <span className="block text-xs text-slate-500 dark:text-slate-400">Easting (X)</span>
-                                <span className="font-semibold text-slate-800 dark:text-slate-200">{point.utm?.easting?.toFixed(2) || 'N/A'}</span>
-                            </div>
-                             <div>
-                                <span className="block text-xs text-slate-500 dark:text-slate-400">Northing (Y)</span>
-                                <span className="font-semibold text-slate-800 dark:text-slate-200">{point.utm?.northing?.toFixed(2) || 'N/A'}</span>
-                            </div>
-                             <div>
-                                <span className="block text-xs text-slate-500 dark:text-slate-400">Elevation (Z)</span>
-                                <span className="font-semibold text-slate-800 dark:text-slate-200">{point.elevation?.toFixed(2) || 'N/A'}</span>
-                            </div>
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm font-mono mb-4 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-lg">
+                            <div>E (X): <span className="font-semibold text-slate-800 dark:text-slate-200">{point.utm?.easting?.toFixed(2) || 'N/A'}</span></div>
+                            <div>N (Y): <span className="font-semibold text-slate-800 dark:text-slate-200">{point.utm?.northing?.toFixed(2) || 'N/A'}</span></div>
+                            <div>Elev (Z): <span className="font-semibold text-slate-800 dark:text-slate-200">{point.elevation?.toFixed(2) || 'N/A'}</span></div>
                         </div>
                         
                         <div className="mb-4">
@@ -1611,7 +1605,7 @@
         };
 
         // ====================================================================
-        //  FILE: src/App.js - المكون الرئيسي للتطبيق
+        //  FILE: src/App.js
         // ====================================================================
         function App() {
             const initializeWorkAreas = () => {
@@ -2073,8 +2067,7 @@
 
                 const elementsToHide = [
                     document.getElementById('map-controls'),
-                    document.getElementById('bottom-nav-bar'),
-                    document.querySelector('.lg\\:hidden.fixed.bottom-0'), // Floating action button container on desktop
+                    document.getElementById('bottom-nav-bar')
                 ];
                 
                 const timestamp = document.createElement('div');
@@ -2212,39 +2205,40 @@
                             />
                         </div>
                         
-                        <main className="flex-grow flex flex-col relative overflow-hidden">
-                            {/* حاوية الخريطة */}
-                            <div className="flex-grow relative">
-                                <div id="capture-area" className="absolute inset-0">
-                                    <MapComponent
-                                        ref={mapApiRef}
-                                        selectedArea={selectedArea}
-                                        selectedGroupId={selectedGroupId}
-                                        utmZone={utmZone}
-                                        onAddPoint={handleAddPoint}
-                                        onUpdatePoint={handleUpdatePoint}
-                                        onUpdateGroupSettings={handleUpdateGroupSettings}
-                                        onActivateGroup={setSelectedGroupId}
-                                        setActivePointId={setActivePointId}
-                                        addToast={addToast}
-                                        isDeleteMode={isDeleteMode}
-                                        onDeletePointById={handleDeletePointById}
-                                        onZoomChange={setCurrentZoom}
-                                    />
-                                    {selectedArea && (
-                                        <>
-                                            <MapControls undo={undo} redo={redo} canUndo={canUndo} canRedo={canRedo} />
-                                            <ActiveAreaIndicator 
-                                                areaName={selectedArea?.name} 
-                                                groupName={selectedGroup?.name} 
-                                                isTakingScreenshot={isTakingScreenshot}
-                                            />
-                                        </>
-                                    )}
-                                </div>
+                        <main className="flex-grow flex flex-col relative">
+                            <div id="capture-area" className="flex-grow relative">
+                                <MapComponent
+                                    ref={mapApiRef}
+                                    selectedArea={selectedArea}
+                                    selectedGroupId={selectedGroupId}
+                                    utmZone={utmZone}
+                                    onAddPoint={handleAddPoint}
+                                    onUpdatePoint={handleUpdatePoint}
+                                    onUpdateGroupSettings={handleUpdateGroupSettings}
+                                    onActivateGroup={setSelectedGroupId}
+                                    setActivePointId={setActivePointId}
+                                    addToast={addToast}
+                                    isDeleteMode={isDeleteMode}
+                                    onDeletePointById={handleDeletePointById}
+                                    onZoomChange={setCurrentZoom}
+                                />
+                                {selectedArea && (
+                                    <>
+                                        <MapControls undo={undo} redo={redo} canUndo={canUndo} canRedo={canRedo} />
+                                        <ActiveAreaIndicator 
+                                            areaName={selectedArea?.name} 
+                                            groupName={selectedGroup?.name} 
+                                            isTakingScreenshot={isTakingScreenshot}
+                                        />
+                                        <div className="hidden lg:block absolute bottom-4 right-4 z-10">
+                                            <button onClick={() => setIsToolsSheetOpen(true)} className="w-16 h-16 bg-blue-600 text-white rounded-full shadow-lg flex items-center justify-center hover:bg-blue-700 transition-all duration-300">
+                                                <Icon name="wrench" size={32} />
+                                            </button>
+                                        </div>
+                                    </>
+                                )}
                             </div>
                             
-                            {/* حاوية جدول النقاط للشاشات الكبيرة */}
                             {!isMapFullScreen && (
                                 <div className={`hidden lg:flex flex-col flex-shrink-0 border-t-2 dark:border-slate-700 transition-all duration-300 ease-in-out ${isDesktopTableExpanded ? 'flex-grow' : 'h-1/3'}`}>
                                     <div className="flex-shrink-0 p-2 flex justify-center items-center border-b dark:border-slate-700 bg-slate-100 dark:bg-slate-800/50">
@@ -2299,7 +2293,6 @@
                                 />
                             </div>
                             
-                            {/* شريط التنقل السفلي للجوال */}
                             <div id="bottom-nav-bar" className="lg:hidden fixed bottom-0 left-0 right-0 h-16 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm shadow-t-lg border-t dark:border-slate-700 flex justify-around items-center z-20">
                                 <button onClick={() => setIsTableViewActive(false)} className={`flex flex-col items-center gap-1 ${!isTableViewActive ? 'text-blue-600' : 'text-slate-500'}`}>
                                     <Icon name="map" />
@@ -2351,7 +2344,7 @@
         }
 
         // ====================================================================
-        //  FILE: src/main.js (Entry Point) - نقطة بداية تشغيل التطبيق
+        //  FILE: src/main.js (Entry Point)
         // ====================================================================
         const container = document.getElementById('root');
         const root = createRoot(container);
