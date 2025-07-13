@@ -70,6 +70,112 @@
         
         .custom-select { -webkit-appearance: none; -moz-appearance: none; appearance: none; background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: left 0.5rem center; background-repeat: no-repeat; background-size: 1.5em 1.5em; padding-left: 2.5rem; }
         .dark-mode .custom-select { background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); }
+    
+        /* --- NEW STYLES FOR MAP LABELS --- */
+        .point-label-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            border-radius: 6px;
+            padding: 4px 8px;
+            font-size: 12px;
+            font-family: 'Cairo', sans-serif;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            transform: translate(-50%, -150%);
+            position: relative;
+            white-space: nowrap;
+            pointer-events: none;
+        }
+        .dark-mode .point-label-card {
+            background: rgba(30, 41, 59, 0.85);
+            border-color: #334155;
+            color: #e2e8f0;
+        }
+        .point-label-card::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 2px;
+            height: 8px;
+            background-color: #475569;
+        }
+        .dark-mode .point-label-card::after {
+            background-color: #94a3b8;
+        }
+        .point-label-header {
+            font-weight: 700;
+            color: #1e293b;
+        }
+        .dark-mode .point-label-header {
+            color: #f1f5f9;
+        }
+        .point-label-body {
+            font-weight: 600;
+            color: #475569;
+            font-size: 11px;
+            border-top: 1px solid #cbd5e1;
+            padding-top: 2px;
+            margin-top: 2px;
+        }
+        .dark-mode .point-label-body {
+            color: #94a3b8;
+            border-color: #334155;
+        }
+
+        .distance-label {
+            font-size: 14px;
+            font-weight: 700;
+            color: white;
+            text-shadow: 0 0 4px black, 0 0 4px black, 0 0 4px black;
+            padding: 2px 4px;
+            pointer-events: none;
+        }
+
+        .area-label-card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: right;
+            border: 1px solid #cbd5e1;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            pointer-events: none;
+            min-width: 220px;
+        }
+        .dark-mode .area-label-card {
+            background: rgba(2, 6, 23, 0.9);
+            border-color: #334155;
+        }
+        .area-label-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .dark-mode .area-label-title {
+            color: #f1f5f9;
+            border-color: #334155;
+        }
+        .area-label-title i {
+            width: 20px;
+            height: 20px;
+        }
+        .area-label-card div {
+            font-size: 14px;
+            color: #374151;
+        }
+        .dark-mode .area-label-card div {
+            color: #cbd5e1;
+        }
     </style>
 </head>
 <body>
@@ -423,9 +529,12 @@
                     <aside className={sidebarClasses}>
                         {/* قسم مناطق العمل */}
                         <div className="mb-6">
-                            <div className="flex justify-between items-center mb-2">
-                                <h2 className="text-lg font-bold">مناطق العمل</h2>
-                                <button onClick={() => promptAction("منطقة عمل جديدة", "أدخل اسمًا:", "الاسم", `منطقة عمل ${workAreas.length + 1}`, name => name && onAddNewArea(name.trim()))} className="icon-button" title="إضافة منطقة عمل"><Icon name="plus-circle" className="text-blue-500" /></button>
+                            <div className="flex justify-between items-center mb-2 p-2 bg-slate-50 dark:bg-slate-900/50 rounded-lg border-b border-slate-200 dark:border-slate-700">
+                                <h2 className="text-lg font-bold flex items-center gap-2">
+                                    <Icon name="folder-kanban" size={20} className="text-slate-500"/>
+                                    <span>مناطق العمل</span>
+                                </h2>
+                                <button onClick={() => promptAction("منطقة عمل جديدة", "أدخل اسمًا:", "الاسم", `منطقة عمل ${workAreas.length + 1}`, name => name && onAddNewArea(name.trim()))} className="icon-button !w-10 !h-10" title="إضافة منطقة عمل"><Icon name="plus-circle" className="text-blue-500" /></button>
                             </div>
                             <select id="work-area-select" value={selectedAreaId || ''} onChange={e => onSelectArea(e.target.value)} className="w-full p-2 border rounded-md dark:bg-slate-700 dark:border-slate-600 mb-2 text-base custom-select">
                                 {workAreas.map(area => (
@@ -446,9 +555,12 @@
                         {/* قسم مجموعات النقاط */}
                         {selectedArea && (
                             <div className="border-t pt-4 mt-4 dark:border-slate-700">
-                                <div className="flex justify-between items-center mb-2">
-                                    <h2 className="text-lg font-bold">المجموعة النشطة</h2>
-                                    <button onClick={() => promptAction("مجموعة جديدة", "أدخل اسمًا:", "الاسم", `مجموعة نقاط ${selectedArea.groups.length + 1}`, name => name && onAddNewGroup(selectedArea.id, name.trim()))} className="icon-button" title="إضافة مجموعة"><Icon name="folder-plus" className="text-blue-500" /></button>
+                                <div className="flex justify-between items-center mb-2 p-2 bg-slate-50 dark:bg-slate-900/50 rounded-lg border-b border-slate-200 dark:border-slate-700">
+                                    <h2 className="text-lg font-bold flex items-center gap-2">
+                                        <Icon name="folder-pen" size={20} className="text-slate-500"/>
+                                        <span>المجموعة النشطة</span>
+                                    </h2>
+                                    <button onClick={() => promptAction("مجموعة جديدة", "أدخل اسمًا:", "الاسم", `مجموعة نقاط ${selectedArea.groups.length + 1}`, name => name && onAddNewGroup(selectedArea.id, name.trim()))} className="icon-button !w-10 !h-10" title="إضافة مجموعة"><Icon name="folder-plus" className="text-blue-500" /></button>
                                 </div>
                                 <select id="point-group-select" value={selectedGroupId || ''} onChange={e => {
                                     const groupId = e.target.value;
@@ -753,6 +865,7 @@
                         this.updateText();
                         this.updateStyle();
                         this.getPanes().floatPane.appendChild(this.div);
+                        window.lucide?.createIcons();
                     }
 
                     draw() {
@@ -772,7 +885,12 @@
                         }
                     }
                     
-                    updateText(text) { if(this.div) this.div.innerHTML = text || this.text; }
+                    updateText(text) { 
+                        if(this.div) {
+                            this.div.innerHTML = text || this.text; 
+                            window.lucide?.createIcons();
+                        }
+                    }
                     updatePosition(position) { this.position = position; this.draw(); }
                     updateStyle(styleProps) {
                         if (!this.div) return;
@@ -910,7 +1028,7 @@
                             });
                             markersRef.current[point.id] = marker;
                             
-                            let labelText = '';
+                            let labelHtml = '';
                             if (canShowAnyLabel) {
                                 let pointLabel = '';
                                 let elevationLabel = '';
@@ -919,18 +1037,20 @@
                                     pointLabel = (labelContent === 'name') ? (point.name || `${index + 1}`) : `${index + 1}`;
                                 }
                                 if (showElevations && point.elevation != null) {
-                                    elevationLabel = point.elevation.toFixed(2);
+                                    elevationLabel = `${point.elevation.toFixed(2)}m`;
                                 }
 
-                                if (pointLabel && elevationLabel) {
-                                    labelText = `${pointLabel} (${elevationLabel})`;
-                                } else {
-                                    labelText = pointLabel || elevationLabel;
+                                if (pointLabel || elevationLabel) {
+                                    labelHtml = `<div class="point-label-card ${darkMode ? 'dark-mode' : ''}">
+                                        ${pointLabel ? `<div class="point-label-header">${pointLabel}</div>` : ''}
+                                        ${pointLabel && elevationLabel ? `<div class="point-label-body">${elevationLabel}</div>` : ''}
+                                        ${!pointLabel && elevationLabel ? `<div class="point-label-header">${elevationLabel}</div>` : ''}
+                                    </div>`;
                                 }
                             }
 
-                            if (labelText) {
-                                newOverlays.push({ id: `point-${point.id}`, position: latLng, text: labelText, styleProps: { transform: 'translate(-50%, -40px)', background: group.color, color: 'white', padding: '2px 8px', borderRadius: '12px', fontSize: '14px', fontWeight: 'bold', border: '1px solid rgba(255,255,255,0.75)', boxShadow: '0 1px 4px rgba(0,0,0,0.4)' } });
+                            if (labelHtml) {
+                                newOverlays.push({ id: `point-${point.id}`, position: latLng, text: labelHtml, styleProps: { transform: 'translate(-50%, -150%)' } });
                             }
 
                             const utm = convertLatLngToUtm(point.lat, point.lng, utmZone);
@@ -987,28 +1107,45 @@
                                     const p1 = path[i], p2 = path[i+1];
                                     const distance = window.google.maps.geometry.spherical.computeDistanceBetween(p1, p2);
                                     const midpoint = window.google.maps.geometry.spherical.interpolate(p1, p2, 0.5);
-                                    let distanceText;
-                                    if (distance > 10000) { 
-                                        distanceText = `${(distance / 1000).toFixed(2)} كم`;
-                                    } else {
-                                        distanceText = `${distance.toFixed(2)} م`;
-                                    }
-                                    newOverlays.push({ id: `dist-${group.id}-${i}`, position: midpoint, text: distanceText, styleProps: { transform: 'translate(-50%, -50%)', background: darkMode ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.8)', color: darkMode ? 'white' : 'black', padding: '2px 6px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', border: `1px solid ${darkMode ? 'white' : 'black'}` } });
+                                    let distanceText = `${distance.toFixed(2)} م`;
+                                    newOverlays.push({ id: `dist-${group.id}-${i}`, position: midpoint, text: `<div class="distance-label"><i data-lucide="ruler" style="width:12px; height:12px; display:inline-block; margin-left:4px;"></i>${distanceText}</div>`, styleProps: { transform: 'translate(-50%, -50%)' } });
                                 }
                             }
                         }
                         
-                        if (isAreaMeasuring && path.length >= 3 && currentZoom >= AREA_LABEL_VISIBILITY_ZOOM_THRESHOLD) {
-                            const area = window.google.maps.geometry.spherical.computeArea(path);
-                            const bounds = new window.google.maps.LatLngBounds();
-                            path.forEach(p => bounds.extend(p));
-                            let areaText;
-                            if (area > 400000) { 
-                                areaText = `المساحة: ${(area / 1000000).toFixed(3)} كم²`;
-                            } else {
-                                areaText = `المساحة: ${area.toFixed(2)} م²`;
+                        if (isAreaMeasuring && path.length >= 3) {
+                            const areaPolygon = new window.google.maps.Polygon({
+                                paths: path,
+                                strokeColor: group.color,
+                                strokeWeight: 2,
+                                strokeOpacity: 0.8,
+                                fillColor: group.color,
+                                fillOpacity: 0.2,
+                                map: map
+                            });
+                            polylinesRef.current[`area-fill-${group.id}`] = areaPolygon;
+                            
+                            if (currentZoom >= AREA_LABEL_VISIBILITY_ZOOM_THRESHOLD) {
+                                const area = window.google.maps.geometry.spherical.computeArea(path);
+                                const perimeter = window.google.maps.geometry.spherical.computeLength(path);
+                                const bounds = new window.google.maps.LatLngBounds();
+                                path.forEach(p => bounds.extend(p));
+                                
+                                const areaText = area > 400000 ? `${(area / 1000000).toFixed(3)} كم²` : `${area.toFixed(2)} م²`;
+                                const perimeterText = perimeter > 10000 ? `${(perimeter / 1000).toFixed(2)} كم` : `${perimeter.toFixed(2)} م`;
+                                
+                                const areaHtml = `<div class="area-label-card ${darkMode ? 'dark-mode' : ''}" style="border:none; background: rgba(255,255,255,0.8); backdrop-filter: blur(4px);">
+                                    <div style="display:flex; align-items:center; gap:8px;">
+                                      <i data-lucide="square" style="color:${group.color};"></i>
+                                      <div>
+                                        <div><span class="font-semibold">المساحة:</span> ${areaText}</div>
+                                        <div><span class="font-semibold">المحيط:</span> ${perimeterText}</div>
+                                      </div>
+                                    </div>
+                                </div>`;
+                                
+                                newOverlays.push({ id: `area-${group.id}`, position: bounds.getCenter(), text: areaHtml, styleProps: { transform: 'translate(-50%, -50%)' } });
                             }
-                            newOverlays.push({ id: `area-${group.id}`, position: bounds.getCenter(), text: areaText, styleProps: { transform: 'translate(-50%, -50%)', background: darkMode ? 'rgba(30,41,59,0.9)' : 'rgba(241,245,249,0.9)', color: darkMode ? '#f1f5f9' : '#1e293b', padding: '6px 10px', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', border: `2px solid ${group.color}` } });
                         }
                     });
                 }
@@ -1479,7 +1616,7 @@
                     <div className="space-y-4">
                         <div className="flex items-center">
                             <input id="show-panel-check" type="checkbox" checked={showPanel} onChange={e => setShowPanel(e.target.checked)} className="ml-3 h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                            <label htmlFor="show-panel-check" className="text-base text-slate-700 dark:text-slate-200">إظهار لوحة معلومات المنطقة</label>
+                            <label htmlFor="show-panel-check" className="text-base text-slate-700 dark:text-slate-200">إظهار معلومات المشروع</label>
                         </div>
                         <div className="flex items-center">
                             <input id="show-timestamp-check" type="checkbox" checked={showTimestamp} onChange={e => setShowTimestamp(e.target.checked)} className="ml-3 h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
@@ -2149,22 +2286,51 @@
                     document.getElementById('desktop-tools-button-container')
                 ];
                 
-                const timestamp = document.createElement('div');
-                timestamp.id = 'temp-timestamp';
-                timestamp.className = 'absolute bottom-4 right-4 z-10 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm p-2 px-4 rounded-lg shadow-lg border dark:border-slate-700 text-sm font-mono';
-                timestamp.innerText = new Date().toLocaleString('ar-EG', { dateStyle: 'medium', timeStyle: 'short' });
+                const stamp = document.createElement('div');
+                stamp.id = 'temp-timestamp';
+                stamp.className = 'absolute bottom-8 right-4 z-10 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm p-3 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 flex items-center gap-3';
+                
+                const iconHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>`;
+                
+                const textContainer = document.createElement('div');
+                textContainer.className = 'text-right';
+                
+                const title = document.createElement('p');
+                title.className = 'font-bold text-sm text-slate-800 dark:text-slate-100';
+                title.innerText = 'تطبيق الخرائط الهندسية';
+                
+                const dev = document.createElement('p');
+                dev.className = 'text-xs text-slate-600 dark:text-slate-400';
+                dev.innerText = 'تطوير: م. حمدي وحيد';
+
+                textContainer.appendChild(title);
+                textContainer.appendChild(dev);
+                
+                if (options.showPanel) {
+                    const areaInfo = document.createElement('p');
+                    areaInfo.className = 'text-xs text-slate-500 dark:text-slate-400 border-t border-slate-200 dark:border-slate-700 pt-1 mt-1';
+                    areaInfo.innerHTML = `<span class="font-semibold">منطقة:</span> ${selectedArea?.name || 'غير محدد'} | <span class="font-semibold">مجموعة:</span> ${selectedGroup?.name || 'غير محدد'}`;
+                    textContainer.appendChild(areaInfo);
+                }
+
+                if (options.showTimestamp) {
+                    const date = document.createElement('p');
+                    date.className = 'text-xs text-slate-500 dark:text-slate-400 font-mono mt-1';
+                    date.innerText = new Date().toLocaleString('ar-EG-u-nu-latn', { dateStyle: 'full', timeStyle: 'medium' });
+                    textContainer.appendChild(date);
+                }
+
+                stamp.innerHTML = iconHTML;
+                stamp.appendChild(textContainer);
 
                 setIsTakingScreenshot(true);
                 elementsToHide.forEach(el => { if (el) el.style.visibility = 'hidden'; });
 
-                if (!options.showPanel) {
-                    const panel = document.getElementById('active-area-indicator');
-                    if (panel) panel.style.visibility = 'hidden';
-                }
+                // Hide the original top-right panel during screenshot
+                const originalPanel = document.getElementById('active-area-indicator');
+                if (originalPanel) originalPanel.style.visibility = 'hidden';
                 
-                if (options.showTimestamp) {
-                    captureArea.appendChild(timestamp);
-                }
+                captureArea.appendChild(stamp);
                 
                 addToast('جاري أخذ لقطة شاشة...', 'info', 2000);
 
@@ -2183,8 +2349,7 @@
                     addToast('فشل أخذ لقطة الشاشة.', 'error');
                 }).finally(() => {
                     elementsToHide.forEach(el => { if (el) el.style.visibility = 'visible'; });
-                    const panel = document.getElementById('active-area-indicator');
-                    if (panel) panel.style.visibility = 'visible';
+                    if (originalPanel) originalPanel.style.visibility = 'visible';
 
                     if (document.getElementById('temp-timestamp')) {
                         document.getElementById('temp-timestamp').remove();
