@@ -80,7 +80,6 @@
             -webkit-backdrop-filter: blur(4px);
             border-radius: 8px;
             padding: 4px 8px;
-            font-size: 12px;
             font-family: 'Cairo', sans-serif;
             border: 1px solid #e2e8f0;
             box-shadow: 0 2px 8px rgba(0,0,0,0.15);
@@ -88,8 +87,8 @@
             white-space: nowrap;
             pointer-events: none;
             display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 6px;
         }
         .dark-mode .point-label-card {
             background: rgba(30, 41, 59, 0.9);
@@ -109,8 +108,14 @@
         .dark-mode .point-label-card::after {
             background-color: #94a3b8;
         }
+        .point-label-main {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
         .point-label-header {
             font-weight: 700;
+            font-size: 12px;
             color: #1e293b;
         }
         .dark-mode .point-label-header {
@@ -118,6 +123,7 @@
         }
         .point-label-body {
             font-weight: 600;
+            font-size: 11px;
             color: #475569;
         }
         .dark-mode .point-label-body {
@@ -128,6 +134,19 @@
         }
         .dark-mode .point-label-separator {
             color: #475569;
+        }
+        .point-label-desc {
+            font-size: 10px;
+            color: #64748b;
+            border-top: 1px solid #e2e8f0;
+            margin-top: 3px;
+            padding-top: 3px;
+            width: 100%;
+            text-align: center;
+        }
+        .dark-mode .point-label-desc {
+            color: #9ca3af;
+            border-color: #334155;
         }
 
         .distance-label {
@@ -200,7 +219,7 @@
             showPolylines: true,
             showElevations: false,
             showLabels: false,
-            labelContent: 'number',
+            showDescriptions: false, // <-- إضافة خاصية إظهار الوصف
             isMeasuring: false,
             isAreaMeasuring: false,
             snapEnabled: false,
@@ -1009,7 +1028,7 @@
 
                 if (selectedArea) {
                     selectedArea.groups.filter(group => group.isVisible).forEach(group => {
-                        const { showPolylines, showElevations, showLabels, labelContent, isMeasuring, isAreaMeasuring } = group;
+                        const { showPolylines, showElevations, showLabels, showDescriptions, isMeasuring, isAreaMeasuring } = group;
                         const path = [];
                         const canShowAnyLabel = currentZoom >= LABEL_VISIBILITY_ZOOM_THRESHOLD;
 
@@ -1036,29 +1055,35 @@
                             if (canShowAnyLabel) {
                                 let pointLabel = '';
                                 let elevationLabel = '';
+                                let descriptionLabel = '';
 
                                 if (showLabels) {
-                                    pointLabel = (labelContent === 'name') ? (point.name || `${index + 1}`) : `${index + 1}`;
+                                    pointLabel = point.name || `${index + 1}`;
                                 }
                                 if (showElevations && point.elevation != null) {
                                     elevationLabel = `Z: ${point.elevation.toFixed(2)}m`;
                                 }
+                                if (showDescriptions && point.description) {
+                                    descriptionLabel = point.description;
+                                }
 
-                                if (pointLabel || elevationLabel) {
-                                    const headerPart = pointLabel ? `<span class="point-label-header">${pointLabel}</span>` : '';
-                                    const elevationPart = elevationLabel ? `<span class="point-label-body">${elevationLabel}</span>` : '';
-                                    const separator = pointLabel && elevationLabel ? `<span class="point-label-separator">|</span>` : '';
+                                if (pointLabel || elevationLabel || descriptionLabel) {
+                                    const mainInfo = [
+                                        pointLabel ? `<span class="point-label-header">${pointLabel}</span>` : '',
+                                        elevationLabel ? `<span class="point-label-body">${elevationLabel}</span>` : ''
+                                    ].filter(Boolean).join(`<span class="point-label-separator mx-1">|</span>`);
                                     
+                                    const descInfo = descriptionLabel ? `<div class="point-label-desc">${descriptionLabel}</div>` : '';
+
                                     labelHtml = `<div class="point-label-card ${darkMode ? 'dark-mode' : ''}">
-                                        ${headerPart}
-                                        ${separator}
-                                        ${elevationPart}
+                                        ${mainInfo ? `<div class="point-label-main">${mainInfo}</div>` : ''}
+                                        ${descInfo}
                                     </div>`;
                                 }
                             }
 
                             if (labelHtml) {
-                                newOverlays.push({ id: `point-${point.id}`, position: latLng, text: labelHtml, styleProps: { transform: 'translate(-50%, -38px)' } });
+                                newOverlays.push({ id: `point-${point.id}`, position: latLng, text: labelHtml, styleProps: { transform: 'translate(-50%, -42px)' } });
                             }
 
                             const utm = convertLatLngToUtm(point.lat, point.lng, utmZone);
@@ -1692,7 +1717,7 @@
         };
 
         const ToolsSheet = ({ settings, onClose, onUpdateSettings, onToggleDeleteMode, onOpenScreenshotModal, isZoomedInEnough }) => {
-            const { showPolylines, showElevations, showLabels, labelContent, isMeasuring, isAreaMeasuring, snapEnabled, isDeleteMode } = settings;
+            const { showPolylines, showElevations, showLabels, showDescriptions, isMeasuring, isAreaMeasuring, snapEnabled, isDeleteMode } = settings;
             
             const handleToolClick = (action) => {
                 action();
@@ -1700,14 +1725,17 @@
             };
 
             const tools = [
+                // Row 1
                 { id: 'measure', icon: 'ruler', title: 'قياس المسافة', action: () => onUpdateSettings('isMeasuring', !isMeasuring), active: isMeasuring },
                 { id: 'area', icon: 'square', title: 'قياس المساحة', action: () => onUpdateSettings('isAreaMeasuring', !isAreaMeasuring), active: isAreaMeasuring },
                 { id: 'snap', icon: 'magnet', title: 'تفعيل الالتقاط', action: () => onUpdateSettings('snapEnabled', !snapEnabled), active: snapEnabled },
-                { id: 'delete', icon: 'trash-2', title: 'حذف نقطة بالنقر', action: onToggleDeleteMode, active: isDeleteMode, danger: true },
+                // Row 2
+                { id: 'showLabels', icon: 'hash', title: 'إظهار التسلسل', action: () => onUpdateSettings('showLabels', !showLabels), active: showLabels, disabled: !isZoomedInEnough },
                 { id: 'polyline', icon: 'git-commit', title: 'إظهار الخطوط', action: () => onUpdateSettings('showPolylines', !showPolylines), active: showPolylines },
                 { id: 'elevation', icon: 'text', title: 'إظهار المناسيب', action: () => onUpdateSettings('showElevations', !showElevations), active: showElevations, disabled: !isZoomedInEnough },
-                { id: 'showLabels', icon: 'hash', title: 'إظهار التسميات', action: () => onUpdateSettings('showLabels', !showLabels), active: showLabels, disabled: !isZoomedInEnough },
-                { id: 'labelContent', icon: 'type', title: 'تبديل محتوى التسمية', action: () => onUpdateSettings('labelContent', labelContent === 'number' ? 'name' : 'number'), active: labelContent === 'name', disabled: !isZoomedInEnough },
+                // Row 3
+                { id: 'showDescription', icon: 'message-square-text', title: 'إظهار الوصف', action: () => onUpdateSettings('showDescriptions', !showDescriptions), active: showDescriptions, disabled: !isZoomedInEnough },
+                { id: 'delete', icon: 'trash-2', title: 'حذف نقطة بالنقر', action: onToggleDeleteMode, active: isDeleteMode, danger: true },
                 { id: 'screenshot', icon: 'camera', title: 'أخذ لقطة شاشة', action: onOpenScreenshotModal, active: false },
             ];
             
@@ -1742,17 +1770,20 @@
         };
         
         const ToolsModal = ({ settings, onClose, onUpdateSettings, onToggleDeleteMode, onOpenScreenshotModal, isZoomedInEnough }) => {
-            const { showPolylines, showElevations, showLabels, labelContent, isMeasuring, isAreaMeasuring, snapEnabled, isDeleteMode } = settings;
+            const { showPolylines, showElevations, showLabels, showDescriptions, isMeasuring, isAreaMeasuring, snapEnabled, isDeleteMode } = settings;
             
             const tools = [
+                 // Row 1
                 { id: 'measure', icon: 'ruler', title: 'قياس المسافة', action: () => onUpdateSettings('isMeasuring', !isMeasuring), active: isMeasuring },
                 { id: 'area', icon: 'square', title: 'قياس المساحة', action: () => onUpdateSettings('isAreaMeasuring', !isAreaMeasuring), active: isAreaMeasuring },
                 { id: 'snap', icon: 'magnet', title: 'تفعيل الالتقاط', action: () => onUpdateSettings('snapEnabled', !snapEnabled), active: snapEnabled },
-                { id: 'delete', icon: 'trash-2', title: 'حذف نقطة بالنقر', action: onToggleDeleteMode, active: isDeleteMode, danger: true },
+                // Row 2
+                { id: 'showLabels', icon: 'hash', title: 'إظهار التسلسل', action: () => onUpdateSettings('showLabels', !showLabels), active: showLabels, disabled: !isZoomedInEnough },
                 { id: 'polyline', icon: 'git-commit', title: 'إظهار الخطوط', action: () => onUpdateSettings('showPolylines', !showPolylines), active: showPolylines },
                 { id: 'elevation', icon: 'text', title: 'إظهار المناسيب', action: () => onUpdateSettings('showElevations', !showElevations), active: showElevations, disabled: !isZoomedInEnough },
-                { id: 'showLabels', icon: 'hash', title: 'إظهار التسميات', action: () => onUpdateSettings('showLabels', !showLabels), active: showLabels, disabled: !isZoomedInEnough },
-                { id: 'labelContent', icon: 'type', title: 'تبديل محتوى التسمية', action: () => onUpdateSettings('labelContent', labelContent === 'number' ? 'name' : 'number'), active: labelContent === 'name', disabled: !isZoomedInEnough },
+                // Row 3
+                { id: 'showDescription', icon: 'message-square-text', title: 'إظهار الوصف', action: () => onUpdateSettings('showDescriptions', !showDescriptions), active: showDescriptions, disabled: !isZoomedInEnough },
+                { id: 'delete', icon: 'trash-2', title: 'حذف نقطة بالنقر', action: onToggleDeleteMode, active: isDeleteMode, danger: true },
                 { id: 'screenshot', icon: 'camera', title: 'لقطة شاشة', action: onOpenScreenshotModal, active: false },
             ];
 
