@@ -2324,7 +2324,7 @@
                         </div>
                         
                         <main className="flex-grow flex flex-col relative overflow-hidden">
-                            <div className={`relative transition-all duration-300 ${isMapFullScreen ? 'h-full' : 'h-full lg:h-3/5'}`} id="capture-area">
+                            <div className={`flex-shrink-0 relative transition-all duration-300 ${isMapFullScreen ? 'h-full' : `h-full lg:h-[${isDesktopTableExpanded ? '25%' : '60%'}]`}`} id="capture-area">
                                 <MapComponent
                                     ref={mapApiRef}
                                     selectedArea={selectedArea}
