@@ -318,8 +318,7 @@
             const [darkMode, setDarkMode] = useState(false);
             const [utmZone, setUtmZone] = useState(DEFAULT_UTM_ZONE);
             const [toasts, setToasts] = useState([]);
-            const [modal, setModal] = useState(null);
-
+            
             useEffect(() => { document.documentElement.classList.toggle('dark-mode', darkMode); }, [darkMode]);
 
             const addToast = useCallback((message, type = 'info', duration = 3000) => {
@@ -328,11 +327,9 @@
                 setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), duration);
             }, []);
             
-            const closeModal = useCallback(() => setModal(null), []);
-
             const value = useMemo(() => ({
-                darkMode, setDarkMode, utmZone, setUtmZone, addToast, closeModal, setModal, modal
-            }), [darkMode, utmZone, addToast, closeModal, setModal, modal]);
+                darkMode, setDarkMode, utmZone, setUtmZone, addToast
+            }), [darkMode, utmZone, addToast]);
 
             return (
                 <AppContext.Provider value={value}>
@@ -340,7 +337,6 @@
                     <div className="toast-container">
                         {toasts.map(toast => <Toast key={toast.id} {...toast} onDismiss={() => setToasts(p => p.filter(t => t.id !== toast.id))} />)}
                     </div>
-                    {modal}
                 </AppContext.Provider>
             );
         };
@@ -386,8 +382,8 @@
             );
         };
         
-        const Sidebar = ({ isOpen, onClose, workAreas, selectedAreaId, selectedGroupId, onSelectArea, onSelectGroup, onAddNewArea, onRenameArea, onDeleteArea, onZoomToWorkArea, onAddNewGroup, onRenameGroup, onDeleteGroup, onZoomToGroup, onUpdateGroupColor, onOpenExportModal, onToggleGroupVisibility, onSetGroupMarker, onOpenImportModal, onGeneratePDF }) => {
-            const { utmZone, setUtmZone, setModal, closeModal } = useAppContext();
+        const Sidebar = ({ isOpen, onClose, workAreas, selectedAreaId, selectedGroupId, onSelectArea, onSelectGroup, onAddNewArea, onRenameArea, onDeleteArea, onZoomToWorkArea, onAddNewGroup, onRenameGroup, onDeleteGroup, onZoomToGroup, onUpdateGroupColor, onOpenExportModal, onToggleGroupVisibility, onSetGroupMarker, onOpenImportModal, onGeneratePDF, setModal, closeModal }) => {
+            const { utmZone, setUtmZone } = useAppContext();
             const selectedArea = workAreas.find(area => area.id === selectedAreaId);
             const selectedGroup = selectedArea?.groups.find(group => group.id === selectedGroupId);
 
@@ -506,7 +502,7 @@
             );
         };
         
-        const GenericModal = ({ type, title, message, inputLabel, initialValue, onConfirm, onClose, onCancel, children, confirmText = "تأكيد", showConfirm = true, showCancel = true }) => {
+        const GenericModal = ({ type, title, message, inputLabel, initialValue, onConfirm, onClose, onCancel, children, confirmText = "تأكيد", showConfirm = true, showCancel = true, cancelText = "إلغاء" }) => {
             const [inputValue, setInputValue] = useState(initialValue || '');
             const inputRef = useRef(null);
             useEffect(() => { 
@@ -530,7 +526,7 @@
                         )}
                         {children}
                         <div className="flex justify-end space-x-3 space-x-reverse mt-6">
-                            {showCancel && <button onClick={handleCancel} className="button-secondary">إلغاء</button>}
+                            {showCancel && <button onClick={handleCancel} className="button-secondary">{cancelText}</button>}
                             {showConfirm && <button onClick={handleConfirm} className="button-primary">{confirmText}</button>}
                         </div>
                     </div>
@@ -541,8 +537,8 @@
         // ====================================================================
         //  FILE: src/components/table/PointsTable.js
         // ====================================================================
-        const PointsTable = ({ selectedArea, selectedGroupId, onUpdatePoint, onDeletePoint, onZoomToPoint, onActivateGroup, activePointId, setActivePointId, onOpenMarkerPicker }) => {
-            const { addToast, setModal, closeModal } = useAppContext();
+        const PointsTable = ({ selectedArea, selectedGroupId, onUpdatePoint, onDeletePoint, onZoomToPoint, onActivateGroup, activePointId, setActivePointId, onOpenMarkerPicker, setModal, closeModal }) => {
+            const { addToast } = useAppContext();
             const rowRefs = useRef({});
             const groupHeaderRefs = useRef({});
         
@@ -624,22 +620,23 @@
                     className={`p-3 border-b dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors duration-200 ${point.id === activePointId ? 'bg-blue-100 dark:bg-blue-900/50 ring-2 ring-blue-500 z-10' : ''}`}
                 >
                     <div className="flex items-center gap-3">
-                         <div className="flex-shrink-0">
-                            <svg width="24" height="24" viewBox="-15 -15 30 30" fill={group.color} stroke="white" strokeWidth="2">
-                                <path d={(MARKER_ICONS[point.markerIcon] || MARKER_ICONS['default']).path} />
-                            </svg>
-                        </div>
                         <div className="flex-grow">
-                            <div className="flex justify-between items-center mb-1">
-                                <span className="font-bold text-slate-700 dark:text-slate-200">{point.name || `نقطة ${index + 1}`}</span>
-                                <span className="text-xs px-2 py-0.5 rounded-full" style={{backgroundColor: group.color, color: 'white'}}>{group.name}</span>
+                            <div className="flex justify-between items-center mb-2">
+                                <div className="flex items-center gap-2">
+                                    <span className="font-bold text-slate-700 dark:text-slate-200">{point.name || `نقطة ${index + 1}`}</span>
+                                    <span className="text-xs px-2 py-0.5 rounded-full" style={{backgroundColor: group.color, color: 'white'}}>{group.name}</span>
+                                </div>
+                                <div className="flex items-center space-x-0 space-x-reverse">
+                                    <button onClick={(e) => { e.stopPropagation(); onOpenMarkerPicker(point, group); }} className="icon-button text-slate-500 !w-8 !h-8" title="تغيير الرمز"><Icon name="palette" size={16}/></button>
+                                    <button onClick={(e) => { e.stopPropagation(); onDeletePoint(group.id, point.id);}} className="icon-button text-red-500 !w-8 !h-8" title="حذف"><Icon name="trash-2" size={16}/></button>
+                                </div>
                             </div>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
-                                {point.description || 'لا يوجد وصف'}
-                            </p>
-                        </div>
-                        <div className="flex items-center space-x-0 space-x-reverse">
-                            <button onClick={(e) => { e.stopPropagation(); onOpenMarkerPicker(point, group); }} className="icon-button text-slate-500 !w-10 !h-10" title="تغيير الرمز"><Icon name="palette" size={18}/></button>
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm font-mono">
+                                <div className="text-slate-500 dark:text-slate-400">X: <span className="text-slate-800 dark:text-slate-100">{point.utm?.easting?.toFixed(2) || 'N/A'}</span></div>
+                                <div className="text-slate-500 dark:text-slate-400">Y: <span className="text-slate-800 dark:text-slate-100">{point.utm?.northing?.toFixed(2) || 'N/A'}</span></div>
+                                <div className="text-slate-500 dark:text-slate-400">Z: <span className="text-slate-800 dark:text-slate-100">{point.elevation?.toFixed(2) || 'N/A'}</span></div>
+                            </div>
+                            {point.description && <p className="text-xs text-slate-600 dark:text-slate-400 mt-2">{point.description}</p>}
                         </div>
                     </div>
                 </div>
@@ -802,7 +799,7 @@
         //  FILE: src/components/map/MapToolbar.js, MapComponent.js, and new UI elements
         // ====================================================================
         
-        const MapControls = ({ onUndo, onRedo, canUndo, canRedo, onToggleFullScreen, isFullScreen }) => {
+        const MapControls = ({ onUndo, onRedo, canUndo, canRedo }) => {
             return (
                 <div id="map-controls" className="absolute top-4 left-4 z-10 flex flex-col gap-2">
                     <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm p-1 rounded-full shadow-lg flex border dark:border-slate-700">
@@ -1603,35 +1600,54 @@
                 </>
             );
         };
+        
+        const ToolsModal = ({ settings, onClose, onUpdateSettings, onToggleDeleteMode, onOpenScreenshotModal, isZoomedInEnough }) => {
+            const { showPolylines, showElevations, showLabels, labelContent, isMeasuring, isAreaMeasuring, snapEnabled, isDeleteMode } = settings;
+            
+            const tools = [
+                { id: 'measure', icon: 'ruler', title: 'قياس المسافة', action: () => onUpdateSettings('isMeasuring', !isMeasuring), active: isMeasuring },
+                { id: 'area', icon: 'square', title: 'قياس المساحة', action: () => onUpdateSettings('isAreaMeasuring', !isAreaMeasuring), active: isAreaMeasuring },
+                { id: 'snap', icon: 'magnet', title: 'تفعيل الالتقاط', action: () => onUpdateSettings('snapEnabled', !snapEnabled), active: snapEnabled },
+                { id: 'delete', icon: 'trash-2', title: 'حذف نقطة بالنقر', action: onToggleDeleteMode, active: isDeleteMode, danger: true },
+                { id: 'polyline', icon: 'git-commit', title: 'إظهار الخطوط', action: () => onUpdateSettings('showPolylines', !showPolylines), active: showPolylines },
+                { id: 'elevation', icon: 'text', title: 'إظهار المناسيب', action: () => onUpdateSettings('showElevations', !showElevations), active: showElevations, disabled: !isZoomedInEnough },
+                { id: 'showLabels', icon: 'hash', title: 'إظهار التسميات', action: () => onUpdateSettings('showLabels', !showLabels), active: showLabels, disabled: !isZoomedInEnough },
+                { id: 'labelContent', icon: 'type', title: 'تبديل محتوى التسمية', action: () => onUpdateSettings('labelContent', labelContent === 'number' ? 'name' : 'number'), active: labelContent === 'name', disabled: !isZoomedInEnough },
+                { id: 'screenshot', icon: 'camera', title: 'لقطة شاشة', action: onOpenScreenshotModal, active: false },
+            ];
+
+            return (
+                <GenericModal
+                    title="أدوات الخريطة"
+                    onClose={onClose}
+                    showConfirm={false}
+                    showCancel={true}
+                    cancelText="إغلاق"
+                >
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                        {tools.map(tool => (
+                            <button 
+                                key={tool.id} 
+                                onClick={tool.action} 
+                                disabled={tool.disabled}
+                                className={`flex flex-col items-center justify-center gap-2 p-4 rounded-lg transition-colors ${tool.active ? (tool.danger ? 'bg-red-500 text-white' : 'bg-blue-600 text-white') : 'bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600'} ${tool.disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            >
+                                <Icon name={tool.icon} size={28} />
+                                <span className="text-xs text-center font-semibold">{tool.title}</span>
+                            </button>
+                        ))}
+                    </div>
+                </GenericModal>
+            );
+        };
 
         // ====================================================================
         //  FILE: src/App.js
         // ====================================================================
         function App() {
-            const initializeWorkAreas = () => {
-                try {
-                    const saved = localStorage.getItem('workAreas');
-                    if (saved) {
-                        const parsed = JSON.parse(saved);
-                        if (Array.isArray(parsed) && parsed.length > 0) {
-                            return parsed.map(area => ({
-                                ...area,
-                                groups: area.groups.map(g => ({...DEFAULT_GROUP_SETTINGS, isVisible: g.isVisible !== false, ...g}))
-                            }));
-                        }
-                    }
-                } catch (e) { console.error("Failed to load work areas", e); }
-                return [{ 
-                    id: generateUniqueId(), 
-                    name: 'منطقة عمل 1', 
-                    createdAt: new Date().toISOString(), 
-                    groups: [{ id: generateUniqueId(), name: 'مجموعة نقاط 1', color: POINT_GROUP_COLORS[0], points: [], ...DEFAULT_GROUP_SETTINGS }],
-                }];
-            };
-
-            const [workAreas, setWorkAreas, undo, redo, canUndo, canRedo] = useHistoryState(initializeWorkAreas());
-            const [selectedWorkAreaId, setSelectedWorkAreaId] = useState(() => localStorage.getItem('selectedWorkAreaId') || workAreas[0]?.id || null);
-            const [selectedGroupId, setSelectedGroupId] = useState(() => localStorage.getItem('selectedGroupId') || null);
+            const [workAreas, setWorkAreas, undo, redo, canUndo, canRedo] = useHistoryState([]);
+            const [selectedWorkAreaId, setSelectedWorkAreaId] = useState(null);
+            const [selectedGroupId, setSelectedGroupId] = useState(null);
             const [activePointId, setActivePointId] = useState(null);
             const [isMapFullScreen, setIsMapFullScreen] = useState(false);
             const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -1640,12 +1656,15 @@
             const [isDesktopTableExpanded, setIsDesktopTableExpanded] = useState(false);
             const [isToolsSheetOpen, setIsToolsSheetOpen] = useState(false);
             const [currentZoom, setCurrentZoom] = useState(DEFAULT_MAP_ZOOM);
-            const { utmZone, setUtmZone, addToast, setModal, closeModal, modal } = useAppContext();
+            const { utmZone, setUtmZone, addToast } = useAppContext();
+            const [modal, setModal] = useState(null);
             const mapApiRef = useRef(null);
             const [isTakingScreenshot, setIsTakingScreenshot] = useState(false);
             const fileInputRef = useRef(null);
             
             const isZoomedInEnough = currentZoom >= LABEL_VISIBILITY_ZOOM_THRESHOLD;
+
+            const closeModal = useCallback(() => setModal(null), []);
 
             const { activePoint, activePointGroup } = useMemo(() => {
                 if (!activePointId) return { activePoint: null, activePointGroup: null };
@@ -1662,50 +1681,68 @@
                 return { activePoint: null, activePointGroup: null };
             }, [activePointId, workAreas]);
 
-            useEffect(() => {
-                const handleKeyDown = (event) => {
-                    if (modal || ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
-                        return;
+            const handleKeyDown = useCallback((event) => {
+                if (modal || ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
+                    return;
+                }
+                if (event.ctrlKey) {
+                    if (event.key.toLowerCase() === 'z') {
+                        event.preventDefault();
+                        undo();
+                    } else if (event.key.toLowerCase() === 'y') {
+                        event.preventDefault();
+                        redo();
                     }
+                }
+            }, [undo, redo, modal]);
 
-                    if (event.ctrlKey) {
-                        if (event.key.toLowerCase() === 'z') {
-                            event.preventDefault();
-                            undo();
-                        } else if (event.key.toLowerCase() === 'y') {
-                            event.preventDefault();
-                            redo();
-                        }
-                    }
-                };
+            useEffect(() => {
                 window.addEventListener('keydown', handleKeyDown);
                 return () => {
                     window.removeEventListener('keydown', handleKeyDown);
                 };
-            }, [undo, redo, modal]);
+            }, [handleKeyDown]);
+            
+            useEffect(() => {
+                try {
+                    const saved = localStorage.getItem('workAreas');
+                    if (saved) {
+                        const parsed = JSON.parse(saved);
+                        if (Array.isArray(parsed) && parsed.length > 0) {
+                            setWorkAreas(parsed.map(area => ({
+                                ...area,
+                                groups: area.groups.map(g => ({...DEFAULT_GROUP_SETTINGS, isVisible: g.isVisible !== false, ...g}))
+                            })));
+                            const savedAreaId = localStorage.getItem('selectedWorkAreaId') || parsed[0]?.id;
+                            setSelectedWorkAreaId(savedAreaId);
+                            const savedGroupId = localStorage.getItem('selectedGroupId') || parsed.find(a => a.id === savedAreaId)?.groups[0]?.id || null;
+                            setSelectedGroupId(savedGroupId);
+                            return;
+                        }
+                    }
+                } catch (e) { console.error("Failed to load work areas", e); }
+                
+                const newAreaId = generateUniqueId();
+                const newGroupId = generateUniqueId();
+                const defaultArea = { 
+                    id: newAreaId, 
+                    name: 'منطقة عمل 1', 
+                    createdAt: new Date().toISOString(), 
+                    groups: [{ id: newGroupId, name: 'مجموعة نقاط 1', color: POINT_GROUP_COLORS[0], points: [], ...DEFAULT_GROUP_SETTINGS }],
+                };
+                setWorkAreas([defaultArea]);
+                setSelectedWorkAreaId(newAreaId);
+                setSelectedGroupId(newGroupId);
+            }, []);
 
             useEffect(() => {
-                if (workAreas.length > 0 && !workAreas.some(a => a.id === selectedWorkAreaId)) {
-                    const firstAreaId = workAreas[0].id;
-                    setSelectedWorkAreaId(firstAreaId);
-                    const firstArea = workAreas[0];
-                    setSelectedGroupId(firstArea.groups[0]?.id || null);
-                } else if (workAreas.length === 0) {
-                    setSelectedWorkAreaId(null);
-                    setSelectedGroupId(null);
-                }
-            }, [workAreas, selectedWorkAreaId]);
-            
+                localStorage.setItem('workAreas', JSON.stringify(workAreas));
+                if (selectedWorkAreaId) localStorage.setItem('selectedWorkAreaId', selectedWorkAreaId);
+                if (selectedGroupId) localStorage.setItem('selectedGroupId', selectedGroupId);
+            }, [workAreas, selectedWorkAreaId, selectedGroupId]);
+
             const selectedArea = useMemo(() => workAreas.find(a => a.id === selectedWorkAreaId), [workAreas, selectedWorkAreaId]);
             const selectedGroup = useMemo(() => selectedArea?.groups.find(g => g.id === selectedGroupId), [selectedArea, selectedGroupId]);
-
-            useEffect(() => { localStorage.setItem('workAreas', JSON.stringify(workAreas)); }, [workAreas]);
-            useEffect(() => { if (selectedWorkAreaId) localStorage.setItem('selectedWorkAreaId', selectedWorkAreaId); else localStorage.removeItem('selectedWorkAreaId'); }, [selectedWorkAreaId]);
-            useEffect(() => { if (selectedGroupId) localStorage.setItem('selectedGroupId', selectedGroupId); else localStorage.removeItem('selectedGroupId'); }, [selectedGroupId]);
-            
-            const updateWorkArea = (areaId, updateFn) => {
-                setWorkAreas(prevAreas => prevAreas.map(a => a.id === areaId ? updateFn(a) : a));
-            };
             
             const handleSelectArea = (areaId) => {
                 setSelectedWorkAreaId(areaId);
@@ -1736,26 +1773,39 @@
                 mapApiRef.current?.resetView();
             };
             
-            const handleDeleteArea = (id) => { setWorkAreas(p => p.filter(a => a.id !== id)); };
-            const handleRenameArea = (id, name) => { updateWorkArea(id, a => ({...a, name})); };
+            const handleDeleteArea = (id) => { 
+                const newWorkAreas = workAreas.filter(a => a.id !== id);
+                setWorkAreas(newWorkAreas);
+                if (selectedWorkAreaId === id) {
+                    setSelectedWorkAreaId(newWorkAreas[0]?.id || null);
+                    setSelectedGroupId(newWorkAreas[0]?.groups[0]?.id || null);
+                }
+            };
+
+            const handleRenameArea = (id, name) => { 
+                setWorkAreas(prev => prev.map(a => a.id === id ? {...a, name} : a));
+            };
 
             const handleAddNewGroup = (areaId, name) => {
                 const newGroup = {id: generateUniqueId(), name, color: POINT_GROUP_COLORS[workAreas.length % POINT_GROUP_COLORS.length], points:[], ...DEFAULT_GROUP_SETTINGS};
-                updateWorkArea(areaId, a => ({...a, groups: [...a.groups, newGroup]}));
+                setWorkAreas(prev => prev.map(a => a.id === areaId ? {...a, groups: [...a.groups, newGroup]} : a));
                 setSelectedGroupId(newGroup.id);
             };
+
             const handleDeleteGroup = (areaId, groupId) => {
-                updateWorkArea(areaId, area => {
+                setWorkAreas(prev => prev.map(area => {
+                    if (area.id !== areaId) return area;
                     const newGroups = area.groups.filter(g => g.id !== groupId);
                     if(selectedGroupId === groupId){
                         setSelectedGroupId(newGroups[0]?.id || null);
                         setActivePointId(null);
                     }
                     return {...area, groups: newGroups};
-                });
+                }));
             };
+            
             const handleRenameGroup = (areaId, groupId, name) => {
-                 updateWorkArea(areaId, a => ({...a, groups: a.groups.map(g => g.id === groupId ? {...g, name} : g)}));
+                 setWorkAreas(prev => prev.map(a => a.id === areaId ? {...a, groups: a.groups.map(g => g.id === groupId ? {...g, name} : g)} : a));
             };
 
             const handleAddPoint = useCallback(async (lat, lng) => {
@@ -1818,33 +1868,54 @@
                 });
 
                 if (!snapped) addToast('تمت إضافة النقطة.', 'success');
-            }, [selectedArea, selectedGroupId, utmZone, addToast, selectedGroup, setWorkAreas, isDeleteMode]);
+            }, [selectedArea, selectedGroupId, utmZone, addToast, selectedGroup, isDeleteMode, setWorkAreas]);
 
             const handleUpdatePoint = useCallback(async (areaId, groupId, pointId, field, value) => {
-                const pointToUpdate = workAreas.find(a => a.id === areaId)?.groups.find(g => g.id === groupId)?.points.find(p => p.id === pointId);
-                if (!pointToUpdate) return;
-            
-                let newPointData = { ...pointToUpdate };
-            
+                let newPointData = {};
+                
                 if (field === 'latlng') {
                     const { elevation, status } = await getElevation(value);
-                    if (status !== 'OK') addToast(`تعذر تحديث المنسوب (${status}). سيتم الاحتفاظ بالمنسوب القديم.`, 'error', 5000);
-                    newPointData = { ...newPointData, lat: value.lat, lng: value.lng, utm: convertLatLngToUtm(value.lat, value.lng, utmZone), elevation: elevation ?? newPointData.elevation };
+                    if (status !== 'OK') addToast(`تعذر تحديث المنسوب (${status}).`, 'error');
+                    newPointData = { lat: value.lat, lng: value.lng, utm: convertLatLngToUtm(value.lat, value.lng, utmZone), elevation: elevation ?? 0 };
                 } else {
                     newPointData[field] = value;
                 }
             
-                updateWorkArea(areaId, area => ({ ...area, groups: area.groups.map(g => g.id === groupId ? { ...g, points: g.points.map(p => p.id === pointId ? newPointData : p) } : g) }));
-            }, [workAreas, utmZone, addToast, setWorkAreas]);
+                setWorkAreas(prev => prev.map(area => 
+                    area.id === areaId ? { 
+                        ...area, 
+                        groups: area.groups.map(g => 
+                            g.id === groupId ? { 
+                                ...g, 
+                                points: g.points.map(p => 
+                                    p.id === pointId ? { ...p, ...newPointData } : p
+                                ) 
+                            } : g
+                        ) 
+                    } : area
+                ));
+            }, [utmZone, addToast, setWorkAreas]);
             
             const handleDeletePointById = (groupId, pointId) => {
                 if (!selectedArea) return;
-                updateWorkArea(selectedArea.id, a => ({...a, groups: a.groups.map(g => g.id === groupId ? {...g, points: g.points.filter(p => p.id !== pointId)} : g)}));
+                setWorkAreas(prev => prev.map(a => 
+                    a.id === selectedArea.id ? {
+                        ...a, 
+                        groups: a.groups.map(g => 
+                            g.id === groupId ? {...g, points: g.points.filter(p => p.id !== pointId)} : g
+                        )
+                    } : a
+                ));
                 addToast('تم حذف النقطة.', 'success');
             };
             
             const handleUpdateGroupColor = (areaId, groupId, color) => {
-                updateWorkArea(areaId, area => ({ ...area, groups: area.groups.map(g => g.id === groupId ? {...g, color} : g) }));
+                setWorkAreas(prev => prev.map(area => 
+                    area.id === areaId ? {
+                        ...area, 
+                        groups: area.groups.map(g => g.id === groupId ? {...g, color} : g)
+                    } : area
+                ));
             };
 
             const handleFileLoad = (event) => {
@@ -1900,7 +1971,9 @@
             
             const handleProcessImport = (groupName, points) => {
                 const newGroup = { id: generateUniqueId(), name: groupName, color: POINT_GROUP_COLORS[workAreas.length % POINT_GROUP_COLORS.length], points, ...DEFAULT_GROUP_SETTINGS };
-                updateWorkArea(selectedArea.id, area => ({ ...area, groups: [...area.groups, newGroup], lastModifiedAt: new Date().toISOString() }));
+                setWorkAreas(prev => prev.map(area => 
+                    area.id === selectedArea.id ? { ...area, groups: [...area.groups, newGroup], lastModifiedAt: new Date().toISOString() } : area
+                ));
                 addToast(`تم استيراد ${points.length} نقطة بنجاح إلى "${groupName}".`, 'success');
                 setSelectedGroupId(newGroup.id);
                 setTimeout(() => mapApiRef.current?.zoomToBounds(points), 100);
@@ -1908,7 +1981,15 @@
 
             const handleProcessDirectPaste = (points) => {
                 if (!selectedArea || !selectedGroup) return;
-                updateWorkArea(selectedArea.id, area => ({ ...area, groups: area.groups.map(g => g.id === selectedGroup.id ? { ...g, points: [...g.points, ...points] } : g), lastModifiedAt: new Date().toISOString() }));
+                setWorkAreas(prev => prev.map(area => 
+                    area.id === selectedArea.id ? { 
+                        ...area, 
+                        groups: area.groups.map(g => 
+                            g.id === selectedGroup.id ? { ...g, points: [...g.points, ...points] } : g
+                        ), 
+                        lastModifiedAt: new Date().toISOString() 
+                    } : area
+                ));
                 addToast(`تم إضافة ${points.length} نقطة بنجاح.`, 'success');
                 setTimeout(() => mapApiRef.current?.zoomToBounds(points), 100);
             };
@@ -1983,7 +2064,7 @@
 
             const handleUpdateGroupSettings = (settingKey, value) => {
                 if (!selectedGroupId || !selectedArea) return;
-                updateWorkArea(selectedArea.id, area => ({
+                setWorkAreas(prev => prev.map(area => ({
                     ...area,
                     groups: area.groups.map(g => {
                         if (g.id === selectedGroupId) {
@@ -1995,20 +2076,20 @@
                         }
                         return g;
                     })
-                }));
+                })));
             };
 
             const handleToggleGroupVisibility = (areaId, groupId) => {
-                updateWorkArea(areaId, area => ({
+                setWorkAreas(prev => prev.map(area => ({
                     ...area,
                     groups: area.groups.map(g => 
                         g.id === groupId ? { ...g, isVisible: !g.isVisible } : g
                     )
-                }));
+                })));
             };
             
             const handleSetGroupMarker = (areaId, groupId, iconKey) => {
-                updateWorkArea(areaId, area => ({
+                setWorkAreas(prev => prev.map(area => ({
                     ...area,
                     groups: area.groups.map(g => {
                         if (g.id === groupId) {
@@ -2019,7 +2100,7 @@
                         }
                         return g;
                     })
-                }));
+                })));
                 addToast('تم تحديث رموز المجموعة بنجاح.', 'success');
             };
 
@@ -2049,7 +2130,7 @@
                 });
             };
 
-            const handleOpenScreenshotModal = () => {
+            const handleOpenScreenshotOptions = () => {
                 setModal(
                     <ScreenshotOptionsModal
                         onClose={closeModal}
@@ -2067,7 +2148,8 @@
 
                 const elementsToHide = [
                     document.getElementById('map-controls'),
-                    document.getElementById('bottom-nav-bar')
+                    document.getElementById('bottom-nav-bar'),
+                    document.getElementById('desktop-tools-button-container')
                 ];
                 
                 const timestamp = document.createElement('div');
@@ -2168,9 +2250,26 @@
                     />
                 );
             };
+
+            const handleOpenToolsModal = () => {
+                setModal(
+                    <ToolsModal
+                        settings={{...displaySettings, isDeleteMode}}
+                        onClose={closeModal}
+                        onUpdateSettings={handleUpdateGroupSettings}
+                        onToggleDeleteMode={handleToggleDeleteMode}
+                        onOpenScreenshotModal={() => {
+                            closeModal();
+                            setTimeout(handleOpenScreenshotOptions, 100); 
+                        }}
+                        isZoomedInEnough={isZoomedInEnough}
+                    />
+                );
+            };
             
             return (
                 <div className="h-screen w-screen flex flex-col bg-slate-100 dark:bg-slate-900">
+                    {modal}
                     <input type="file" ref={fileInputRef} onChange={handleFileLoad} style={{ display: 'none' }} accept=".txt,.csv,.tsv,.json,.hemap" />
                     <Header onToggleFullScreen={() => setIsMapFullScreen(f => !f)} isFullScreen={isMapFullScreen} onToggleSidebar={() => setIsSidebarOpen(true)} />
                     <div className="flex flex-grow min-h-0"> 
@@ -2202,11 +2301,14 @@
                                 onOpenImportModal={handleOpenImportModal}
                                 onToggleGroupVisibility={handleToggleGroupVisibility}
                                 onSetGroupMarker={handleSetGroupMarker}
+                                onGeneratePDF={() => addToast('هذه الميزة قيد التطوير حاليًا.', 'info')}
+                                setModal={setModal}
+                                closeModal={closeModal}
                             />
                         </div>
                         
-                        <main className="flex-grow flex flex-col relative">
-                            <div id="capture-area" className="flex-grow relative">
+                        <main className="flex-grow flex flex-col relative overflow-hidden">
+                            <div className={`flex-shrink-0 relative transition-all duration-300 ${isDesktopTableExpanded ? 'h-1/4' : 'h-3/5'}`} id="capture-area">
                                 <MapComponent
                                     ref={mapApiRef}
                                     selectedArea={selectedArea}
@@ -2224,15 +2326,19 @@
                                 />
                                 {selectedArea && (
                                     <>
-                                        <MapControls undo={undo} redo={redo} canUndo={canUndo} canRedo={canRedo} />
+                                        <MapControls onUndo={undo} onRedo={redo} canUndo={canUndo} canRedo={canRedo} />
                                         <ActiveAreaIndicator 
                                             areaName={selectedArea?.name} 
                                             groupName={selectedGroup?.name} 
                                             isTakingScreenshot={isTakingScreenshot}
                                         />
-                                        <div className="hidden lg:block absolute bottom-4 right-4 z-10">
-                                            <button onClick={() => setIsToolsSheetOpen(true)} className="w-16 h-16 bg-blue-600 text-white rounded-full shadow-lg flex items-center justify-center hover:bg-blue-700 transition-all duration-300">
-                                                <Icon name="wrench" size={32} />
+                                        <div id="desktop-tools-button-container" className="hidden lg:flex absolute bottom-4 left-1/2 -translate-x-1/2 z-10">
+                                            <button 
+                                                onClick={handleOpenToolsModal} 
+                                                className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm py-2 px-4 rounded-full shadow-lg flex items-center gap-2 border dark:border-slate-700 hover:bg-white dark:hover:bg-slate-700 transition-colors"
+                                            >
+                                                <Icon name="sliders-horizontal" size={20} />
+                                                <span className="font-semibold">الأدوات</span>
                                             </button>
                                         </div>
                                     </>
@@ -2240,7 +2346,7 @@
                             </div>
                             
                             {!isMapFullScreen && (
-                                <div className={`hidden lg:flex flex-col flex-shrink-0 border-t-2 dark:border-slate-700 transition-all duration-300 ease-in-out ${isDesktopTableExpanded ? 'flex-grow' : 'h-1/3'}`}>
+                                <div className="hidden lg:flex flex-col flex-grow min-h-0 border-t-2 dark:border-slate-700">
                                     <div className="flex-shrink-0 p-2 flex justify-center items-center border-b dark:border-slate-700 bg-slate-100 dark:bg-slate-800/50">
                                         <button
                                             onClick={() => setIsDesktopTableExpanded(p => !p)}
@@ -2252,7 +2358,7 @@
                                             <Icon name={isDesktopTableExpanded ? 'chevrons-down-up' : 'chevrons-up-down'} size={16} />
                                         </button>
                                     </div>
-                                    <div className="flex-grow overflow-auto min-h-0">
+                                    <div className="flex-grow overflow-auto">
                                         <PointsTable 
                                             selectedArea={selectedArea} 
                                             selectedGroupId={selectedGroupId}
@@ -2266,12 +2372,13 @@
                                                 if(point) mapApiRef.current?.zoomToPoint(point.lat, point.lng);
                                             }}
                                             onOpenMarkerPicker={handleOpenMarkerPickerForPoint}
+                                            setModal={setModal}
+                                            closeModal={closeModal}
                                         />
                                     </div>
                                 </div>
                             )}
 
-                            {/* حاوية جدول النقاط للجوال */}
                             <div className={`lg:hidden flex flex-col h-full bg-white dark:bg-slate-900 absolute inset-0 z-20 transition-transform duration-300 ease-out ${isTableViewActive ? 'translate-x-0' : 'translate-x-full'}`}>
                                <PointsTable 
                                     selectedArea={selectedArea} 
@@ -2290,6 +2397,8 @@
                                         }
                                     }}
                                     onOpenMarkerPicker={handleOpenMarkerPickerForPoint}
+                                    setModal={setModal}
+                                    closeModal={closeModal}
                                 />
                             </div>
                             
@@ -2333,7 +2442,7 @@
                                     onClose={() => setIsToolsSheetOpen(false)}
                                     onUpdateSettings={handleUpdateGroupSettings}
                                     onToggleDeleteMode={handleToggleDeleteMode}
-                                    onOpenScreenshotModal={handleOpenScreenshotModal}
+                                    onOpenScreenshotModal={handleOpenScreenshotOptions}
                                     isZoomedInEnough={isZoomedInEnough}
                                 />
                             )}
