@@ -2302,89 +2302,92 @@
                 setIsMapFullScreen(true);
             
                 setTimeout(() => {
-                    const captureArea = document.getElementById('capture-area');
-                    if (!captureArea) {
-                        setIsMapFullScreen(wasFullscreen);
-                        return;
-                    }
-            
-                    const elementsToHide = [
-                        document.getElementById('map-controls'),
-                        document.getElementById('bottom-nav-bar'),
-                        document.getElementById('desktop-tools-button-container')
-                    ];
-                    
-                    const stamp = document.createElement('div');
-                    stamp.id = 'temp-timestamp';
-                    stamp.className = 'absolute bottom-8 right-4 z-10 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm p-3 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 flex items-center gap-3';
-                    
-                    const iconHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>`;
-                    
-                    const textContainer = document.createElement('div');
-                    textContainer.className = 'text-right';
-                    
-                    const title = document.createElement('p');
-                    title.className = 'font-bold text-sm text-slate-800 dark:text-slate-100';
-                    title.innerText = 'تطبيق الخرائط الهندسية';
-                    
-                    const dev = document.createElement('p');
-                    dev.className = 'text-xs text-slate-600 dark:text-slate-400';
-                    dev.innerText = 'تطوير: م. حمدي وحيد';
-
-                    textContainer.appendChild(title);
-                    textContainer.appendChild(dev);
-                    
-                    if (options.showPanel) {
-                        const areaInfo = document.createElement('p');
-                        areaInfo.className = 'text-xs text-slate-500 dark:text-slate-400 border-t border-slate-200 dark:border-slate-700 pt-1 mt-1';
-                        areaInfo.innerHTML = `<span class="font-semibold">منطقة:</span> ${selectedArea?.name || 'غير محدد'} | <span class="font-semibold">مجموعة:</span> ${selectedGroup?.name || 'غير محدد'}`;
-                        textContainer.appendChild(areaInfo);
-                    }
-
-                    if (options.showTimestamp) {
-                        const date = document.createElement('p');
-                        date.className = 'text-xs text-slate-500 dark:text-slate-400 font-mono mt-1';
-                        date.innerText = new Date().toLocaleString('ar-EG-u-nu-latn', { dateStyle: 'full', timeStyle: 'medium' });
-                        textContainer.appendChild(date);
-                    }
-
-                    stamp.innerHTML = iconHTML;
-                    stamp.appendChild(textContainer);
-
-                    setIsTakingScreenshot(true);
-                    elementsToHide.forEach(el => { if (el) el.style.visibility = 'hidden'; });
-
-                    const originalPanel = document.getElementById('active-area-indicator');
-                    if (originalPanel) originalPanel.style.visibility = 'hidden';
-                    
-                    captureArea.appendChild(stamp);
-                    
-                    addToast('جاري أخذ لقطة شاشة...', 'info', 2000);
-
-                    html2canvas(captureArea, {
-                        useCORS: true,
-                        allowTaint: true,
-                        backgroundColor: null,
-                    }).then(canvas => {
-                        const link = document.createElement('a');
-                        link.download = `خريطة-${new Date().toISOString().slice(0, 10)}.png`;
-                        link.href = canvas.toDataURL('image/png');
-                        link.click();
-                        addToast('تم حفظ لقطة الشاشة بنجاح.', 'success');
-                    }).catch(err => {
-                        console.error("Screenshot error:", err);
-                        addToast('فشل أخذ لقطة الشاشة.', 'error');
-                    }).finally(() => {
-                        elementsToHide.forEach(el => { if (el) el.style.visibility = 'visible'; });
-                        if (originalPanel) originalPanel.style.visibility = 'visible';
-
-                        if (document.getElementById('temp-timestamp')) {
-                            document.getElementById('temp-timestamp').remove();
+                    requestAnimationFrame(() => {
+                        const captureArea = document.getElementById('capture-area');
+                        if (!captureArea) {
+                            setIsMapFullScreen(wasFullscreen);
+                            return;
                         }
-                        setIsTakingScreenshot(false);
-                        setIsMapFullScreen(wasFullscreen);
+                
+                        const elementsToHide = [
+                            document.getElementById('map-controls'),
+                            document.getElementById('bottom-nav-bar'),
+                            document.getElementById('desktop-tools-button-container'),
+                            document.getElementById('desktop-location-button')
+                        ];
+                        
+                        const stamp = document.createElement('div');
+                        stamp.id = 'temp-timestamp';
+                        stamp.className = 'absolute bottom-8 right-4 z-10 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm p-3 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 flex items-center gap-3';
+                        
+                        const iconHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>`;
+                        
+                        const textContainer = document.createElement('div');
+                        textContainer.className = 'text-right';
+                        
+                        const title = document.createElement('p');
+                        title.className = 'font-bold text-sm text-slate-800 dark:text-slate-100';
+                        title.innerText = 'تطبيق الخرائط الهندسية';
+                        
+                        const dev = document.createElement('p');
+                        dev.className = 'text-xs text-slate-600 dark:text-slate-400';
+                        dev.innerText = 'تطوير: م. حمدي وحيد';
+
+                        textContainer.appendChild(title);
+                        textContainer.appendChild(dev);
+                        
+                        if (options.showPanel) {
+                            const areaInfo = document.createElement('p');
+                            areaInfo.className = 'text-xs text-slate-500 dark:text-slate-400 border-t border-slate-200 dark:border-slate-700 pt-1 mt-1';
+                            areaInfo.innerHTML = `<span class="font-semibold">منطقة:</span> ${selectedArea?.name || 'غير محدد'} | <span class="font-semibold">مجموعة:</span> ${selectedGroup?.name || 'غير محدد'}`;
+                            textContainer.appendChild(areaInfo);
+                        }
+
+                        if (options.showTimestamp) {
+                            const date = document.createElement('p');
+                            date.className = 'text-xs text-slate-500 dark:text-slate-400 font-mono mt-1';
+                            date.innerText = new Date().toLocaleString('ar-EG-u-nu-latn', { dateStyle: 'full', timeStyle: 'medium' });
+                            textContainer.appendChild(date);
+                        }
+
+                        stamp.innerHTML = iconHTML;
+                        stamp.appendChild(textContainer);
+
+                        setIsTakingScreenshot(true);
+                        elementsToHide.forEach(el => { if (el) el.style.visibility = 'hidden'; });
+
+                        const originalPanel = document.getElementById('active-area-indicator');
+                        if (originalPanel) originalPanel.style.visibility = 'hidden';
+                        
+                        captureArea.appendChild(stamp);
+                        
+                        addToast('جاري أخذ لقطة شاشة...', 'info', 2000);
+
+                        html2canvas(captureArea, {
+                            useCORS: true,
+                            allowTaint: true,
+                            backgroundColor: null,
+                        }).then(canvas => {
+                            const link = document.createElement('a');
+                            link.download = `خريطة-${new Date().toISOString().slice(0, 10)}.png`;
+                            link.href = canvas.toDataURL('image/png');
+                            link.click();
+                            addToast('تم حفظ لقطة الشاشة بنجاح.', 'success');
+                        }).catch(err => {
+                            console.error("Screenshot error:", err);
+                            addToast('فشل أخذ لقطة الشاشة.', 'error');
+                        }).finally(() => {
+                            elementsToHide.forEach(el => { if (el) el.style.visibility = 'visible'; });
+                            if (originalPanel) originalPanel.style.visibility = 'visible';
+
+                            if (document.getElementById('temp-timestamp')) {
+                                document.getElementById('temp-timestamp').remove();
+                            }
+                            setIsTakingScreenshot(false);
+                            setIsMapFullScreen(wasFullscreen);
+                        });
                     });
-                }, 100);
+                }, 50);
             };
 
             const handleOpenMarkerPickerForPoint = (point, group) => {
@@ -2551,13 +2554,13 @@
                                                 <span className="font-semibold">الأدوات</span>
                                             </button>
                                         </div>
-                                        <div className="hidden lg:block absolute bottom-4 left-4 z-10">
+                                        <div id="desktop-location-button" className="hidden lg:block absolute bottom-4 left-4 z-10">
                                             <button 
                                                 onClick={triggerGetCurrentLocation} 
-                                                className="bg-blue-600 text-white rounded-full p-3 shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition"
+                                                className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm text-slate-600 dark:text-slate-300 rounded-full p-3 shadow-lg hover:bg-white dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition"
                                                 title="جلب الموقع الحالي"
                                             >
-                                                <Icon name="crosshair" size={24} />
+                                                <Icon name="locate-fixed" size={24} />
                                             </button>
                                         </div>
                                     </>
