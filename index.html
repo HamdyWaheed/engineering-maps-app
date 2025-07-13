@@ -773,8 +773,8 @@
                                     <span className="text-xs px-2 py-0.5 rounded-full" style={{backgroundColor: group.color, color: 'white'}}>{group.name}</span>
                                 </div>
                                 <div className="flex items-center space-x-0 space-x-reverse">
-                                    <button onClick={(e) => { e.stopPropagation(); onOpenMarkerPicker(point, group); }} className="icon-button text-indigo-500 !w-9 !h-9" title="تغيير الرمز"><Icon name="palette" size={18}/></button>
-                                    <button onClick={(e) => { e.stopPropagation(); onDeletePoint(group.id, point.id);}} className="icon-button text-red-500 !w-9 !h-9" title="حذف"><Icon name="trash-2" size={18}/></button>
+                                    <button onClick={(e) => { e.stopPropagation(); onOpenMarkerPicker(point, group); }} className="icon-button text-indigo-500 !w-11 !h-11" title="تغيير الرمز"><Icon name="palette" size={22}/></button>
+                                    <button onClick={(e) => { e.stopPropagation(); onDeletePoint(group.id, point.id);}} className="icon-button text-red-500 !w-11 !h-11" title="حذف"><Icon name="trash-2" size={22}/></button>
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm font-mono">
@@ -848,17 +848,17 @@
                                                     </td>
                                                     <td className="px-2 py-2">
                                                         <div className="flex items-center justify-center space-x-1 space-x-reverse">
-                                                            <button onClick={(e) => handleOpenMarkerPicker(e, point, group)} className="icon-button !w-9 !h-9 text-indigo-500 hover:bg-indigo-100 dark:hover:bg-indigo-900/50" title="تغيير الرمز">
-                                                                <Icon name="palette" size={18}/>
+                                                            <button onClick={(e) => handleOpenMarkerPicker(e, point, group)} className="icon-button !w-11 !h-11 text-indigo-500 hover:bg-indigo-100 dark:hover:bg-indigo-900/50" title="تغيير الرمز">
+                                                                <Icon name="palette" size={22}/>
                                                             </button>
-                                                            <button onClick={(e) => { e.stopPropagation(); copyLatLngToClipboard(point); }} className="icon-button !w-9 !h-9 text-sky-500 hover:bg-sky-100 dark:hover:bg-sky-900/50" title="نسخ Lat/Lng">
-                                                                <Icon name="globe-2" size={18}/>
+                                                            <button onClick={(e) => { e.stopPropagation(); copyLatLngToClipboard(point); }} className="icon-button !w-11 !h-11 text-sky-500 hover:bg-sky-100 dark:hover:bg-sky-900/50" title="نسخ Lat/Lng">
+                                                                <Icon name="globe-2" size={22}/>
                                                             </button>
-                                                            <button onClick={(e) => { e.stopPropagation(); copyUtmToClipboard(point); }} className="icon-button !w-9 !h-9 text-green-500 hover:bg-green-100 dark:hover:bg-green-900/50" title="نسخ UTM">
-                                                                <Icon name="copy" size={18}/>
+                                                            <button onClick={(e) => { e.stopPropagation(); copyUtmToClipboard(point); }} className="icon-button !w-11 !h-11 text-green-500 hover:bg-green-100 dark:hover:bg-green-900/50" title="نسخ UTM">
+                                                                <Icon name="copy" size={22}/>
                                                             </button>
-                                                            <button onClick={e => {e.stopPropagation(); onDeletePoint(group.id, point.id);}} className="icon-button !w-9 !h-9 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/50" title="حذف">
-                                                                <Icon name="trash-2" size={18}/>
+                                                            <button onClick={e => {e.stopPropagation(); onDeletePoint(group.id, point.id);}} className="icon-button !w-11 !h-11 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/50" title="حذف">
+                                                                <Icon name="trash-2" size={22}/>
                                                             </button>
                                                         </div>
                                                     </td>
