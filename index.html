@@ -136,7 +136,7 @@
             color: #475569;
         }
         .point-label-desc {
-            font-size: 14px;
+            font-size: 15px;
             color: #64748b;
             border-top: 1px solid #e2e8f0;
             margin-top: 3px;
@@ -195,38 +195,34 @@
     <script type="text/babel">
         // ====================================================================
         //  BLOCK: IMPORTS & SETUP
-        //  استيراد المكتبات والدوال الأساسية من React و ReactDOM
         // ====================================================================
         const { useState, useEffect, useRef, useCallback, useMemo, createContext, useContext, forwardRef, useImperativeHandle } = React;
         const { createRoot } = ReactDOM;
 
         // ====================================================================
         //  FILE: src/constants.js
-        //  ملف لتعريف جميع الثوابت المستخدمة في التطبيق
         // ====================================================================
-        const Maps_API_KEY = 'AIzaSyAKXVuJsf0vANjBtlUIWcPj-wNWPkOc-S4'; // مفتاح API لخرائط جوجل
-        const DEFAULT_UTM_ZONE = 35; // منطقة UTM الافتراضية
-        const SNAP_TOLERANCE_METERS = 10; // مسافة الالتقاط (Snap) بالنقاط بالمتر
-        const MAX_ZOOM_FOR_SNAP = 21; // أقصى مستوى تقريب لتفعيل الالتقاط
-        const LABEL_VISIBILITY_ZOOM_THRESHOLD = 17; // مستوى التقريب الذي تبدأ عنده التسميات بالظهور
-        const MARKER_VISIBILITY_ZOOM_THRESHOLD = 15; // مستوى التقريب الذي تبدأ عنده العلامات بالظهور
-        const DISTANCE_LABEL_VISIBILITY_ZOOM_THRESHOLD = 16; // مستوى التقريب لظهور تسميات المسافات
-        const AREA_LABEL_VISIBILITY_ZOOM_THRESHOLD = 14; // مستوى التقريب لظهور تسميات المساحات
-        const POINT_GROUP_COLORS = ['#3b82f6', '#22c55e', '#f97316', '#8b5cf6', '#ef4444', '#ec4899', '#14b8a6', '#6b7280']; // مجموعة ألوان افتراضية للمجموعات
+        const Maps_API_KEY = 'AIzaSyAKXVuJsf0vANjBtlUIWcPj-wNWPkOc-S4';
+        const DEFAULT_UTM_ZONE = 35;
+        const SNAP_TOLERANCE_METERS = 10;
+        const MAX_ZOOM_FOR_SNAP = 21;
+        const LABEL_VISIBILITY_ZOOM_THRESHOLD = 17;
+        const MARKER_VISIBILITY_ZOOM_THRESHOLD = 15;
+        const DISTANCE_LABEL_VISIBILITY_ZOOM_THRESHOLD = 16;
+        const AREA_LABEL_VISIBILITY_ZOOM_THRESHOLD = 14;
+        const POINT_GROUP_COLORS = ['#3b82f6', '#22c55e', '#f97316', '#8b5cf6', '#ef4444', '#ec4899', '#14b8a6', '#6b7280'];
         
-        // الإعدادات الافتراضية لأي مجموعة نقاط جديدة
         const DEFAULT_GROUP_SETTINGS = {
             showPolylines: true,
             showElevations: false,
             showLabels: false,
-            showDescriptions: false, // <-- إضافة خاصية إظهار الوصف
+            showDescriptions: false,
             isMeasuring: false,
             isAreaMeasuring: false,
             snapEnabled: false,
             isVisible: true,
         };
         
-        // تعريف أشكال الأيقونات المختلفة للنقاط
         const MARKER_ICONS = {
             default: { type: 'default', label: 'دائرة', path: 'M 0, 0 m -10, 0 a 10,10 0 1,0 20,0 a 10,10 0 1,0 -20,0', scale: 0.8, strokeWeight: 2.5 },
             square: { type: 'custom', label: 'مربع', path: 'M -8 -8 L 8 -8 L 8 8 L -8 8 Z', anchor: { x: 0, y: 0 }, scale: 1.2, strokeWeight: 2.5 },
@@ -245,7 +241,6 @@
 
         // ====================================================================
         //  FILE: src/utils.js
-        //  ملف للدوال المساعدة المستخدمة في أنحاء التطبيق
         // ====================================================================
         const generateUniqueId = () => Math.random().toString(36).substring(2, 9);
         
@@ -376,7 +371,6 @@
 
         // ====================================================================
         //  FILE: src/hooks/useHistoryState.js
-        //  خطاف مخصص لإدارة سجل التعديلات (Undo/Redo)
         // ====================================================================
         const useHistoryState = (initialState) => {
             const historyRef = useRef({ past: [], present: initialState, future: [] });
@@ -435,7 +429,6 @@
 
         // ====================================================================
         //  FILE: src/contexts/AppContext.js
-        //  سياق (Context) لتوفير الحالات العامة مثل الوضع الداكن والرسائل
         // ====================================================================
         const AppContext = createContext();
         const AppProvider = ({ children }) => {
@@ -468,7 +461,6 @@
 
         // ====================================================================
         //  FILE: src/components/common/Toast.js, Icon.js
-        //  مكونات واجهة مستخدم عامة
         // ====================================================================
         const Toast = ({ id, message, type, onDismiss }) => (
             <div className={`toast ${type}`}>
@@ -484,7 +476,6 @@
 
         // ====================================================================
         //  FILE: src/components/layout/Header.js, Sidebar.js
-        //  مكونات التخطيط الرئيسية: الشريط العلوي والشريط الجانبي
         // ====================================================================
         const Header = ({ onToggleFullScreen, isFullScreen, onToggleSidebar }) => {
             const { darkMode, setDarkMode } = useAppContext();
@@ -669,7 +660,6 @@
 
         // ====================================================================
         //  FILE: src/components/table/PointsTable.js
-        //  مكون لعرض جدول الإحداثيات
         // ====================================================================
         const PointsTable = ({ selectedArea, selectedGroupId, onUpdatePoint, onDeletePoint, onZoomToPoint, onActivateGroup, activePointId, setActivePointId, onOpenMarkerPicker, setModal, closeModal }) => {
             const { addToast } = useAppContext();
@@ -863,7 +853,6 @@
 
         // ====================================================================
         //  FILE: src/components/map/CustomLabel.js
-        //  مكون مخصص لعرض التسميات على الخريطة
         // ====================================================================
         const CustomLabel = ({ map, position, text, styleProps }) => {
             const overlay = useRef(null);
@@ -934,29 +923,8 @@
         };
 
         // ====================================================================
-        //  FILE: src/components/map/MapToolbar.js, MapComponent.js, and new UI elements
-        //  مكونات واجهة الخريطة وأدواتها
+        //  FILE: src/components/map/MapComponent.js
         // ====================================================================
-        
-        const MapControls = ({ onUndo, onRedo, canUndo, canRedo }) => {
-            return (
-                <div id="map-controls" className="absolute top-4 left-4 z-10 flex flex-col gap-2">
-                    <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm p-1 rounded-full shadow-lg flex items-center border dark:border-slate-700">
-                        <button onClick={onUndo} disabled={!canUndo} className="icon-button !w-10 !h-10" title="تراجع (Ctrl+Z)"><Icon name="undo-2" /></button>
-                        <div className="w-px bg-slate-300 dark:bg-slate-600 my-2"></div>
-                        <button onClick={onRedo} disabled={!canRedo} className="icon-button !w-10 !h-10" title="إعادة (Ctrl+Y)"><Icon name="redo-2" /></button>
-                    </div>
-                </div>
-            );
-        };
-
-        const ActiveAreaIndicator = ({ areaName, groupName, isTakingScreenshot }) => (
-            <div id="active-area-indicator" className="absolute top-4 right-4 z-10 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm p-2 px-4 rounded-lg shadow-lg border dark:border-slate-700 text-sm max-w-[calc(100vw-100px)]">
-                <p className="truncate"><span className="font-semibold">منطقة:</span> {areaName || 'غير محدد'}</p>
-                <p className="truncate"><span className="font-semibold">{isTakingScreenshot ? 'مجموعة:' : 'نشطة:'}</span> {groupName || 'غير محدد'}</p>
-            </div>
-        );
-
         const MapComponent = forwardRef(({ selectedArea, utmZone, onAddPoint, onUpdatePoint, addToast, onUpdateGroupSettings, selectedGroupId, isDeleteMode, onDeletePointById, onActivateGroup, setActivePointId, onZoomChange }, ref) => {
             const { darkMode } = useAppContext();
             const mapRef = useRef(null);
@@ -1188,8 +1156,30 @@
         });
 
         // ====================================================================
-        //  FILE: src/components/import/ImportExportModals.js
-        //  مجموعة النوافذ المنبثقة لعمليات الاستيراد والتصدير
+        //  FILE: src/components/map/MapOverlays.js
+        // ====================================================================
+        
+        const MapControls = ({ onUndo, onRedo, canUndo, canRedo }) => {
+            return (
+                <div id="map-controls" className="absolute top-4 left-4 z-10 flex flex-col gap-2">
+                    <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm p-1 rounded-full shadow-lg flex items-center border dark:border-slate-700">
+                        <button onClick={onUndo} disabled={!canUndo} className="icon-button !w-10 !h-10" title="تراجع (Ctrl+Z)"><Icon name="undo-2" /></button>
+                        <div className="w-px bg-slate-300 dark:bg-slate-600 my-2"></div>
+                        <button onClick={onRedo} disabled={!canRedo} className="icon-button !w-10 !h-10" title="إعادة (Ctrl+Y)"><Icon name="redo-2" /></button>
+                    </div>
+                </div>
+            );
+        };
+
+        const ActiveAreaIndicator = ({ areaName, groupName, isTakingScreenshot }) => (
+            <div id="active-area-indicator" className="absolute top-4 right-4 z-10 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm p-2 px-4 rounded-lg shadow-lg border dark:border-slate-700 text-sm max-w-[calc(100vw-100px)]">
+                <p className="truncate"><span className="font-semibold">منطقة:</span> {areaName || 'غير محدد'}</p>
+                <p className="truncate"><span className="font-semibold">{isTakingScreenshot ? 'مجموعة:' : 'نشطة:'}</span> {groupName || 'غير محدد'}</p>
+            </div>
+        );
+
+        // ====================================================================
+        //  FILE: src/components/modals/index.js
         // ====================================================================
         
         const MarkerPickerModal = ({ onClose, onSelect, currentIconKey, previewColor = '#6b7280' }) => {
@@ -1401,7 +1391,7 @@
                     onClose={onClose}
                     showConfirm={false}
                     showCancel={true}
-                    confirmText="إغلاق"
+                    cancelText="إغلاق"
                 >
                     <div className="flex flex-col space-y-4">
                         <p className="text-slate-600 dark:text-slate-300">اختر طريقة إدخال البيانات:</p>
@@ -1425,7 +1415,7 @@
                     onClose={onClose}
                     showConfirm={false}
                     showCancel={true}
-                    confirmText="إغلاق"
+                    cancelText="إغلاق"
                 >
                     <div className="flex flex-col space-y-4">
                         <p className="text-slate-600 dark:text-slate-300">اختر الإجراء المطلوب:</p>
@@ -1712,9 +1702,11 @@
         const ToolsSheet = ({ settings, onClose, onUpdateSettings, onToggleDeleteMode, onOpenScreenshotModal, isZoomedInEnough }) => {
             const { showPolylines, showElevations, showLabels, showDescriptions, isMeasuring, isAreaMeasuring, snapEnabled, isDeleteMode } = settings;
             
-            const handleToolClick = (action) => {
+            const handleToolClick = (action, toolId) => {
                 action();
-                onClose();
+                if (toolId === 'screenshot') {
+                    onClose();
+                }
             };
 
             const tools = [
@@ -1729,7 +1721,7 @@
                 // Row 3
                 { id: 'showDescription', icon: 'message-square-text', title: 'إظهار الوصف', action: () => onUpdateSettings('showDescriptions', !showDescriptions), active: showDescriptions, disabled: !isZoomedInEnough },
                 { id: 'delete', icon: 'trash-2', title: 'حذف نقطة بالنقر', action: onToggleDeleteMode, active: isDeleteMode, danger: true },
-                { id: 'screenshot', icon: 'camera', title: 'أخذ لقطة شاشة', action: () => { onOpenScreenshotModal(); onClose(); }, active: false },
+                { id: 'screenshot', icon: 'camera', title: 'أخذ لقطة شاشة', action: onOpenScreenshotModal, active: false },
             ];
             
             return (
@@ -1748,7 +1740,7 @@
                             {tools.map(tool => (
                                 <button 
                                     key={tool.id} 
-                                    onClick={tool.action} 
+                                    onClick={() => handleToolClick(tool.action, tool.id)} 
                                     disabled={tool.disabled}
                                     className={`flex flex-col items-center justify-center gap-2 p-3 rounded-lg transition-colors ${tool.active ? (tool.danger ? 'bg-red-500 text-white' : 'bg-blue-600 text-white') : 'bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600'} ${tool.disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
@@ -1804,10 +1796,47 @@
                 </GenericModal>
             );
         };
+        
+        // ====================================================================
+        //  FILE: src/components/other/ScreenshotStamp.js
+        //  مكون جديد لعرض لوحة البيانات الخاصة بلقطة الشاشة
+        // ====================================================================
+        const ScreenshotStamp = ({ isVisible, areaName, groupName, options }) => {
+            if (!options) return null;
+        
+            const stampStyle = {
+                position: 'absolute',
+                bottom: '2rem',
+                right: '1rem',
+                zIndex: 30, // للتأكد من أنها فوق الخريطة
+                transition: 'opacity 0.2s ease-in-out',
+                opacity: isVisible ? 1 : 0,
+                pointerEvents: 'none', // لمنع التفاعل معها
+            };
+        
+            return (
+                <div style={stampStyle} className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm p-3 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 flex items-center gap-3">
+                    <Icon name="map-pin" className="text-blue-600" size={32} />
+                    <div className="text-right">
+                        <p className="font-bold text-sm text-slate-800 dark:text-slate-100">تطبيق الخرائط الهندسية</p>
+                        <p className="text-xs text-slate-600 dark:text-slate-400">تطوير: م. حمدي وحيد</p>
+                        {options.showPanel && (
+                            <p className="text-xs text-slate-500 dark:text-slate-400 border-t border-slate-200 dark:border-slate-700 pt-1 mt-1">
+                                <span className="font-semibold">منطقة:</span> {areaName || 'غير محدد'} | <span className="font-semibold">مجموعة:</span> {groupName || 'غير محدد'}
+                            </p>
+                        )}
+                        {options.showTimestamp && (
+                            <p className="text-xs text-slate-500 dark:text-slate-400 font-mono mt-1">
+                                {new Date().toLocaleString('ar-EG-u-nu-latn', { dateStyle: 'full', timeStyle: 'medium' })}
+                            </p>
+                        )}
+                    </div>
+                </div>
+            );
+        };
 
         // ====================================================================
         //  FILE: src/App.js
-        //  المكون الرئيسي للتطبيق الذي يجمع كل شيء
         // ====================================================================
         function App() {
             // --- تعريف الحالات (States) ---
@@ -1825,6 +1854,7 @@
             const { utmZone, setUtmZone, addToast } = useAppContext();
             const [modal, setModal] = useState({ type: null, props: {} });
             const [isTakingScreenshot, setIsTakingScreenshot] = useState(false);
+            const [screenshotOptions, setScreenshotOptions] = useState({ showPanel: true, showTimestamp: true });
             const mapApiRef = useRef(null);
             const fileInputRef = useRef(null);
             
@@ -2054,7 +2084,7 @@
                 } else {
                     newPointData[field] = value;
                 }
-            
+        
                 setWorkAreas(prev => prev.map(area => 
                     area.id === areaId ? { 
                         ...area, 
@@ -2316,74 +2346,32 @@
                     onClose: closeModal,
                     onConfirm: (options) => {
                         closeModal();
-                        setTimeout(() => executeScreenshot(options), 100); 
+                        executeScreenshot(options);
                     }
                 }});
             };
 
             const executeScreenshot = (options) => {
-                const wasFullscreen = isMapFullScreen;
-                setIsMapFullScreen(true);
-            
-                setTimeout(() => {
-                    requestAnimationFrame(() => {
+                setScreenshotOptions(options);
+                setIsTakingScreenshot(true);
+                
+                requestAnimationFrame(() => {
+                    setTimeout(() => { 
                         const captureArea = document.getElementById('capture-area');
                         if (!captureArea) {
-                            setIsMapFullScreen(wasFullscreen);
+                            setIsTakingScreenshot(false);
                             return;
                         }
-                
+            
                         const elementsToHide = [
                             document.getElementById('map-controls'),
                             document.getElementById('bottom-nav-bar'),
                             document.getElementById('desktop-tools-button-container'),
-                            document.getElementById('desktop-location-button')
+                            document.getElementById('desktop-location-button'),
+                            document.getElementById('active-area-indicator')
                         ];
                         
-                        const stamp = document.createElement('div');
-                        stamp.id = 'temp-timestamp';
-                        stamp.className = 'absolute bottom-8 right-4 z-30 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm p-3 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 flex items-center gap-3';
-                        
-                        const iconHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>`;
-                        
-                        const textContainer = document.createElement('div');
-                        textContainer.className = 'text-right';
-                        
-                        const title = document.createElement('p');
-                        title.className = 'font-bold text-sm text-slate-800 dark:text-slate-100';
-                        title.innerText = 'تطبيق الخرائط الهندسية';
-                        
-                        const dev = document.createElement('p');
-                        dev.className = 'text-xs text-slate-600 dark:text-slate-400';
-                        dev.innerText = 'تطوير: م. حمدي وحيد';
-
-                        textContainer.appendChild(title);
-                        textContainer.appendChild(dev);
-                        
-                        if (options.showPanel) {
-                            const areaInfo = document.createElement('p');
-                            areaInfo.className = 'text-xs text-slate-500 dark:text-slate-400 border-t border-slate-200 dark:border-slate-700 pt-1 mt-1';
-                            areaInfo.innerHTML = `<span class="font-semibold">منطقة:</span> ${selectedArea?.name || 'غير محدد'} | <span class="font-semibold">مجموعة:</span> ${selectedGroup?.name || 'غير محدد'}`;
-                            textContainer.appendChild(areaInfo);
-                        }
-
-                        if (options.showTimestamp) {
-                            const date = document.createElement('p');
-                            date.className = 'text-xs text-slate-500 dark:text-slate-400 font-mono mt-1';
-                            date.innerText = new Date().toLocaleString('ar-EG-u-nu-latn', { dateStyle: 'full', timeStyle: 'medium' });
-                            textContainer.appendChild(date);
-                        }
-
-                        stamp.innerHTML = iconHTML;
-                        stamp.appendChild(textContainer);
-
-                        setIsTakingScreenshot(true);
                         elementsToHide.forEach(el => { if (el) el.style.visibility = 'hidden'; });
-
-                        const originalPanel = document.getElementById('active-area-indicator');
-                        if (originalPanel) originalPanel.style.visibility = 'hidden';
-                        
-                        captureArea.appendChild(stamp);
                         
                         addToast('جاري أخذ لقطة شاشة...', 'info', 2000);
 
@@ -2402,16 +2390,10 @@
                             addToast('فشل أخذ لقطة الشاشة.', 'error');
                         }).finally(() => {
                             elementsToHide.forEach(el => { if (el) el.style.visibility = 'visible'; });
-                            if (originalPanel) originalPanel.style.visibility = 'visible';
-
-                            if (document.getElementById('temp-timestamp')) {
-                                document.getElementById('temp-timestamp').remove();
-                            }
                             setIsTakingScreenshot(false);
-                            setIsMapFullScreen(wasFullscreen);
                         });
-                    });
-                }, 50);
+                    }, 100);
+                });
             };
 
             const handleOpenMarkerPickerForPoint = (point, group) => {
@@ -2568,7 +2550,7 @@
                                         <ActiveAreaIndicator 
                                             areaName={selectedArea?.name} 
                                             groupName={selectedGroup?.name} 
-                                            isTakingScreenshot={isTakingScreenshot}
+                                            isTakingScreenshot={false}
                                         />
                                         <div id="desktop-tools-button-container" className="hidden lg:flex absolute bottom-4 left-1/2 -translate-x-1/2 z-10">
                                             <button 
@@ -2588,6 +2570,12 @@
                                                 <Icon name="locate-fixed" size={24} />
                                             </button>
                                         </div>
+                                        <ScreenshotStamp 
+                                            isVisible={isTakingScreenshot} 
+                                            areaName={selectedArea?.name} 
+                                            groupName={selectedGroup?.name}
+                                            options={screenshotOptions}
+                                        />
                                     </>
                                 )}
                             </div>
@@ -2711,8 +2699,6 @@
             </AppProvider>
         );
         
-        if (window.google && window.google.maps) window.initMap();
-
     </script>
 </body>
 </html>
