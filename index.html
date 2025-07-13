@@ -1712,6 +1712,11 @@
         const ToolsSheet = ({ settings, onClose, onUpdateSettings, onToggleDeleteMode, onOpenScreenshotModal, isZoomedInEnough }) => {
             const { showPolylines, showElevations, showLabels, showDescriptions, isMeasuring, isAreaMeasuring, snapEnabled, isDeleteMode } = settings;
             
+            const handleToolClick = (action) => {
+                action();
+                onClose();
+            };
+
             const tools = [
                 // Row 1
                 { id: 'measure', icon: 'ruler', title: 'قياس المسافة', action: () => onUpdateSettings('isMeasuring', !isMeasuring), active: isMeasuring },
