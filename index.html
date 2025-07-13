@@ -388,25 +388,26 @@
             const selectedGroup = selectedArea?.groups.find(group => group.id === selectedGroupId);
 
             const promptAction = (title, message, inputLabel, initialValue, onConfirm) => {
-                setModal(<GenericModal type="prompt" title={title} message={message} inputLabel={inputLabel} initialValue={initialValue} onConfirm={onConfirm} onClose={closeModal} />);
+                setModal({ type: 'prompt', props: { title, message, inputLabel, initialValue, onConfirm, onClose: closeModal } });
             };
             const confirmAction = (title, message, onConfirm) => {
-                setModal(<GenericModal type="confirm" title={title} message={message} onConfirm={onConfirm} onClose={closeModal} />);
+                setModal({ type: 'confirm', props: { title, message, onConfirm, onClose: closeModal } });
             };
 
             const openGroupMarkerPicker = () => {
                 if (!selectedArea || !selectedGroup) return;
-                setModal(
-                    <MarkerPickerModal
-                        onClose={closeModal}
-                        onSelect={(iconKey) => {
+                setModal({
+                    type: 'markerPicker',
+                    props: {
+                        onClose: closeModal,
+                        onSelect: (iconKey) => {
                             onSetGroupMarker(selectedArea.id, selectedGroup.id, iconKey);
                             closeModal();
-                        }}
-                        currentIconKey={selectedGroup.points[0]?.markerIcon || 'default'}
-                        previewColor={selectedGroup.color}
-                    />
-                );
+                        },
+                        currentIconKey: selectedGroup.points[0]?.markerIcon || 'default',
+                        previewColor: selectedGroup.color,
+                    }
+                });
             };
 
             const sidebarClasses = `
@@ -562,17 +563,15 @@
 
             const handleOpenMarkerPicker = (e, point, group) => {
                 e.stopPropagation();
-                setModal(
-                    <MarkerPickerModal
-                        onClose={closeModal}
-                        onSelect={(iconKey) => {
-                            onUpdatePoint(selectedArea.id, group.id, point.id, 'markerIcon', iconKey);
-                            closeModal();
-                        }}
-                        currentIconKey={point.markerIcon || 'default'}
-                        previewColor={group.color}
-                    />
-                );
+                setModal({type: 'markerPicker', props: {
+                    onClose: closeModal,
+                    onSelect: (iconKey) => {
+                        onUpdatePoint(selectedArea.id, group.id, point.id, 'markerIcon', iconKey);
+                        closeModal();
+                    },
+                    currentIconKey: point.markerIcon || 'default',
+                    previewColor: group.color
+                }});
             };
 
             const copyToClipboard = (text, message) => {
@@ -1657,14 +1656,14 @@
             const [isToolsSheetOpen, setIsToolsSheetOpen] = useState(false);
             const [currentZoom, setCurrentZoom] = useState(DEFAULT_MAP_ZOOM);
             const { utmZone, setUtmZone, addToast } = useAppContext();
-            const [modal, setModal] = useState(null);
+            const [modal, setModal] = useState({ type: null, props: {} });
             const mapApiRef = useRef(null);
             const [isTakingScreenshot, setIsTakingScreenshot] = useState(false);
             const fileInputRef = useRef(null);
             
             const isZoomedInEnough = currentZoom >= LABEL_VISIBILITY_ZOOM_THRESHOLD;
 
-            const closeModal = useCallback(() => setModal(null), []);
+            const closeModal = useCallback(() => setModal({ type: null, props: {} }), []);
 
             const { activePoint, activePointGroup } = useMemo(() => {
                 if (!activePointId) return { activePoint: null, activePointGroup: null };
@@ -1682,7 +1681,7 @@
             }, [activePointId, workAreas]);
 
             const handleKeyDown = useCallback((event) => {
-                if (modal || ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
+                if (modal.type || ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
                     return;
                 }
                 if (event.ctrlKey) {
@@ -1694,7 +1693,7 @@
                         redo();
                     }
                 }
-            }, [undo, redo, modal]);
+            }, [undo, redo, modal.type]);
 
             useEffect(() => {
                 window.addEventListener('keydown', handleKeyDown);
@@ -1958,7 +1957,7 @@
                             if (!selectedArea) { addToast('الرجاء تحديد منطقة عمل أولاً لاستيراد النقاط.', 'error'); return; }
                             const parsedData = parseDelimitedText(content);
                             if (parsedData.error && !parsedData.data.length) { addToast(parsedData.error, 'error'); return; }
-                            setModal(<ImportPointsModal fileData={{...parsedData, fileName}} onClose={closeModal} onImport={handleProcessImport} utmZone={utmZone} />);
+                            setModal({type: 'importPoints', props: {fileData:{...parsedData, fileName}, onClose:closeModal, onImport:handleProcessImport, utmZone:utmZone}});
                         }
                     } catch (err) {
                         console.error("File load error:", err);
@@ -1996,7 +1995,7 @@
 
             const handleOpenDirectPasteModal = () => {
                 if (!selectedArea || !selectedGroup) { addToast('الرجاء تحديد منطقة عمل ومجموعة نقاط أولاً.', 'error'); return; }
-                setModal(<DirectPasteModal onClose={closeModal} onProcessPaste={handleProcessDirectPaste} utmZone={utmZone} />);
+                setModal({type: 'directPaste', props: { onClose:closeModal, onProcessPaste:handleProcessDirectPaste, utmZone:utmZone }});
             };
             
             const handleExportData = (options, fileNameFromModal) => {
@@ -2110,7 +2109,7 @@
             }, [selectedGroup]);
 
             const promptAction = (title, message, inputLabel, initialValue, onConfirm) => {
-                setModal(<GenericModal type="prompt" title={title} message={message} inputLabel={inputLabel} initialValue={initialValue} onConfirm={onConfirm} onClose={closeModal} />);
+                setModal({type: 'prompt', props: { title, message, inputLabel, initialValue, onConfirm, onClose: closeModal }});
             };
 
             const handleSaveProject = () => {
@@ -2131,15 +2130,13 @@
             };
 
             const handleOpenScreenshotOptions = () => {
-                setModal(
-                    <ScreenshotOptionsModal
-                        onClose={closeModal}
-                        onConfirm={(options) => {
-                            closeModal();
-                            setTimeout(() => executeScreenshot(options), 100);
-                        }}
-                    />
-                );
+                setModal({type: 'screenshotOptions', props: {
+                    onClose: closeModal,
+                    onConfirm: (options) => {
+                        closeModal();
+                        setTimeout(() => executeScreenshot(options), 100);
+                    }
+                }});
             };
 
             const executeScreenshot = (options) => {
@@ -2198,17 +2195,15 @@
 
             const handleOpenMarkerPickerForPoint = (point, group) => {
                 if (!point || !group || !selectedArea) return;
-                setModal(
-                    <MarkerPickerModal
-                        onClose={closeModal}
-                        onSelect={(iconKey) => {
-                            handleUpdatePoint(selectedArea.id, group.id, point.id, 'markerIcon', iconKey);
-                            closeModal();
-                        }}
-                        currentIconKey={point.markerIcon || 'default'}
-                        previewColor={group.color}
-                    />
-                );
+                setModal({type: 'markerPicker', props: {
+                    onClose: closeModal,
+                    onSelect: (iconKey) => {
+                        handleUpdatePoint(selectedArea.id, group.id, point.id, 'markerIcon', iconKey);
+                        closeModal();
+                    },
+                    currentIconKey: point.markerIcon || 'default',
+                    previewColor: group.color
+                }});
             };
 
             const handleOpenImportModal = () => {
@@ -2216,60 +2211,81 @@
                     addToast('الرجاء تحديد منطقة عمل أولاً.', 'error');
                     return;
                 }
-                setModal(
-                    <ImportChoiceModal
-                        onClose={closeModal}
-                        onPasteClick={() => {
-                            closeModal();
-                            setTimeout(() => {
-                                handleOpenDirectPasteModal();
-                            }, 50);
-                        }}
-                        onFileClick={() => {
-                            closeModal();
-                            fileInputRef.current.click();
-                        }}
-                    />
-                );
+                setModal({type: 'importChoice', props: {
+                    onClose: closeModal,
+                    onPasteClick: () => {
+                        closeModal();
+                        setTimeout(() => {
+                            handleOpenDirectPasteModal();
+                        }, 50);
+                    },
+                    onFileClick: () => {
+                        closeModal();
+                        fileInputRef.current.click();
+                    }
+                }});
             };
 
             const handleOpenExportModal = () => {
-                setModal(
-                    <ExportChoiceModal
-                        onClose={closeModal}
-                        onExportClick={() => {
-                            closeModal();
-                            setTimeout(() => {
-                                setModal(<ExportPointsModal workAreas={workAreas} onClose={closeModal} onExport={handleExportData} />);
-                            }, 50);
-                        }}
-                        onSaveClick={() => {
-                            closeModal();
-                            handleSaveProject();
-                        }}
-                    />
-                );
+                setModal({type: 'exportChoice', props: {
+                    onClose: closeModal,
+                    onExportClick: () => {
+                        closeModal();
+                        setTimeout(() => {
+                            setModal({type: 'exportPoints', props: { workAreas, onClose: closeModal, onExport: handleExportData }});
+                        }, 50);
+                    },
+                    onSaveClick: () => {
+                        closeModal();
+                        handleSaveProject();
+                    }
+                }});
             };
 
             const handleOpenToolsModal = () => {
-                setModal(
-                    <ToolsModal
-                        settings={{...displaySettings, isDeleteMode}}
-                        onClose={closeModal}
-                        onUpdateSettings={handleUpdateGroupSettings}
-                        onToggleDeleteMode={handleToggleDeleteMode}
-                        onOpenScreenshotModal={() => {
-                            closeModal();
-                            setTimeout(handleOpenScreenshotOptions, 100); 
-                        }}
-                        isZoomedInEnough={isZoomedInEnough}
-                    />
-                );
+                setModal({type: 'tools'});
+            };
+
+            const renderModal = () => {
+                if (!modal.type) return null;
+                switch (modal.type) {
+                    case 'prompt':
+                    case 'confirm':
+                        return <GenericModal {...modal.props} />;
+                    case 'markerPicker':
+                        return <MarkerPickerModal {...modal.props} />;
+                    case 'importChoice':
+                        return <ImportChoiceModal {...modal.props} />;
+                    case 'directPaste':
+                        return <DirectPasteModal {...modal.props} />;
+                    case 'importPoints':
+                        return <ImportPointsModal {...modal.props} />;
+                    case 'exportChoice':
+                        return <ExportChoiceModal {...modal.props} />;
+                    case 'exportPoints':
+                        return <ExportPointsModal {...modal.props} />;
+                    case 'screenshotOptions':
+                        return <ScreenshotOptionsModal {...modal.props} />;
+                    case 'tools':
+                         return <ToolsModal
+                                settings={{...displaySettings, isDeleteMode}}
+                                onClose={closeModal}
+                                onUpdateSettings={handleUpdateGroupSettings}
+                                onToggleDeleteMode={handleToggleDeleteMode}
+                                onOpenScreenshotModal={() => {
+                                    closeModal();
+                                    setTimeout(handleOpenScreenshotOptions, 100); 
+                                }}
+                                isZoomedInEnough={isZoomedInEnough}
+                            />;
+                    default:
+                        return null;
+                }
             };
             
             return (
                 <div className="h-screen w-screen flex flex-col bg-slate-100 dark:bg-slate-900">
-                    {modal}
+                    {renderModal()}
                     <input type="file" ref={fileInputRef} onChange={handleFileLoad} style={{ display: 'none' }} accept=".txt,.csv,.tsv,.json,.hemap" />
                     <Header onToggleFullScreen={() => setIsMapFullScreen(f => !f)} isFullScreen={isMapFullScreen} onToggleSidebar={() => setIsSidebarOpen(true)} />
                     <div className="flex flex-grow min-h-0"> 
