@@ -1408,7 +1408,7 @@
             );
         };
         
-        const ExportChoiceModal = ({ onClose, onExportClick, onSaveClick }) => {
+        const ExportChoiceModal = ({ onClose, onExportClick, onSaveClick, onDxfClick }) => {
             return (
                 <GenericModal
                     title="تصدير / حفظ"
@@ -1423,6 +1423,10 @@
                             <Icon name="file-output" className="ml-2" />
                             تصدير النقاط (CSV, SCR...)
                         </button>
+                        <button onClick={onDxfClick} className="button-secondary flex items-center justify-center w-full !py-3 text-base">
+                            <Icon name="file-axis-3d" className="ml-2" />
+                            تصدير إلى DXF
+                        </button>
                         <button onClick={onSaveClick} className="button-primary flex items-center justify-center w-full !py-3 text-base">
                             <Icon name="save-all" className="ml-2" />
                             حفظ المشروع بالكامل (.hemap)
@@ -1432,12 +1436,12 @@
             );
         };
 
-        const ExportPointsModal = ({ workAreas, onClose, onExport }) => {
+        const ExportPointsModal = ({ workAreas, onClose, onExport, initialFormat = 'csv' }) => {
             const { addToast } = useAppContext();
             const [selectedIds, setSelectedIds] = useState({});
-            const [exportFormat, setExportFormat] = useState('csv');
+            const [exportFormat, setExportFormat] = useState(initialFormat);
             const [delimiter, setDelimiter] = useState(',');
-            const [acadScriptType, setAcadScriptType] = useState('pline');
+            const [entityType, setEntityType] = useState('pline'); // Renamed from acadScriptType
             const [addCsvDescription, setAddCsvDescription] = useState(false);
             const [generatedCommand, setGeneratedCommand] = useState('');
             
@@ -1447,17 +1451,15 @@
             useEffect(() => {
                 if (exportFormat === 'csv') {
                     setFileName('تصدير_نقاط');
+                    setFileExtension('csv');
                 } else if (exportFormat === 'acad_script') {
-                    setFileName(`سكريبت_${acadScriptType}`);
+                    setFileName(`سكريبت_${entityType}`);
                     setFileExtension('scr');
+                } else if (exportFormat === 'dxf') {
+                    setFileName(`رسم_${entityType}`);
+                    setFileExtension('dxf');
                 }
-            }, [exportFormat, acadScriptType]);
-
-            useEffect(() => {
-                if (exportFormat === 'acad_script') {
-                    setFileName(`سكريبت_${acadScriptType}`);
-                }
-            }, [acadScriptType]);
+            }, [exportFormat, entityType]);
 
             const handleSelectionChange = (id, type) => {
                 setSelectedIds(prev => {
@@ -1484,7 +1486,7 @@
                     addToast('الرجاء إدخال اسم ملف صالح.', 'error');
                     return;
                 }
-                const options = { selectedIds, exportFormat, delimiter, fileExtension, acadScriptType, addCsvDescription };
+                const options = { selectedIds, exportFormat, delimiter, fileExtension, entityType, addCsvDescription };
                 const result = onExport(options, fileName.trim());
 
                 if (exportFormat === 'acad_script') {
@@ -1544,8 +1546,9 @@
                         <div>
                             <h3 className="text-lg font-semibold mb-2">2. تحديد الصيغة والإعدادات</h3>
                             <div className="space-y-2">
-                                <div className="flex items-center"><input type="radio" id="format-csv" name="format" value="csv" checked={exportFormat === 'csv'} onChange={e => setExportFormat(e.target.value)} className="ml-2" /><label htmlFor="format-csv">ملف نصي</label></div>
-                                <div className="flex items-center"><input type="radio" id="format-acad" name="format" value="acad_script" checked={exportFormat === 'acad_script'} onChange={e => setExportFormat(e.target.value)} className="ml-2" /><label htmlFor="format-acad">سكريبت AutoCAD/Civil</label></div>
+                                <div className="flex items-center"><input type="radio" id="format-csv" name="format" value="csv" checked={exportFormat === 'csv'} onChange={e => setExportFormat(e.target.value)} className="ml-2" /><label htmlFor="format-csv">ملف نصي (CSV/TXT)</label></div>
+                                <div className="flex items-center"><input type="radio" id="format-acad" name="format" value="acad_script" checked={exportFormat === 'acad_script'} onChange={e => setExportFormat(e.target.value)} className="ml-2" /><label htmlFor="format-acad">سكريبت AutoCAD (.scr)</label></div>
+                                <div className="flex items-center"><input type="radio" id="format-dxf" name="format" value="dxf" checked={exportFormat === 'dxf'} onChange={e => setExportFormat(e.target.value)} className="ml-2" /><label htmlFor="format-dxf">ملف DXF</label></div>
                             </div>
                             
                             <div className="mt-4">
@@ -1588,11 +1591,11 @@
                                     </div>
                                 </div>
                             )}
-                            {exportFormat === 'acad_script' && (
+                            {(exportFormat === 'acad_script' || exportFormat === 'dxf') && (
                                 <div className="mt-4 space-y-4">
                                     <div>
-                                        <label htmlFor="acad-script-type" className="block text-sm font-medium mb-1">نوع السكريبت</label>
-                                        <select id="acad-script-type" value={acadScriptType} onChange={e => setAcadScriptType(e.target.value)} className="block w-full p-2 border rounded-md dark:bg-slate-700 dark:border-slate-600">
+                                        <label htmlFor="entity-type" className="block text-sm font-medium mb-1">نوع الكيان</label>
+                                        <select id="entity-type" value={entityType} onChange={e => setEntityType(e.target.value)} className="block w-full p-2 border rounded-md dark:bg-slate-700 dark:border-slate-600">
                                             <option value="pline">خطوط متصلة (Polyline)</option>
                                             <option value="points">نقاط (Points)</option>
                                         </select>
@@ -1799,7 +1802,6 @@
         
         // ====================================================================
         //  FILE: src/components/other/ScreenshotStamp.js
-        //  مكون جديد لعرض لوحة البيانات الخاصة بلقطة الشاشة
         // ====================================================================
         const ScreenshotStamp = ({ isVisible, areaName, groupName, options }) => {
             if (!options) return null;
@@ -1808,10 +1810,10 @@
                 position: 'absolute',
                 bottom: '2rem',
                 right: '1rem',
-                zIndex: 30, // للتأكد من أنها فوق الخريطة
+                zIndex: 30, 
                 transition: 'opacity 0.2s ease-in-out',
                 opacity: isVisible ? 1 : 0,
-                pointerEvents: 'none', // لمنع التفاعل معها
+                pointerEvents: 'none', 
             };
         
             return (
@@ -2204,7 +2206,7 @@
             };
             
             const handleExportData = (options, fileNameFromModal) => {
-                const { selectedIds, exportFormat, delimiter, fileExtension, acadScriptType, addCsvDescription } = options;
+                const { selectedIds, exportFormat, delimiter, fileExtension, entityType, addCsvDescription } = options;
                 
                 const selectedGroups = workAreas.flatMap(area => 
                     area.groups.filter(group => selectedIds[area.id] || selectedIds[`group-${group.id}`])
@@ -2234,7 +2236,7 @@
                     return null;
                 } 
                 else if (exportFormat === 'acad_script') {
-                    if (acadScriptType === 'pline') {
+                    if (entityType === 'pline') {
                         content = selectedGroups.map(group => 
                             "PLINE\n" + group.points.map(p => `${safeToFixed(p.utm?.easting)},${safeToFixed(p.utm?.northing)}`).join('\n')
                         ).join('\n \n');
@@ -2244,9 +2246,50 @@
                         ).join('\n');
                     }
                     return content;
+                } else if (exportFormat === 'dxf') {
+                    content = generateDxfContent(selectedGroups, { entityType });
+                    downloadFile(content, `${fileNameFromModal}.dxf`, 'application/dxf');
+                    return null;
                 }
 
                 return null;
+            };
+
+            const generateDxfContent = (groups, options) => {
+                let dxf = "0\nSECTION\n2\nENTITIES\n";
+                const { entityType } = options;
+
+                if (entityType === 'points') {
+                    groups.forEach(group => {
+                        group.points.forEach(p => {
+                            dxf += "0\nPOINT\n";
+                            dxf += `8\n${group.name.replace(/ /g, "_")}\n`; // Layer name
+                            dxf += `10\n${p.utm.easting.toFixed(3)}\n`; // X
+                            dxf += `20\n${p.utm.northing.toFixed(3)}\n`; // Y
+                            dxf += `30\n${p.elevation.toFixed(3)}\n`; // Z
+                        });
+                    });
+                } else { // pline
+                    groups.forEach(group => {
+                        if (group.points.length > 0) {
+                            dxf += "0\nPOLYLINE\n";
+                            dxf += `8\n${group.name.replace(/ /g, "_")}\n`;
+                            dxf += "66\n1\n"; // Entities follow
+                            dxf += "70\n0\n"; // Open polyline
+                            group.points.forEach(p => {
+                                dxf += "0\nVERTEX\n";
+                                dxf += `8\n${group.name.replace(/ /g, "_")}\n`;
+                                dxf += `10\n${p.utm.easting.toFixed(3)}\n`;
+                                dxf += `20\n${p.utm.northing.toFixed(3)}\n`;
+                                dxf += `30\n${p.elevation.toFixed(3)}\n`;
+                            });
+                            dxf += "0\nSEQEND\n";
+                        }
+                    });
+                }
+
+                dxf += "0\nENDSEC\n0\nEOF\n";
+                return dxf;
             };
 
             const triggerGetCurrentLocation = async () => {
@@ -2435,7 +2478,13 @@
                     onExportClick: () => {
                         closeModal();
                         setTimeout(() => {
-                            setModal({type: 'exportPoints', props: { workAreas, onClose: closeModal, onExport: handleExportData }});
+                            setModal({type: 'exportPoints', props: { workAreas, onClose: closeModal, onExport: handleExportData, initialFormat: 'csv' }});
+                        }, 50);
+                    },
+                    onDxfClick: () => {
+                        closeModal();
+                        setTimeout(() => {
+                            setModal({type: 'exportPoints', props: { workAreas, onClose: closeModal, onExport: handleExportData, initialFormat: 'dxf' }});
                         }, 50);
                     },
                     onSaveClick: () => {
