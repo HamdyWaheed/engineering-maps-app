@@ -73,33 +73,35 @@
     
         /* --- NEW STYLES FOR MAP LABELS --- */
         .point-label-card {
-            background: rgba(255, 255, 255, 0.85);
+            background: rgba(255, 255, 255, 0.9);
             backdrop-filter: blur(4px);
             -webkit-backdrop-filter: blur(4px);
-            border-radius: 6px;
-            padding: 4px 8px;
-            font-size: 12px;
+            border-radius: 8px;
+            padding: 5px 10px;
+            font-size: 13px;
             font-family: 'Cairo', sans-serif;
             border: 1px solid #e2e8f0;
             box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-            transform: translate(-50%, -150%);
             position: relative;
             white-space: nowrap;
             pointer-events: none;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
         .dark-mode .point-label-card {
-            background: rgba(30, 41, 59, 0.85);
+            background: rgba(30, 41, 59, 0.9);
             border-color: #334155;
             color: #e2e8f0;
         }
         .point-label-card::after {
             content: '';
             position: absolute;
-            bottom: -8px;
+            bottom: -7px;
             left: 50%;
             transform: translateX(-50%);
             width: 2px;
-            height: 8px;
+            height: 7px;
             background-color: #475569;
         }
         .dark-mode .point-label-card::after {
@@ -115,14 +117,15 @@
         .point-label-body {
             font-weight: 600;
             color: #475569;
-            font-size: 11px;
-            border-top: 1px solid #cbd5e1;
-            padding-top: 2px;
-            margin-top: 2px;
         }
         .dark-mode .point-label-body {
             color: #94a3b8;
-            border-color: #334155;
+        }
+        .point-label-separator {
+            color: #cbd5e1;
+        }
+        .dark-mode .point-label-separator {
+            color: #475569;
         }
 
         .distance-label {
@@ -132,46 +135,33 @@
             text-shadow: 0 0 4px black, 0 0 4px black, 0 0 4px black;
             padding: 2px 4px;
             pointer-events: none;
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
 
         .area-label-card {
-            background: rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 0.85);
             backdrop-filter: blur(5px);
             -webkit-backdrop-filter: blur(5px);
             border-radius: 8px;
-            padding: 12px;
+            padding: 10px 12px;
             text-align: right;
-            border: 1px solid #cbd5e1;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
             pointer-events: none;
-            min-width: 220px;
+            min-width: 200px;
         }
         .dark-mode .area-label-card {
-            background: rgba(2, 6, 23, 0.9);
+            background: rgba(15, 23, 42, 0.85);
             border-color: #334155;
-        }
-        .area-label-title {
-            font-size: 16px;
-            font-weight: 700;
-            color: #1e293b;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 8px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid #e2e8f0;
-        }
-        .dark-mode .area-label-title {
-            color: #f1f5f9;
-            border-color: #334155;
-        }
-        .area-label-title i {
-            width: 20px;
-            height: 20px;
         }
         .area-label-card div {
             font-size: 14px;
             color: #374151;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
         .dark-mode .area-label-card div {
             color: #cbd5e1;
@@ -1037,20 +1027,24 @@
                                     pointLabel = (labelContent === 'name') ? (point.name || `${index + 1}`) : `${index + 1}`;
                                 }
                                 if (showElevations && point.elevation != null) {
-                                    elevationLabel = `${point.elevation.toFixed(2)}m`;
+                                    elevationLabel = `Z: ${point.elevation.toFixed(2)}m`;
                                 }
 
                                 if (pointLabel || elevationLabel) {
+                                    const headerPart = pointLabel ? `<span class="point-label-header">${pointLabel}</span>` : '';
+                                    const elevationPart = elevationLabel ? `<span class="point-label-body">${elevationLabel}</span>` : '';
+                                    const separator = pointLabel && elevationLabel ? `<span class="point-label-separator">|</span>` : '';
+                                    
                                     labelHtml = `<div class="point-label-card ${darkMode ? 'dark-mode' : ''}">
-                                        ${pointLabel ? `<div class="point-label-header">${pointLabel}</div>` : ''}
-                                        ${pointLabel && elevationLabel ? `<div class="point-label-body">${elevationLabel}</div>` : ''}
-                                        ${!pointLabel && elevationLabel ? `<div class="point-label-header">${elevationLabel}</div>` : ''}
+                                        ${headerPart}
+                                        ${separator}
+                                        ${elevationPart}
                                     </div>`;
                                 }
                             }
 
                             if (labelHtml) {
-                                newOverlays.push({ id: `point-${point.id}`, position: latLng, text: labelHtml, styleProps: { transform: 'translate(-50%, -150%)' } });
+                                newOverlays.push({ id: `point-${point.id}`, position: latLng, text: labelHtml, styleProps: { transform: 'translate(-50%, -42px)' } });
                             }
 
                             const utm = convertLatLngToUtm(point.lat, point.lng, utmZone);
@@ -1134,14 +1128,9 @@
                                 const areaText = area > 400000 ? `${(area / 1000000).toFixed(3)} كم²` : `${area.toFixed(2)} م²`;
                                 const perimeterText = perimeter > 10000 ? `${(perimeter / 1000).toFixed(2)} كم` : `${perimeter.toFixed(2)} م`;
                                 
-                                const areaHtml = `<div class="area-label-card ${darkMode ? 'dark-mode' : ''}" style="border:none; background: rgba(255,255,255,0.8); backdrop-filter: blur(4px);">
-                                    <div style="display:flex; align-items:center; gap:8px;">
-                                      <i data-lucide="square" style="color:${group.color};"></i>
-                                      <div>
-                                        <div><span class="font-semibold">المساحة:</span> ${areaText}</div>
-                                        <div><span class="font-semibold">المحيط:</span> ${perimeterText}</div>
-                                      </div>
-                                    </div>
+                                const areaHtml = `<div class="area-label-card ${darkMode ? 'dark-mode' : ''}">
+                                    <div><i data-lucide="square" style="color:${group.color};"></i><span class="font-semibold">المساحة:</span> ${areaText}</div>
+                                    <div class="mt-1 pt-1 border-t border-slate-200 dark:border-slate-700"><i data-lucide="move-horizontal" style="color:${group.color};"></i><span class="font-semibold">المحيط:</span> ${perimeterText}</div>
                                 </div>`;
                                 
                                 newOverlays.push({ id: `area-${group.id}`, position: bounds.getCenter(), text: areaHtml, styleProps: { transform: 'translate(-50%, -50%)' } });
@@ -2326,7 +2315,6 @@
                 setIsTakingScreenshot(true);
                 elementsToHide.forEach(el => { if (el) el.style.visibility = 'hidden'; });
 
-                // Hide the original top-right panel during screenshot
                 const originalPanel = document.getElementById('active-area-indicator');
                 if (originalPanel) originalPanel.style.visibility = 'hidden';
                 
