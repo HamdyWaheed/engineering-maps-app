@@ -15,6 +15,10 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.8.0/proj4.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- مكتبات جديدة لإنشاء PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    
     <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAKXVuJsf0vANjBtlUIWcPj-wNWPkOc-S4&libraries=geometry,places,elevation&callback=initMap"></script>
 
     <!-- قسم الأنماط المخصصة (Custom CSS) -->
@@ -198,6 +202,7 @@
         // ====================================================================
         const { useState, useEffect, useRef, useCallback, useMemo, createContext, useContext, forwardRef, useImperativeHandle } = React;
         const { createRoot } = ReactDOM;
+        // Note: jsPDF is accessed via window.jspdf to ensure it's loaded.
 
         // ====================================================================
         //  FILE: src/constants.js
@@ -367,6 +372,34 @@
             link.click();
             document.body.removeChild(link);
             URL.revokeObjectURL(link.href);
+        };
+
+        const getWeatherData = async (lat, lng) => {
+            if (lat == null || lng == null) return null;
+            // FIX: Changed the API endpoint to the marine API to support wave_height parameter.
+            const apiUrl = `https://marine-api.open-meteo.com/v1/marine?latitude=${lat.toFixed(4)}&longitude=${lng.toFixed(4)}&current=wind_speed_10m,wave_height&timeformat=unixtime`;
+            try {
+                const response = await fetch(apiUrl);
+                if (!response.ok) {
+                    // Log the error response for better debugging
+                    const errorBody = await response.text();
+                    console.error("Weather API request failed with status:", response.status, "Response:", errorBody);
+                    return null;
+                }
+                const data = await response.json();
+                if (!data.current) return null;
+                return {
+                    windSpeed: data.current.wind_speed_10m,
+                    waveHeight: data.current.wave_height,
+                    units: {
+                        windSpeed: data.current_units.wind_speed_10m,
+                        waveHeight: data.current_units.wave_height,
+                    }
+                };
+            } catch (error) {
+                console.error("Error fetching weather data:", error);
+                return null;
+            }
         };
 
         // ====================================================================
@@ -2262,27 +2295,27 @@
                 groups.forEach(group => {
                     const validPoints = group.points.filter(p => p && p.utm && typeof p.utm.easting === 'number' && typeof p.utm.northing === 'number');
                     
-                    if (validPoints.length === 0) return; // Skip group if no valid points
+                    if (validPoints.length === 0) return;
 
                     if (entityType === 'points') {
                         validPoints.forEach(p => {
                             dxf += "0\nPOINT\n";
-                            dxf += `8\n${group.name.replace(/ /g, "_")}\n`; // Layer name
-                            dxf += `10\n${p.utm.easting.toFixed(3)}\n`; // X
-                            dxf += `20\n${p.utm.northing.toFixed(3)}\n`; // Y
-                            dxf += `30\n${(p.elevation ?? 0).toFixed(3)}\n`; // Z - Fixed
+                            dxf += `8\n${group.name.replace(/ /g, "_")}\n`;
+                            dxf += `10\n${p.utm.easting.toFixed(3)}\n`;
+                            dxf += `20\n${p.utm.northing.toFixed(3)}\n`;
+                            dxf += `30\n${(p.elevation ?? 0).toFixed(3)}\n`;
                         });
                     } else { // pline
                         dxf += "0\nPOLYLINE\n";
                         dxf += `8\n${group.name.replace(/ /g, "_")}\n`;
-                        dxf += "66\n1\n"; // Entities follow
-                        dxf += "70\n0\n"; // Open polyline
+                        dxf += "66\n1\n";
+                        dxf += "70\n0\n";
                         validPoints.forEach(p => {
                             dxf += "0\nVERTEX\n";
                             dxf += `8\n${group.name.replace(/ /g, "_")}\n`;
                             dxf += `10\n${p.utm.easting.toFixed(3)}\n`;
                             dxf += `20\n${p.utm.northing.toFixed(3)}\n`;
-                            dxf += `30\n${(p.elevation ?? 0).toFixed(3)}\n`; // Fixed
+                            dxf += `30\n${(p.elevation ?? 0).toFixed(3)}\n`;
                         });
                         dxf += "0\nSEQEND\n";
                     }
@@ -2384,25 +2417,29 @@
                 });
             };
 
-            const handleOpenScreenshotOptions = () => {
+            const handleOpenScreenshotOptions = (onConfirm) => {
                 setModal({type: 'screenshotOptions', props: {
                     onClose: closeModal,
                     onConfirm: (options) => {
                         closeModal();
-                        executeScreenshot(options);
+                        if (onConfirm) {
+                           onConfirm(options);
+                        }
                     }
                 }});
             };
 
-            const executeScreenshot = (options) => {
+            const executeScreenshot = (options, onComplete) => {
                 setScreenshotOptions(options);
                 setIsTakingScreenshot(true);
                 
                 requestAnimationFrame(() => {
                     setTimeout(() => { 
                         const captureArea = document.getElementById('capture-area');
-                        if (!captureArea) {
+                        if (!captureArea || !window.html2canvas) {
                             setIsTakingScreenshot(false);
+                            if(onComplete) onComplete(null);
+                             addToast('فشل تهيئة أداة لقطة الشاشة.', 'error');
                             return;
                         }
             
@@ -2416,27 +2453,139 @@
                         
                         elementsToHide.forEach(el => { if (el) el.style.visibility = 'hidden'; });
                         
-                        addToast('جاري أخذ لقطة شاشة...', 'info', 2000);
-
                         html2canvas(captureArea, {
                             useCORS: true,
                             allowTaint: true,
                             backgroundColor: null,
                         }).then(canvas => {
-                            const link = document.createElement('a');
-                            link.download = `خريطة-${new Date().toISOString().slice(0, 10)}.png`;
-                            link.href = canvas.toDataURL('image/png');
-                            link.click();
-                            addToast('تم حفظ لقطة الشاشة بنجاح.', 'success');
+                            if(onComplete) onComplete(canvas.toDataURL('image/png'));
                         }).catch(err => {
                             console.error("Screenshot error:", err);
                             addToast('فشل أخذ لقطة الشاشة.', 'error');
+                            if(onComplete) onComplete(null);
                         }).finally(() => {
                             elementsToHide.forEach(el => { if (el) el.style.visibility = 'visible'; });
                             setIsTakingScreenshot(false);
                         });
                     }, 100);
                 });
+            };
+
+            const handleGeneratePDF = async () => {
+                if (!selectedGroup || !selectedArea) {
+                    addToast("الرجاء تحديد مجموعة نقاط أولاً لإنشاء التقرير.", "error");
+                    return;
+                }
+                if (!window.jspdf || !window.jspdf.jsPDF) {
+                    addToast("مكتبة إنشاء التقارير (jsPDF) غير جاهزة. يرجى المحاولة مرة أخرى.", "error");
+                    return;
+                }
+                addToast("جاري تحضير التقرير...", "info");
+
+                // 1. Get Screenshot
+                const mapImageData = await new Promise(resolve => {
+                    executeScreenshot({ showPanel: false, showTimestamp: false }, resolve);
+                });
+
+                if (!mapImageData) {
+                    addToast("فشل التقاط صورة الخريطة للتقرير.", "error");
+                    return;
+                }
+
+                // 2. Get Weather Data
+                const groupCenter = selectedGroup.points.length > 0
+                    ? { lat: selectedGroup.points.reduce((a, b) => a + b.lat, 0) / selectedGroup.points.length, lng: selectedGroup.points.reduce((a, b) => a + b.lng, 0) / selectedGroup.points.length }
+                    : null;
+                const weatherData = await getWeatherData(groupCenter?.lat, groupCenter?.lng);
+
+                // 3. Generate PDF
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                // Add the font to jsPDF. The font is assumed to be available globally.
+                // This is a placeholder for a real font file. For production, you'd load a Base64 font.
+                // For now, we rely on standard fonts and hope the browser can render them.
+                doc.setFont('Helvetica');
+
+                let yPos = 20;
+                
+                // --- Header ---
+                doc.setFontSize(22);
+                doc.text("Technical Report", 105, yPos, { align: 'center' });
+                yPos += 15;
+
+                // --- Project Info (RTL) ---
+                doc.setFontSize(12);
+                doc.setR2L(true);
+                doc.text(`: ${selectedArea.name}`, 195, yPos, { align: 'right' });
+                doc.text("اسم المشروع", 150, yPos, { align: 'right' });
+                yPos += 8;
+                doc.text(`: ${selectedGroup.name}`, 195, yPos, { align: 'right' });
+                doc.text("اسم المجموعة", 150, yPos, { align: 'right' });
+                yPos += 10;
+                doc.setR2L(false); // Switch back to LTR
+
+                // --- Weather Info (RTL for labels, LTR for values) ---
+                if (weatherData) {
+                    doc.setR2L(true);
+                    doc.setFontSize(14);
+                    doc.text("بيانات الطقس", 195, yPos, { align: 'right' });
+                    yPos += 8;
+                    doc.setFontSize(11);
+                    doc.text("سرعة الرياح", 195, yPos, { align: 'right' });
+                    doc.text("ارتفاع الأمواج", 195, yPos + 7, { align: 'right' });
+                    doc.setR2L(false);
+                    doc.text(`: ${weatherData.windSpeed} ${weatherData.units.windSpeed}`, 160, yPos, { align: 'left' });
+                    doc.text(`: ${weatherData.waveHeight} ${weatherData.units.waveHeight}`, 160, yPos + 7, { align: 'left' });
+                    yPos += 17;
+                }
+
+                // --- Map Image ---
+                const imgProps = doc.getImageProperties(mapImageData);
+                const pdfWidth = doc.internal.pageSize.getWidth();
+                const margin = 15;
+                const imgWidth = pdfWidth - margin * 2;
+                const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+                if (yPos + imgHeight > doc.internal.pageSize.getHeight() - 30) {
+                    doc.addPage();
+                    yPos = 20;
+                }
+                doc.addImage(mapImageData, 'PNG', margin, yPos, imgWidth, imgHeight);
+                yPos += imgHeight + 10;
+
+                // --- Points Table (LTR) ---
+                const tableData = selectedGroup.points.map((p, i) => [
+                    i + 1,
+                    p.utm?.easting?.toFixed(3) || 'N/A',
+                    p.utm?.northing?.toFixed(3) || 'N/A',
+                    (p.elevation ?? 0).toFixed(3),
+                    p.description || '-',
+                ]);
+
+                doc.autoTable({
+                    startY: yPos,
+                    head: [['#', 'Easting (X)', 'Northing (Y)', 'Elevation (Z)', 'Description']],
+                    body: tableData,
+                    theme: 'grid',
+                    headStyles: { font: 'Helvetica', halign: 'center', fillColor: [41, 128, 185] },
+                    bodyStyles: { font: 'Helvetica', halign: 'center' },
+                    columnStyles: {
+                        4: { halign: 'right', font: 'Helvetica' } // Align description to the right
+                    },
+                    didDrawPage: (data) => {
+                        // Footer
+                        const pageCount = doc.internal.getNumberOfPages();
+                        doc.setFontSize(10);
+                        doc.setR2L(false);
+                        doc.text(`Page ${data.pageNumber} of ${pageCount}`, data.settings.margin.left, doc.internal.pageSize.height - 10);
+                        doc.setR2L(true);
+                        doc.text(new Date().toLocaleDateString('ar-EG'), doc.internal.pageSize.width - data.settings.margin.right, doc.internal.pageSize.height - 10, { align: 'right' });
+                        doc.setR2L(false);
+                    }
+                });
+                
+                doc.save(`تقرير-${selectedGroup.name}.pdf`);
+                addToast("تم إنشاء التقرير بنجاح.", "success");
             };
 
             const handleOpenMarkerPickerForPoint = (point, group) => {
@@ -2524,10 +2673,15 @@
                                 onClose={closeModal}
                                 onUpdateSettings={handleUpdateGroupSettings}
                                 onToggleDeleteMode={handleToggleDeleteMode}
-                                onOpenScreenshotModal={() => {
-                                    closeModal();
-                                    setTimeout(handleOpenScreenshotOptions, 100); 
-                                }}
+                                onOpenScreenshotModal={() => handleOpenScreenshotOptions((options) => executeScreenshot(options, (dataUrl) => {
+                                    if(dataUrl) {
+                                        const link = document.createElement('a');
+                                        link.download = `خريطة-${new Date().toISOString().slice(0, 10)}.png`;
+                                        link.href = dataUrl;
+                                        link.click();
+                                        addToast('تم حفظ لقطة الشاشة بنجاح.', 'success');
+                                    }
+                                }))}
                                 isZoomedInEnough={isZoomedInEnough}
                             />;
                     default:
@@ -2569,7 +2723,7 @@
                                 onOpenImportModal={handleOpenImportModal}
                                 onToggleGroupVisibility={handleToggleGroupVisibility}
                                 onSetGroupMarker={handleSetGroupMarker}
-                                onGeneratePDF={() => addToast('هذه الميزة قيد التطوير حاليًا.', 'info')}
+                                onGeneratePDF={handleGeneratePDF}
                                 setModal={setModal}
                                 closeModal={closeModal}
                             />
@@ -2726,7 +2880,15 @@
                                     onClose={() => setIsToolsSheetOpen(false)}
                                     onUpdateSettings={handleUpdateGroupSettings}
                                     onToggleDeleteMode={handleToggleDeleteMode}
-                                    onOpenScreenshotModal={handleOpenScreenshotOptions}
+                                    onOpenScreenshotModal={() => handleOpenScreenshotOptions((options) => executeScreenshot(options, (dataUrl) => {
+                                        if(dataUrl) {
+                                            const link = document.createElement('a');
+                                            link.download = `خريطة-${new Date().toISOString().slice(0, 10)}.png`;
+                                            link.href = dataUrl;
+                                            link.click();
+                                            addToast('تم حفظ لقطة الشاشة بنجاح.', 'success');
+                                        }
+                                    }))}
                                     isZoomedInEnough={isZoomedInEnough}
                                 />
                             )}
@@ -2742,11 +2904,18 @@
         const container = document.getElementById('root');
         const root = createRoot(container);
         
-        window.initMap = () => root.render(
-            <AppProvider>
-                <App />
-            </AppProvider>
-        );
+        window.initMap = () => {
+            try {
+                root.render(
+                    <AppProvider>
+                        <App />
+                    </AppProvider>
+                );
+            } catch (error) {
+                console.error("Fatal error during React rendering:", error);
+                document.getElementById('root').innerHTML = '<div style="padding: 2rem; text-align: center; font-family: sans-serif;"><h1>An error occurred</h1><p>Could not load the application. Please check the console for details.</p></div>';
+            }
+        };
         
     </script>
 </body>
