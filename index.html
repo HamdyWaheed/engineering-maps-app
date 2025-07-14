@@ -1,34 +1,78 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <!-- قسم البيانات الوصفية والإعدادات الأساسية للصفحة -->
+    <!-- ==================================================================== -->
+    <!-- BLOCK: METADATA & SETUP -->
+    <!-- ==================================================================== -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>تطبيق الخرائط الهندسية - تطوير م. حمدي وحيد</title>
     
-    <!-- قسم استيراد المكتبات والخطوط والأنماط -->
+    <!-- ==================================================================== -->
+    <!-- BLOCK: LIBRARIES, FONTS, STYLES -->
+    <!-- ==================================================================== -->
+    
+    <!-- مكتبة خط القاهرة لتحسين الواجهة العربية -->
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- TailwindCSS: مكتبة لتصميم الواجهات بسرعة عبر كلاسات جاهزة -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React & ReactDOM: المكتبات الأساسية لبناء واجهة المستخدم التفاعلية -->
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Babel: مترجم يقوم بتحويل كود JSX (الذي يشبه HTML) إلى JavaScript يفهمه المتصفح -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Lucide Icons: مكتبة أيقونات خفيفة وجميلة -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Proj4.js: مكتبة أساسية لتحويل الإحداثيات بين الأنظمة المختلفة (مثل WGS84 و UTM) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.8.0/proj4.js"></script>
+    
+    <!-- html2canvas: مكتبة لأخذ لقطة شاشة (screenshot) لجزء من الصفحة -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <!-- Google Maps API: الخدمة الأساسية للخرائط. يتم استدعاء دالة initMap بعد تحميلها -->
     <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAKXVuJsf0vANjBtlUIWcPj-wNWPkOc-S4&libraries=geometry,places,elevation&callback=initMap"></script>
 
-    <!-- قسم الأنماط المخصصة (Custom CSS) -->
+    <!-- ==================================================================== -->
+    <!-- BLOCK: CUSTOM CSS -->
+    <!-- ==================================================================== -->
     <style>
+        /* إعدادات أساسية لضمان امتداد الصفحة بالكامل واستخدام الخط المحدد */
         html, body { height: 100%; }
-        body { font-family: 'Cairo', sans-serif; overscroll-behavior: none; -webkit-tap-highlight-color: transparent; overflow: hidden; }
+        body { 
+            font-family: 'Cairo', sans-serif; 
+            overscroll-behavior: none; 
+            -webkit-tap-highlight-color: transparent; 
+            overflow: hidden; /* منع السكرول للصفحة الرئيسية */
+        }
         
+        /* كلاسات الوضع الليلي */
         .dark-mode { background-color: #020617; color: #e2e8f0; }
         .dark-mode body { background-color: #020617; }
 
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.7); display: flex; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(4px); animation: fade-in 0.3s ease-out forwards; }
-        .modal-content { background-color: white; padding: 1.5rem; border-radius: 0.75rem; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); width: 95%; max-width: 800px; max-height: 90vh; overflow-y: auto; animation: slide-in-down 0.3s ease-out forwards; transform-origin: center; }
+        /* ستايلات الواجهات المنبثقة (Modals) */
+        .modal-overlay { 
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0; 
+            background-color: rgba(0, 0, 0, 0.7); 
+            display: flex; align-items: center; justify-content: center; z-index: 1000; 
+            backdrop-filter: blur(4px); 
+            animation: fade-in 0.3s ease-out forwards; 
+        }
+        .modal-content { 
+            background-color: white; padding: 1.5rem; border-radius: 0.75rem; 
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); 
+            width: 95%; max-width: 800px; max-height: 90vh; 
+            overflow-y: auto; 
+            animation: slide-in-down 0.3s ease-out forwards; 
+            transform-origin: center; 
+        }
         .dark-mode .modal-content { background-color: #1e293b; }
         
+        /* ستايلات الأزرار الرئيسية */
         .button-primary { background-color: #2563eb; color: white; padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: 600; transition: all 0.2s; box-shadow: 0 1px 3px 0 rgba(0,0,0,0.1), 0 1px 2px 0 rgba(0,0,0,0.06); }
         .button-primary:hover { background-color: #1d4ed8; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); transform: translateY(-1px); }
         .button-secondary { background-color: #64748b; color: white; padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: 600; transition: all 0.2s; }
@@ -36,6 +80,7 @@
         .button-tertiary { background-color: #1e293b; color: white; padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: 600; transition: all 0.2s; }
         .button-tertiary:hover { background-color: #334155; transform: translateY(-1px); }
 
+        /* ستايلات أزرار الأيقونات */
         .icon-button { background: transparent; border: none; cursor: pointer; padding: 0.75rem; width: 48px; height: 48px; border-radius: 9999px; transition: background-color 0.2s, transform 0.2s; line-height: 1; display: flex; align-items: center; justify-content: center; }
         .icon-button:hover { background-color: rgba(0,0,0,0.1); transform: scale(1.1); }
         .dark-mode .icon-button:hover { background-color: rgba(255,255,255,0.1); }
@@ -43,17 +88,21 @@
         .icon-button.danger.active { background-color: #ef4444; color: white; }
         .icon-button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; background-color: transparent !important; }
 
+        /* تخصيص شكل شريط التمرير (Scrollbar) */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; }
         .dark-mode ::-webkit-scrollbar-track { background: #0f172a; }
         ::-webkit-scrollbar-thumb { background: #a8a29e; border-radius: 4px; }
         .dark-mode ::-webkit-scrollbar-thumb { background: #475569; }
         
+        /* حركات الأنيميشن الأساسية */
         @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slide-in-down { from { opacity: 0; transform: translateY(-20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
         @keyframes slide-in-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
         @keyframes slide-out-down { from { transform: translateY(0); } to { transform: translateY(100%); } }
+        @keyframes fade-out { from { opacity: 1; } to { opacity: 0; } }
 
+        /* ستايلات رسائل التنبيه (Toasts) */
         .toast-container { position: fixed; top: 1rem; left: 1rem; right: 1rem; z-index: 1001; display: flex; flex-direction: column; gap: 0.5rem; align-items: center; }
         .toast { background-color: white; color: #333; padding: 0.75rem 1rem; border-radius: 0.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: space-between; width: 100%; max-width: 400px; animation: slide-in-down 0.3s ease-out forwards, fade-out 0.5s ease-in 2.5s forwards; }
         .dark-mode .toast { background-color: #1e293b; color: #e2e8f0; }
@@ -63,155 +112,101 @@
         .toast-close-button { background: none; border: none; color: #666; cursor: pointer; font-size: 1.2rem; margin-right: -0.5rem; }
         .dark-mode .toast-close-button { color: #ccc; }
 
-        @keyframes slide-in-right { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
-        @keyframes fade-out { from { opacity: 1; } to { opacity: 0; } }
-        
+        /* ستايل أداة اختيار الألوان */
         .color-picker-label { position: relative; display: inline-block; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; border: 2px solid white; box-shadow: 0 0 0 1px rgba(0,0,0,0.2); transition: transform 0.2s; }
         .color-picker-label:hover { transform: scale(1.2); }
         .color-picker-label input[type="color"] { position: absolute; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
         
+        /* تخصيص شكل القوائم المنسدلة (select) */
         .custom-select { -webkit-appearance: none; -moz-appearance: none; appearance: none; background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: left 0.5rem center; background-repeat: no-repeat; background-size: 1.5em 1.5em; padding-left: 2.5rem; }
         .dark-mode .custom-select { background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); }
     
-        /* --- أنماط جديدة لتسميات الخريطة --- */
+        /* --- ستايلات بيانات النقاط على الخريطة --- */
         .point-label-card {
             background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
-            border-radius: 8px;
-            padding: 4px 8px;
-            font-family: 'Cairo', sans-serif;
-            border: 1px solid #e2e8f0;
+            backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+            border-radius: 8px; padding: 4px 8px;
+            font-family: 'Cairo', sans-serif; border: 1px solid #e2e8f0;
             box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-            position: relative;
-            white-space: nowrap;
-            pointer-events: none;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            position: relative; white-space: nowrap; pointer-events: none;
+            display: flex; flex-direction: column; align-items: center;
         }
-        .dark-mode .point-label-card {
-            background: rgba(30, 41, 59, 0.9);
-            border-color: #334155;
-            color: #e2e8f0;
-        }
-        .point-label-card::after {
-            content: '';
-            position: absolute;
-            bottom: -7px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 1.5px;
-            height: 7px;
+        .dark-mode .point-label-card { background: rgba(30, 41, 59, 0.9); border-color: #334155; color: #e2e8f0; }
+        .point-label-card::after { /* هذا الجزء يرسم الخط الصغير أسفل الكارت ليربطه بالنقطة */
+            content: ''; position: absolute; bottom: -7px; left: 50%;
+            transform: translateX(-50%); width: 1.5px; height: 7px;
             background-color: #475569;
         }
-        .dark-mode .point-label-card::after {
-            background-color: #94a3b8;
+        .dark-mode .point-label-card::after { background-color: #94a3b8; }
+        .point-label-main { display: flex; gap: 6px; align-items: center; }
+        .point-label-header { font-weight: 700; font-size: 12px; color: #1e293b; }
+        .dark-mode .point-label-header { color: #f1f5f9; }
+        .point-label-body { font-weight: 600; font-size: 11px; color: #475569; }
+        .dark-mode .point-label-body { color: #94a3b8; }
+        .point-label-separator { color: #cbd5e1; }
+        .dark-mode .point-label-separator { color: #475569; }
+        .point-label-desc { 
+            font-size: 15px; color: #64748b; border-top: 1px solid #e2e8f0;
+            margin-top: 3px; padding-top: 3px; width: 100%; text-align: center;
         }
-        .point-label-main {
-            display: flex;
-            gap: 6px;
-            align-items: center;
-        }
-        .point-label-header {
-            font-weight: 700;
-            font-size: 12px;
-            color: #1e293b;
-        }
-        .dark-mode .point-label-header {
-            color: #f1f5f9;
-        }
-        .point-label-body {
-            font-weight: 600;
-            font-size: 11px;
-            color: #475569;
-        }
-        .dark-mode .point-label-body {
-            color: #94a3b8;
-        }
-        .point-label-separator {
-            color: #cbd5e1;
-        }
-        .dark-mode .point-label-separator {
-            color: #475569;
-        }
-        .point-label-desc {
-            font-size: 15px;
-            color: #64748b;
-            border-top: 1px solid #e2e8f0;
-            margin-top: 3px;
-            padding-top: 3px;
-            width: 100%;
-            text-align: center;
-        }
-        .dark-mode .point-label-desc {
-            color: #9ca3af;
-            border-color: #334155;
-        }
+        .dark-mode .point-label-desc { color: #9ca3af; border-color: #334155; }
 
+        /* ستايل بيانات المسافة على الخريطة */
         .distance-label {
-            font-size: 14px;
-            font-weight: 700;
-            color: white;
-            text-shadow: 0 0 4px black, 0 0 4px black, 0 0 4px black;
-            padding: 2px 4px;
-            pointer-events: none;
-            display: flex;
-            align-items: center;
-            gap: 4px;
+            font-size: 14px; font-weight: 700; color: white;
+            text-shadow: 0 0 4px black, 0 0 4px black, 0 0 4px black; /* ظل للنص لزيادة الوضوح */
+            padding: 2px 4px; pointer-events: none;
+            display: flex; align-items: center; gap: 4px;
         }
 
+        /* ستايل بيانات المساحة على الخريطة */
         .area-label-card {
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(5px);
-            -webkit-backdrop-filter: blur(5px);
-            border-radius: 8px;
-            padding: 10px 12px;
-            text-align: right;
-            border: 1px solid #e2e8f0;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            pointer-events: none;
-            min-width: 200px;
+            background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px); border-radius: 8px;
+            padding: 10px 12px; text-align: right; border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1); pointer-events: none; min-width: 200px;
         }
-        .dark-mode .area-label-card {
-            background: rgba(15, 23, 42, 0.85);
-            border-color: #334155;
-        }
-        .area-label-card div {
-            font-size: 14px;
-            color: #374151;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .dark-mode .area-label-card div {
-            color: #cbd5e1;
-        }
+        .dark-mode .area-label-card { background: rgba(15, 23, 42, 0.85); border-color: #334155; }
+        .area-label-card div { font-size: 14px; color: #374151; display: flex; align-items: center; gap: 6px; }
+        .dark-mode .area-label-card div { color: #cbd5e1; }
     </style>
 </head>
 <body>
+    <!-- هذا هو العنصر الجذر الذي سيعمل عليه تطبيق React -->
     <div id="root"></div>
 
+    <!-- هنا يبدأ كود React. النوع "text/babel" يخبر المتصفح أن يستخدم Babel لتحويل الكود -->
     <script type="text/babel">
         // ====================================================================
         //  BLOCK: IMPORTS & SETUP
+        //  هنا يتم استيراد الأدوات الرئيسية من مكتبة React
         // ====================================================================
         const { useState, useEffect, useRef, useCallback, useMemo, createContext, useContext, forwardRef, useImperativeHandle } = React;
         const { createRoot } = ReactDOM;
 
         // ====================================================================
         //  FILE: src/constants.js
+        //  هنا يتم تعريف كل الثوابت المستخدمة في التطبيق لتسهيل التعديل عليها لاحقاً
         // ====================================================================
+        
+        // !! تنبيه أمني !! لا تترك مفتاح API هنا في النسخة النهائية. قم بتقييده في Google Cloud Console
         const Maps_API_KEY = 'AIzaSyAKXVuJsf0vANjBtlUIWcPj-wNWPkOc-S4';
-        const DEFAULT_UTM_ZONE = 35;
-        const SNAP_TOLERANCE_METERS = 10;
-        const MAX_ZOOM_FOR_SNAP = 21;
-        const LABEL_VISIBILITY_ZOOM_THRESHOLD = 17;
-        const MARKER_VISIBILITY_ZOOM_THRESHOLD = 15;
-        const DISTANCE_LABEL_VISIBILITY_ZOOM_THRESHOLD = 16;
-        const AREA_LABEL_VISIBILITY_ZOOM_THRESHOLD = 14;
+        
+        // الإعدادات الافتراضية والحدود
+        const DEFAULT_UTM_ZONE = 35; // شريحة UTM الافتراضية لمصر
+        const SNAP_TOLERANCE_METERS = 10; // مسافة الالتقاط (بالمتر)
+        const MAX_ZOOM_FOR_SNAP = 21; // أقصى مستوى تقريب يعمل فيه الالتقاط
+        
+        // حدود إظهار البيانات حسب مستوى التقريب (Zoom Level)
+        const LABEL_VISIBILITY_ZOOM_THRESHOLD = 17; // بداية ظهور بيانات النقاط
+        const MARKER_VISIBILITY_ZOOM_THRESHOLD = 15; // بداية ظهور رموز النقاط
+        const DISTANCE_LABEL_VISIBILITY_ZOOM_THRESHOLD = 16; // بداية ظهور بيانات المسافات
+        const AREA_LABEL_VISIBILITY_ZOOM_THRESHOLD = 14; // بداية ظهور بيانات المساحة
+        
+        // لوحة الألوان الافتراضية للمجموعات الجديدة
         const POINT_GROUP_COLORS = ['#3b82f6', '#22c55e', '#f97316', '#8b5cf6', '#ef4444', '#ec4899', '#14b8a6', '#6b7280'];
         
+        // الإعدادات الافتراضية لأي مجموعة نقاط جديدة
         const DEFAULT_GROUP_SETTINGS = {
             showPolylines: true,
             showElevations: false,
@@ -223,6 +218,7 @@
             isVisible: true,
         };
         
+        // تعريف أشكال الرموز (Markers) المستخدمة في الخريطة
         const MARKER_ICONS = {
             default: { type: 'default', label: 'دائرة', path: 'M 0, 0 m -10, 0 a 10,10 0 1,0 20,0 a 10,10 0 1,0 -20,0', scale: 0.8, strokeWeight: 2.5 },
             square: { type: 'custom', label: 'مربع', path: 'M -8 -8 L 8 -8 L 8 8 L -8 8 Z', anchor: { x: 0, y: 0 }, scale: 1.2, strokeWeight: 2.5 },
@@ -241,41 +237,69 @@
 
         // ====================================================================
         //  FILE: src/utils.js
+        //  ملف يحتوي على دوال مساعدة يتم استخدامها في أماكن متفرقة من التطبيق
         // ====================================================================
+
+        /**
+         * دالة لإنشاء معرف فريد (unique ID) عشوائي.
+         */
         const generateUniqueId = () => Math.random().toString(36).substring(2, 9);
         
+        /**
+         * إعداد مكتبة Proj4.js بتعاريف أنظمة الإحداثيات اللازمة (WGS84 وشرائح UTM).
+         */
         if (window.proj4) {
-            proj4.defs("EPSG:4326", "+proj=longlat +datum=WGS84 +no_defs");
+            proj4.defs("EPSG:4326", "+proj=longlat +datum=WGS84 +no_defs"); // نظام الإحداثيات العالمي
             for (let i = 30; i <= 40; i++) {
+                // تعريف شرائح UTM من 30 إلى 40
                 proj4.defs(`EPSG:326${i}`, `+proj=utm +zone=${i} +datum=WGS84 +units=m +no_defs`);
             }
         }
 
+        /**
+         * دالة لتحويل إحداثيات من Lat/Lng إلى UTM.
+         * @param {number} lat - خط العرض
+         * @param {number} lng - خط الطول
+         * @param {number} zone - شريحة UTM
+         * @returns {object|null} - كائن يحتوي على easting, northing, zone أو null في حالة الخطأ
+         */
         const convertLatLngToUtm = (lat, lng, zone) => {
             try {
                 const utmProjection = `EPSG:326${zone}`;
                 if (!window.proj4.defs[utmProjection]) return null;
                 const [easting, northing] = window.proj4("EPSG:4326", utmProjection, [lng, lat]);
                 return { easting, northing, zone, hemisphere: lat >= 0 ? 'N' : 'S' };
-            } catch (error) { console.error("Conversion error:", error); return null; }
+            } catch (error) { console.error("UTM Conversion error:", error); return null; }
         };
 
+        /**
+         * دالة لتحويل إحداثيات من UTM إلى Lat/Lng.
+         * @param {number} easting 
+         * @param {number} northing 
+         * @param {number} zone - شريحة UTM
+         * @returns {object|null} - كائن يحتوي على lat, lng أو null في حالة الخطأ
+         */
         const convertUtmToLatLng = (easting, northing, zone) => {
             try {
                 const utmProjection = `EPSG:326${zone}`;
                 if (!window.proj4.defs[utmProjection]) return null;
                 const [lng, lat] = window.proj4(utmProjection, "EPSG:4326", [easting, northing]);
                 return { lat, lng };
-            } catch (error) { console.error("Conversion error:", error); return null; }
+            } catch (error) { console.error("LatLng Conversion error:", error); return null; }
         };
         
+        // تحديد مركز الخريطة الافتراضي بناءً على إحداثيات UTM محددة مسبقاً
         const initialCoords = convertUtmToLatLng(765898.785, 3449300.220, DEFAULT_UTM_ZONE);
         const DEFAULT_MAP_CENTER_LAT = initialCoords ? initialCoords.lat : 31.20;
         const DEFAULT_MAP_CENTER_LNG = initialCoords ? initialCoords.lng : 29.91;
         const DEFAULT_MAP_ZOOM = 20;
 
+        /**
+         * دالة لجلب منسوب (Elevation) نقطة من خدمات Google Maps API.
+         * تتضمن محاولات إعادة تلقائية في حالة فشل الاتصال.
+         */
         const getElevation = async (latLng, retries = 3, delay = 1000) => {
-            if (!window.google || !window.google.maps || !window.google.maps.ElevationService) {
+             if (!window.google || !window.google.maps || !window.google.maps.ElevationService) {
                 console.warn("Google Maps Elevation Service not available.");
                 return { elevation: null, status: 'NO_SERVICE' };
             }
@@ -295,6 +319,7 @@
                     });
                 });
                 if (result.success) return { elevation: result.elevation, status: 'OK' };
+                // لا تعيد المحاولة إذا كان الخطأ جوهرياً (مثل INVALID_REQUEST)
                 if (lastStatus !== 'UNKNOWN_ERROR' && lastStatus !== 'OVER_QUERY_LIMIT') {
                     break; 
                 }
@@ -304,6 +329,9 @@
             return { elevation: null, status: lastStatus };
         };
 
+        /**
+         * دالة لجلب الموقع الجغرافي الحالي للمستخدم عبر المتصفح.
+         */
         const getCurrentLocation = () => {
             return new Promise(resolve => {
                 if (!navigator.geolocation) {
@@ -315,7 +343,7 @@
                     err => {
                         let message = 'تعذر جلب الموقع الحالي.';
                         if (err.code === err.PERMISSION_DENIED) {
-                            message = err.message.includes('policy') ? 'تم تعطيل تحديد الموقع بواسطة سياسة الأمان.' : 'تم رفض إذن تحديد الموقع.';
+                            message = 'تم رفض إذن تحديد الموقع.';
                         }
                         resolve({ location: null, error: { message } });
                     },
@@ -324,11 +352,15 @@
             });
         };
 
+        /**
+         * دالة لتحليل نص يحتوي على إحداثيات مفصولة بفواصل مختلفة (comma, space, tab).
+         */
         const parseDelimitedText = (text) => {
             if (!text || typeof text !== 'string') return { data: [], error: "المحتوى فارغ أو غير صالح." };
             const lines = text.trim().split(/\r?\n/).filter(line => line.trim() !== '');
             if (lines.length === 0) return { data: [], error: "الملف فارغ." };
             
+            // محاولة اكتشاف الفاصل المستخدم تلقائياً
             const delimiters = [',', '\t', ';', ' '];
             let bestDelimiter = ',';
             let maxCols = 0;
@@ -346,10 +378,11 @@
                  return { data, error: "بعض الصفوف لا تتطابق مع عدد الأعمدة." };
             }
             
+            // اكتشاف هل يوجد ترويسة (Header) أم لا
             let hasHeader = false;
             const firstRow = data[0];
             if (firstRow) {
-                const isNumericRow = firstRow.every(cell => cell.trim() === '' || (!isNaN(parseFloat(cell)) && isFinite(cell)));
+                const isNumericRow = firstRow.every(cell => cell.trim() === '' || !isNaN(parseFloat(cell)));
                 if (!isNumericRow) {
                     hasHeader = true;
                 }
@@ -357,12 +390,16 @@
 
             return { data, error: null, hasHeader };
         };
-        
+
+        /**
+         * دالة لتحليل ملفات SDR واستخراج بيانات النقاط.
+         */
         const parseSdrText = (text) => {
             const lines = text.trim().split(/\r?\n/);
             const points = [];
             
             lines.forEach(line => {
+                // البحث عن الأسطر التي تحتوي على بيانات الإحداثيات (عادة تبدأ بـ '08' في SDR33)
                 if (line.startsWith('08')) {
                     try {
                         const content = line.substring(4).trim();
@@ -398,6 +435,9 @@
             return { data: points, error: null };
         };
 
+        /**
+         * دالة لتنزيل محتوى نصي كملف.
+         */
         const downloadFile = (content, fileName, mimeType) => {
             const blob = new Blob([content], { type: mimeType });
             const link = document.createElement('a');
