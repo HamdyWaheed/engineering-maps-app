@@ -357,6 +357,46 @@
 
             return { data, error: null, hasHeader };
         };
+        
+        const parseSdrText = (text) => {
+            const lines = text.trim().split(/\r?\n/);
+            const points = [];
+            
+            lines.forEach(line => {
+                if (line.startsWith('08')) {
+                    try {
+                        const content = line.substring(4).trim();
+                        const parts = content.split(/\s+/);
+                        
+                        if (parts.length >= 4) {
+                            const pointNumber = parts[0]; 
+                            const easting = parseFloat(parts[1]);
+                            const northing = parseFloat(parts[2]);
+                            const elevation = parseFloat(parts[3]);
+                            const description = parts.slice(4).join(' ');
+
+                             if (pointNumber && !isNaN(easting) && !isNaN(northing) && !isNaN(elevation)) {
+                                points.push({
+                                    pointNumber,
+                                    northing,
+                                    easting,
+                                    elevation,
+                                    description
+                                });
+                            }
+                        }
+                    } catch (e) {
+                        console.warn("Could not parse SDR line:", line, e);
+                    }
+                }
+            });
+            
+            if (points.length === 0) {
+                return { data: [], error: "لم يتم العثور على نقاط بصيغة SDR صالحة في الملف." };
+            }
+            
+            return { data: points, error: null };
+        };
 
         const downloadFile = (content, fileName, mimeType) => {
             const blob = new Blob([content], { type: mimeType });
@@ -1384,7 +1424,7 @@
             );
         };
 
-        const ImportChoiceModal = ({ onClose, onPasteClick, onFileClick }) => {
+        const ImportChoiceModal = ({ onClose, onPasteClick, onFileClick, onSdrClick }) => {
             return (
                 <GenericModal
                     title="استيراد / تحميل"
@@ -1399,9 +1439,13 @@
                             <Icon name="clipboard-paste" className="ml-2" />
                             لصق الإحداثيات مباشرة
                         </button>
+                        <button onClick={onSdrClick} className="button-secondary flex items-center justify-center w-full !py-3 text-base">
+                            <Icon name="satellite-dish" className="ml-2" />
+                            استيراد ملف SDR
+                        </button>
                         <button onClick={onFileClick} className="button-primary flex items-center justify-center w-full !py-3 text-base">
-                            <Icon name="upload" className="ml-2" />
-                            تحميل ملف
+                            <Icon name="file-text" className="ml-2" />
+                            تحميل ملف نصي (CSV, TXT)
                         </button>
                     </div>
                 </GenericModal>
@@ -1441,7 +1485,7 @@
             const [selectedIds, setSelectedIds] = useState({});
             const [exportFormat, setExportFormat] = useState(initialFormat);
             const [delimiter, setDelimiter] = useState(',');
-            const [entityType, setEntityType] = useState('pline'); // Renamed from acadScriptType
+            const [dxfEntityType, setDxfEntityType] = useState('pline');
             const [addCsvDescription, setAddCsvDescription] = useState(false);
             const [generatedCommand, setGeneratedCommand] = useState('');
             
@@ -1453,13 +1497,13 @@
                     setFileName('تصدير_نقاط');
                     setFileExtension('csv');
                 } else if (exportFormat === 'acad_script') {
-                    setFileName(`سكريبت_${entityType}`);
+                    setFileName(`سكريبت_${dxfEntityType}`);
                     setFileExtension('scr');
                 } else if (exportFormat === 'dxf') {
-                    setFileName(`رسم_${entityType}`);
+                    setFileName(`رسم_${dxfEntityType}`);
                     setFileExtension('dxf');
                 }
-            }, [exportFormat, entityType]);
+            }, [exportFormat, dxfEntityType]);
 
             const handleSelectionChange = (id, type) => {
                 setSelectedIds(prev => {
@@ -1486,7 +1530,14 @@
                     addToast('الرجاء إدخال اسم ملف صالح.', 'error');
                     return;
                 }
-                const options = { selectedIds, exportFormat, delimiter, fileExtension, entityType, addCsvDescription };
+                const options = { 
+                    selectedIds, 
+                    exportFormat, 
+                    delimiter, 
+                    fileExtension, 
+                    dxfEntityType,
+                    addCsvDescription,
+                };
                 const result = onExport(options, fileName.trim());
 
                 if (exportFormat === 'acad_script') {
@@ -1595,7 +1646,7 @@
                                 <div className="mt-4 space-y-4">
                                     <div>
                                         <label htmlFor="entity-type" className="block text-sm font-medium mb-1">نوع الكيان</label>
-                                        <select id="entity-type" value={entityType} onChange={e => setEntityType(e.target.value)} className="block w-full p-2 border rounded-md dark:bg-slate-700 dark:border-slate-600">
+                                        <select id="entity-type" value={dxfEntityType} onChange={e => setDxfEntityType(e.target.value)} className="block w-full p-2 border rounded-md dark:bg-slate-700 dark:border-slate-600">
                                             <option value="pline">خطوط متصلة (Polyline)</option>
                                             <option value="points">نقاط (Points)</option>
                                         </select>
@@ -1728,7 +1779,7 @@
             ];
             
             return (
-                 <>
+                <>
                     <div className="fixed inset-0 bg-black/30 z-40" onClick={onClose} style={{ animation: 'fade-in 0.3s' }}></div>
                     <div 
                         className="fixed bottom-0 right-0 left-0 bg-white dark:bg-slate-800 p-4 rounded-t-2xl shadow-2xl z-50"
@@ -1857,9 +1908,48 @@
             const [modal, setModal] = useState({ type: null, props: {} });
             const [isTakingScreenshot, setIsTakingScreenshot] = useState(false);
             const [screenshotOptions, setScreenshotOptions] = useState({ showPanel: true, showTimestamp: true });
+            const [importMode, setImportMode] = useState('text');
             const mapApiRef = useRef(null);
             const fileInputRef = useRef(null);
             
+            // FIX: Moved renderModal function definition before the return statement.
+            const renderModal = () => {
+                if (!modal.type) return null;
+                switch (modal.type) {
+                    case 'prompt':
+                    case 'confirm':
+                        return <GenericModal type={modal.type} {...modal.props} />;
+                    case 'markerPicker':
+                        return <MarkerPickerModal {...modal.props} />;
+                    case 'importChoice':
+                        return <ImportChoiceModal {...modal.props} />;
+                    case 'directPaste':
+                        return <DirectPasteModal {...modal.props} />;
+                    case 'importPoints':
+                        return <ImportPointsModal {...modal.props} />;
+                    case 'exportChoice':
+                        return <ExportChoiceModal {...modal.props} />;
+                    case 'exportPoints':
+                        return <ExportPointsModal {...modal.props} />;
+                    case 'screenshotOptions':
+                        return <ScreenshotOptionsModal {...modal.props} />;
+                    case 'tools':
+                         return <ToolsModal
+                                settings={{...displaySettings, isDeleteMode}}
+                                onClose={closeModal}
+                                onUpdateSettings={handleUpdateGroupSettings}
+                                onToggleDeleteMode={handleToggleDeleteMode}
+                                onOpenScreenshotModal={() => {
+                                    closeModal();
+                                    setTimeout(handleOpenScreenshotOptions, 100); 
+                                }}
+                                isZoomedInEnough={isZoomedInEnough}
+                            />;
+                    default:
+                        return null;
+                }
+            };
+
             const isZoomedInEnough = currentZoom >= LABEL_VISIBILITY_ZOOM_THRESHOLD;
 
             const closeModal = useCallback(() => setModal({ type: null, props: {} }), []);
@@ -2134,7 +2224,30 @@
                 reader.onload = (e) => {
                     const content = e.target.result;
                     try {
-                        if (fileName.endsWith('.hemap')) {
+                        if (importMode === 'sdr') {
+                            const { data: sdrPoints, error } = parseSdrText(content);
+                            if (error) {
+                                addToast(error, 'error');
+                                return;
+                            }
+                            const pointsToImport = sdrPoints.map(p => {
+                                const latLng = convertUtmToLatLng(p.easting, p.northing, utmZone);
+                                if (!latLng) return null;
+                                return { 
+                                    id: generateUniqueId(), 
+                                    lat: latLng.lat, 
+                                    lng: latLng.lng, 
+                                    elevation: p.elevation, 
+                                    utm: { easting: p.easting, northing: p.northing, zone: utmZone }, 
+                                    description: p.pointNumber, 
+                                    markerIcon: 'default', 
+                                    createdAt: new Date().toISOString() 
+                                };
+                            }).filter(Boolean);
+                            
+                            handleProcessImport(`استيراد SDR - ${fileName}`, pointsToImport);
+
+                        } else if (fileName.endsWith('.hemap')) {
                             const decodedData = decodeURIComponent(escape(atob(content)));
                             const projectData = JSON.parse(decodedData);
 
@@ -2206,17 +2319,14 @@
             };
             
             const handleExportData = (options, fileNameFromModal) => {
-                const { selectedIds, exportFormat, delimiter, fileExtension, entityType, addCsvDescription } = options;
+                const { selectedIds, exportFormat, delimiter, fileExtension, dxfEntityType, addCsvDescription } = options;
                 
                 const selectedGroups = workAreas.flatMap(area => 
                     area.groups.filter(group => selectedIds[area.id] || selectedIds[`group-${group.id}`])
                 );
 
-                const pointsToExport = selectedGroups.flatMap(g => g.points)
-                    .filter(p => p && p.utm && typeof p.utm.easting === 'number' && typeof p.utm.northing === 'number');
-
-                if (pointsToExport.length === 0) {
-                    addToast('لم يتم تحديد نقاط صالحة للتصدير.', 'error');
+                if (selectedGroups.length === 0) {
+                    addToast('لم يتم تحديد مجموعات للتصدير.', 'error');
                     return null;
                 }
 
@@ -2225,6 +2335,8 @@
                 let content = '';
                 
                 if (exportFormat === 'csv') {
+                    const pointsToExport = selectedGroups.flatMap(g => g.points).filter(p => p && p.utm);
+                    if (pointsToExport.length === 0) { addToast('لا توجد نقاط صالحة للتصدير.', 'error'); return null; }
                     content = pointsToExport.map((p, index) => {
                         const base = `${safeToFixed(p.utm.easting)}${delimiter}${safeToFixed(p.utm.northing)}${delimiter}${safeToFixed(p.elevation)}`;
                         return addCsvDescription ? `${index + 1}${delimiter}${base}${delimiter}${p.description || ''}` : base;
@@ -2236,19 +2348,12 @@
                     return null;
                 } 
                 else if (exportFormat === 'acad_script') {
-                    if (entityType === 'pline') {
-                        content = selectedGroups.map(group => 
-                            "PLINE\n" + group.points.map(p => `${safeToFixed(p.utm?.easting)},${safeToFixed(p.utm?.northing)}`).join('\n')
-                        ).join('\n \n');
-                    } else { // points
-                        content = pointsToExport.map(p => 
-                            `_POINT ${safeToFixed(p.utm?.easting)},${safeToFixed(p.utm?.northing)},${safeToFixed(p.elevation)}`
-                        ).join('\n');
-                    }
+                    content = generateDxfContent(selectedGroups, { entityType: dxfEntityType, isScript: true });
                     return content;
                 } else if (exportFormat === 'dxf') {
-                    content = generateDxfContent(selectedGroups, { entityType });
+                    content = generateDxfContent(selectedGroups, { entityType: dxfEntityType, isScript: false });
                     downloadFile(content, `${fileNameFromModal}.dxf`, 'application/dxf');
+                    addToast('تم إنشاء ملف DXF بنجاح.', 'success');
                     return null;
                 }
 
@@ -2256,37 +2361,49 @@
             };
 
             const generateDxfContent = (groups, options) => {
-                let dxf = "0\nSECTION\n2\nENTITIES\n";
-                const { entityType } = options;
+                const { entityType, isScript } = options;
+                let content = "";
+                const safeToFixed = (num, digits = 3) => (typeof num === 'number' ? num.toFixed(digits) : '0.000');
 
-                if (entityType === 'points') {
-                    groups.forEach(group => {
+                if (isScript) {
+                    if (entityType === 'pline') {
+                        content = groups.map(group => 
+                            "PLINE\n" + group.points.map(p => `${safeToFixed(p.utm?.easting)},${safeToFixed(p.utm?.northing)}`).join('\n')
+                        ).join('\n \n');
+                    } else { // points
+                        const pointsToExport = groups.flatMap(g => g.points).filter(p => p && p.utm);
+                        content = pointsToExport.map(p => 
+                            `_POINT ${safeToFixed(p.utm?.easting)},${safeToFixed(p.utm?.northing)},${safeToFixed(p.elevation)}`
+                        ).join('\n');
+                    }
+                    return content;
+                }
+
+                // Full DXF Generation
+                let dxf = "0\nSECTION\n2\nENTITIES\n";
+                
+                groups.forEach(group => {
+                    const layerName = group.name.replace(/ /g, "_");
+                    
+                    if (entityType === 'pline' && group.points.length > 1) {
+                        dxf += "0\nLWPOLYLINE\n";
+                        dxf += `8\n${layerName}\n`;
+                        dxf += "90\n" + group.points.length + "\n";
+                        dxf += "70\n0\n"; // Open polyline
+                        group.points.forEach(p => {
+                            dxf += `10\n${p.utm.easting.toFixed(3)}\n`;
+                            dxf += `20\n${p.utm.northing.toFixed(3)}\n`;
+                        });
+                    } else if (entityType === 'points') {
                         group.points.forEach(p => {
                             dxf += "0\nPOINT\n";
-                            dxf += `8\n${group.name.replace(/ /g, "_")}\n`; // Layer name
-                            dxf += `10\n${p.utm.easting.toFixed(3)}\n`; // X
-                            dxf += `20\n${p.utm.northing.toFixed(3)}\n`; // Y
-                            dxf += `30\n${p.elevation.toFixed(3)}\n`; // Z
+                            dxf += `8\n${layerName}\n`;
+                            dxf += `10\n${p.utm.easting.toFixed(3)}\n`;
+                            dxf += `20\n${p.utm.northing.toFixed(3)}\n`;
+                            dxf += `30\n${p.elevation.toFixed(3)}\n`;
                         });
-                    });
-                } else { // pline
-                    groups.forEach(group => {
-                        if (group.points.length > 0) {
-                            dxf += "0\nPOLYLINE\n";
-                            dxf += `8\n${group.name.replace(/ /g, "_")}\n`;
-                            dxf += "66\n1\n"; // Entities follow
-                            dxf += "70\n0\n"; // Open polyline
-                            group.points.forEach(p => {
-                                dxf += "0\nVERTEX\n";
-                                dxf += `8\n${group.name.replace(/ /g, "_")}\n`;
-                                dxf += `10\n${p.utm.easting.toFixed(3)}\n`;
-                                dxf += `20\n${p.utm.northing.toFixed(3)}\n`;
-                                dxf += `30\n${p.elevation.toFixed(3)}\n`;
-                            });
-                            dxf += "0\nSEQEND\n";
-                        }
-                    });
-                }
+                    }
+                });
 
                 dxf += "0\nENDSEC\n0\nEOF\n";
                 return dxf;
@@ -2465,8 +2582,16 @@
                             handleOpenDirectPasteModal();
                         }, 50);
                     },
+                    onSdrClick: () => {
+                        closeModal();
+                        setImportMode('sdr');
+                        fileInputRef.current.accept = ".sdr,.txt";
+                        fileInputRef.current.click();
+                    },
                     onFileClick: () => {
                         closeModal();
+                        setImportMode('text');
+                        fileInputRef.current.accept = ".txt,.csv,.json,.hemap";
                         fileInputRef.current.click();
                     }
                 }});
@@ -2497,48 +2622,11 @@
             const handleOpenToolsModal = () => {
                 setModal({type: 'tools'});
             };
-
-            const renderModal = () => {
-                if (!modal.type) return null;
-                switch (modal.type) {
-                    case 'prompt':
-                    case 'confirm':
-                        return <GenericModal type={modal.type} {...modal.props} />;
-                    case 'markerPicker':
-                        return <MarkerPickerModal {...modal.props} />;
-                    case 'importChoice':
-                        return <ImportChoiceModal {...modal.props} />;
-                    case 'directPaste':
-                        return <DirectPasteModal {...modal.props} />;
-                    case 'importPoints':
-                        return <ImportPointsModal {...modal.props} />;
-                    case 'exportChoice':
-                        return <ExportChoiceModal {...modal.props} />;
-                    case 'exportPoints':
-                        return <ExportPointsModal {...modal.props} />;
-                    case 'screenshotOptions':
-                        return <ScreenshotOptionsModal {...modal.props} />;
-                    case 'tools':
-                         return <ToolsModal
-                                settings={{...displaySettings, isDeleteMode}}
-                                onClose={closeModal}
-                                onUpdateSettings={handleUpdateGroupSettings}
-                                onToggleDeleteMode={handleToggleDeleteMode}
-                                onOpenScreenshotModal={() => {
-                                    closeModal();
-                                    setTimeout(handleOpenScreenshotOptions, 100); 
-                                }}
-                                isZoomedInEnough={isZoomedInEnough}
-                            />;
-                    default:
-                        return null;
-                }
-            };
             
             return (
                 <div className="h-screen w-screen flex flex-col bg-slate-100 dark:bg-slate-900">
                     {renderModal()}
-                    <input type="file" ref={fileInputRef} onChange={handleFileLoad} style={{ display: 'none' }} accept=".txt,.csv,.tsv,.json,.hemap" />
+                    <input type="file" ref={fileInputRef} onChange={handleFileLoad} style={{ display: 'none' }} />
                     <Header onToggleFullScreen={() => setIsMapFullScreen(f => !f)} isFullScreen={isMapFullScreen} onToggleSidebar={() => setIsSidebarOpen(true)} />
                     <div className="flex flex-grow min-h-0"> 
                         <div className={`${isMapFullScreen ? 'hidden' : ''} lg:block`}>
