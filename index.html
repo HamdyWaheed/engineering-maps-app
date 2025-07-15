@@ -15,11 +15,10 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.8.0/proj4.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <!-- مكتبات PDF (محفوظة للاستخدام المستقبلي) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAKXVuJsf0vANjBtlUIWcPj-wNWPkOc-S4&libraries=geometry,places,elevation&callback=initMap"></script>
+    <!-- تم نقل استدعاء سكربت خرائط جوجل إلى داخل الكود ليتم تحميله ديناميكياً -->
 
     <!-- قسم الأنماط المخصصة (Custom CSS) -->
     <style>
@@ -140,7 +139,7 @@
             color: #475569;
         }
         .point-label-desc {
-            font-size: 15px;
+            font-size: 10px;
             color: #64748b;
             border-top: 1px solid #e2e8f0;
             margin-top: 3px;
@@ -207,8 +206,11 @@
         // ====================================================================
         //  FILE: src/constants.js
         // ====================================================================
-        const Maps_API_KEY = 'AIzaSyAKXVuJsf0vANjBtlUIWcPj-wNWPkOc-S4';
-        const DEFAULT_UTM_ZONE = 35;
+        const GOOGLE_MAPS_API_KEY = 'AIzaSyAKXVuJsf0vANjBtlUIWcPj-wNWPkOc-S4';
+        const DEFAULT_UTM_ZONE = 35; // تم التحديث إلى 35
+        const DEFAULT_MAP_CENTER_LAT = 30.04439461; // تم التحديث
+        const DEFAULT_MAP_CENTER_LNG = 31.23577427; // تم التحديث
+        const DEFAULT_MAP_ZOOM = 18;
         const SNAP_TOLERANCE_METERS = 10;
         const MAX_ZOOM_FOR_SNAP = 21;
         const LABEL_VISIBILITY_ZOOM_THRESHOLD = 17;
@@ -244,9 +246,6 @@
             tree: { type: 'custom', label: 'شجرة', path: 'M 0 -5 Q 5 -15 10 -5 T 0 5 Q -5 -5 -10 -5 T 0 -5 Z M 0 5 L 0 15', anchor: { x: 0, y: 15 }, scale: 1, strokeWeight: 2 },
         };
         
-        // Base64 encoded Amiri font for PDF generation. This ensures Arabic text renders correctly.
-        const AMIRI_FONT_BASE64 = 'AAEAAAARAQAABAAQR0RFRg... (base64 font data would go here, but is omitted for brevity and stability)';
-
         // ====================================================================
         //  FILE: src/utils.js
         // ====================================================================
@@ -277,11 +276,6 @@
             } catch (error) { console.error("Conversion error:", error); return null; }
         };
         
-        const initialCoords = convertUtmToLatLng(765898.785, 3449300.220, DEFAULT_UTM_ZONE);
-        const DEFAULT_MAP_CENTER_LAT = initialCoords ? initialCoords.lat : 31.20;
-        const DEFAULT_MAP_CENTER_LNG = initialCoords ? initialCoords.lng : 29.91;
-        const DEFAULT_MAP_ZOOM = 20;
-
         const getElevation = async (latLng, retries = 3, delay = 1000) => {
             if (!window.google || !window.google.maps || !window.google.maps.ElevationService) {
                 console.warn("Google Maps Elevation Service not available.");
@@ -2420,7 +2414,7 @@
                              addToast('فشل تهيئة أداة لقطة الشاشة.', 'error');
                             return;
                         }
-            
+        
                         const elementsToHide = [
                             document.getElementById('map-controls'),
                             document.getElementById('bottom-nav-bar'),
@@ -2449,7 +2443,8 @@
                 });
             };
 
-            const handleGeneratePDF = async () => {
+            const handleGeneratePDF = async (options) => {
+                const { reportTitle } = options;
                 if (!selectedGroup || !selectedArea) {
                     addToast("الرجاء تحديد مجموعة نقاط أولاً لإنشاء التقرير.", "error");
                     return;
@@ -2460,9 +2455,9 @@
                 }
                 addToast("جاري تحضير التقرير...", "info");
 
-                // 1. Get Screenshot
                 const mapImageData = await new Promise(resolve => {
-                    executeScreenshot({ showPanel: false, showTimestamp: false }, resolve);
+                    // تم التعديل: إظهار إطار المعلومات والتاريخ في لقطة شاشة التقرير
+                    executeScreenshot({ showPanel: true, showTimestamp: true }, resolve);
                 });
 
                 if (!mapImageData) {
@@ -2470,36 +2465,29 @@
                     return;
                 }
 
-                // 2. Generate PDF
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
                 
-                // This is a Base64 encoded version of a simple Arabic font (Amiri).
-                // In a real application, you might manage fonts more robustly.
-                const amiriFont = 'AAEAAAARAQAABAAQR0RFRg... (base64 font data would go here, but is omitted for brevity and stability)';
-                // For stability, we will rely on jsPDF's built-in fonts but set RTL.
-                // doc.addFileToVFS('Amiri-Regular.ttf', amiriFont);
-                // doc.addFont('Amiri-Regular.ttf', 'Amiri', 'normal');
-                doc.setFont('Helvetica'); // Use a standard font
-                doc.setR2L(true);
-
+                // ملاحظة: تم إزالة الخط العربي المخصص لتجنب أخطاء التشفير.
+                // سيتم استخدام الخطوط القياسية، مما قد يؤثر على عرض الأحرف العربية المتصلة.
+                doc.setFont('Helvetica');
+                
                 let yPos = 20;
                 
                 // --- Header ---
                 doc.setFontSize(22);
-                doc.text("Technical Report", 105, yPos, { align: 'center' });
+                doc.setR2L(true);
+                doc.text(reportTitle || "تقرير فني", 105, yPos, { align: 'center' });
                 yPos += 15;
 
                 // --- Project Info (RTL) ---
                 doc.setFontSize(12);
-                doc.setR2L(true);
                 doc.text(`: ${selectedArea.name}`, 195, yPos, { align: 'right' });
                 doc.text("اسم المشروع", 150, yPos, { align: 'right' });
                 yPos += 8;
                 doc.text(`: ${selectedGroup.name}`, 195, yPos, { align: 'right' });
                 doc.text("اسم المجموعة", 150, yPos, { align: 'right' });
                 yPos += 10;
-                doc.setR2L(false); // Switch back to LTR
                 
                 // --- Map Image ---
                 const imgProps = doc.getImageProperties(mapImageData);
@@ -2514,34 +2502,33 @@
                 doc.addImage(mapImageData, 'PNG', margin, yPos, imgWidth, imgHeight);
                 yPos += imgHeight + 10;
 
-                // --- Points Table (LTR) ---
+                // --- Points Table ---
                 const tableData = selectedGroup.points.map((p, i) => [
-                    i + 1,
-                    p.utm?.easting?.toFixed(3) || 'N/A',
-                    p.utm?.northing?.toFixed(3) || 'N/A',
-                    (p.elevation ?? 0).toFixed(3),
                     p.description || '-',
+                    (p.elevation ?? 0).toFixed(3),
+                    p.utm?.northing?.toFixed(3) || 'N/A',
+                    p.utm?.easting?.toFixed(3) || 'N/A',
+                    i + 1,
                 ]);
 
                 doc.autoTable({
                     startY: yPos,
-                    head: [['#', 'Easting (X)', 'Northing (Y)', 'Elevation (Z)', 'Description']],
+                    head: [['الوصف', 'Elevation (Z)', 'Northing (Y)', 'Easting (X)', '#']],
                     body: tableData,
                     theme: 'grid',
                     headStyles: { font: 'Helvetica', halign: 'center', fillColor: [41, 128, 185] },
                     bodyStyles: { font: 'Helvetica', halign: 'center' },
                     columnStyles: {
-                        4: { halign: 'right', font: 'Helvetica' } // Align description to the right
+                        0: { halign: 'right' }, // الوصف
                     },
                     didDrawPage: (data) => {
                         // Footer
                         const pageCount = doc.internal.getNumberOfPages();
                         doc.setFontSize(10);
-                        doc.setR2L(false);
+                        doc.setR2L(false); // LTR for page number
                         doc.text(`Page ${data.pageNumber} of ${pageCount}`, data.settings.margin.left, doc.internal.pageSize.height - 10);
-                        doc.setR2L(true);
+                        doc.setR2L(true); // RTL for date
                         doc.text(new Date().toLocaleDateString('ar-EG'), doc.internal.pageSize.width - data.settings.margin.right, doc.internal.pageSize.height - 10, { align: 'right' });
-                        doc.setR2L(false);
                     }
                 });
                 
@@ -2609,7 +2596,18 @@
             };
 
             const handleOpenPdfOptions = () => {
-                setModal({ type: 'pdfOptions', props: { onClose: closeModal, onConfirm: handleGeneratePDF } });
+                 setModal({
+                    type: 'prompt',
+                    props: {
+                        title: "إعدادات تقرير PDF",
+                        message: "أدخل عنواناً للتقرير الذي سيتم إنشاؤه.",
+                        inputLabel: "عنوان التقرير",
+                        initialValue: `تقرير فني - ${selectedGroup?.name || ''}`,
+                        onConfirm: (title) => handleGeneratePDF({ reportTitle: title }),
+                        onClose: closeModal,
+                        confirmText: "إنشاء التقرير"
+                    }
+                });
             };
 
             const renderModal = () => {
@@ -2632,27 +2630,23 @@
                         return <ExportPointsModal {...modal.props} />;
                     case 'screenshotOptions':
                         return <ScreenshotOptionsModal {...modal.props} />;
-                    case 'pdfOptions':
-                         return <GenericModal title="PDF Report Options" onClose={closeModal} onConfirm={handleGeneratePDF} confirmText="Generate Report">
-                                    <p>This is where PDF options will go.</p>
-                                </GenericModal>;
                     case 'tools':
                          return <ToolsModal
-                                settings={{...displaySettings, isDeleteMode}}
-                                onClose={closeModal}
-                                onUpdateSettings={handleUpdateGroupSettings}
-                                onToggleDeleteMode={handleToggleDeleteMode}
-                                onOpenScreenshotModal={() => handleOpenScreenshotOptions((options) => executeScreenshot(options, (dataUrl) => {
-                                    if(dataUrl) {
-                                        const link = document.createElement('a');
-                                        link.download = `خريطة-${new Date().toISOString().slice(0, 10)}.png`;
-                                        link.href = dataUrl;
-                                        link.click();
-                                        addToast('تم حفظ لقطة الشاشة بنجاح.', 'success');
-                                    }
-                                }))}
-                                isZoomedInEnough={isZoomedInEnough}
-                            />;
+                            settings={{...displaySettings, isDeleteMode}}
+                            onClose={closeModal}
+                            onUpdateSettings={handleUpdateGroupSettings}
+                            onToggleDeleteMode={handleToggleDeleteMode}
+                            onOpenScreenshotModal={() => handleOpenScreenshotOptions((options) => executeScreenshot(options, (dataUrl) => {
+                                if(dataUrl) {
+                                    const link = document.createElement('a');
+                                    link.download = `خريطة-${new Date().toISOString().slice(0, 10)}.png`;
+                                    link.href = dataUrl;
+                                    link.click();
+                                    addToast('تم حفظ لقطة الشاشة بنجاح.', 'success');
+                                }
+                            }))}
+                            isZoomedInEnough={isZoomedInEnough}
+                        />;
                     default:
                         return null;
                 }
@@ -2692,7 +2686,7 @@
                                 onOpenImportModal={handleOpenImportModal}
                                 onToggleGroupVisibility={handleToggleGroupVisibility}
                                 onSetGroupMarker={handleSetGroupMarker}
-                                onGeneratePDF={handleOpenPdfOptions}
+                                onOpenPdfOptions={handleOpenPdfOptions}
                                 setModal={setModal}
                                 closeModal={closeModal}
                             />
@@ -2873,6 +2867,7 @@
         const container = document.getElementById('root');
         const root = createRoot(container);
         
+        // هذه هي الدالة التي سيتم استدعاؤها بواسطة سكربت خرائط جوجل بعد تحميله
         window.initMap = () => {
             try {
                 root.render(
@@ -2885,6 +2880,18 @@
                 document.getElementById('root').innerHTML = '<div style="padding: 2rem; text-align: center; font-family: sans-serif;"><h1>An error occurred</h1><p>Could not load the application. Please check the console for details.</p></div>';
             }
         };
+        
+        // دالة تقوم بتحميل سكربت خرائط جوجل ديناميكياً باستخدام المفتاح من المتغير
+        function loadGoogleMaps() {
+            const script = document.createElement('script');
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=geometry,places,elevation&callback=initMap`;
+            script.async = true;
+            script.defer = true;
+            document.head.appendChild(script);
+        }
+
+        // بدء تحميل السكربت
+        loadGoogleMaps();
         
     </script>
 </body>
