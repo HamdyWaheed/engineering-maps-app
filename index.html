@@ -1629,6 +1629,80 @@
             );
         };
         
+        const PdfOptionsModal = ({ onClose, onConfirm, groups, selectedGroupId }) => {
+            const { addToast } = useAppContext();
+            const [reportTitle, setReportTitle] = useState('Technical Report');
+            
+            const [selectedGroupIds, setSelectedGroupIds] = useState(() => {
+                const initialSelection = {};
+                if (selectedGroupId) {
+                    initialSelection[selectedGroupId] = true;
+                }
+                return initialSelection;
+            });
+
+            const handleGroupSelectionChange = (groupId) => {
+                setSelectedGroupIds(prev => {
+                    const newSelection = {...prev};
+                    if (newSelection[groupId]) {
+                        delete newSelection[groupId];
+                    } else {
+                        newSelection[groupId] = true;
+                    }
+                    return newSelection;
+                });
+            };
+
+            const handleConfirm = () => {
+                const ids = Object.keys(selectedGroupIds);
+                if (ids.length === 0) {
+                    addToast('Please select at least one group to include in the report.', 'error');
+                    return;
+                }
+                onConfirm({ reportTitle, selectedGroupIds: ids });
+                onClose();
+            };
+
+            return (
+                <GenericModal
+                    title="PDF Report Options"
+                    onClose={onClose}
+                    onConfirm={handleConfirm}
+                    confirmText="Generate Report"
+                >
+                    <div className="space-y-4" dir="ltr">
+                        <div>
+                            <label htmlFor="report-title" className="block text-sm font-medium mb-1">Report Title</label>
+                            <input
+                                id="report-title"
+                                type="text"
+                                value={reportTitle}
+                                onChange={e => setReportTitle(e.target.value)}
+                                className="block w-full p-2 border rounded-md dark:bg-slate-700 dark:border-slate-600"
+                            />
+                        </div>
+                        <div>
+                            <h4 className="text-sm font-medium mb-2">Select Groups to Include</h4>
+                            <div className="max-h-48 overflow-y-auto p-2 border rounded-md dark:border-slate-600">
+                                {groups.map(group => (
+                                    <div key={group.id} className="flex items-center">
+                                        <input
+                                            type="checkbox"
+                                            id={`pdf-group-${group.id}`}
+                                            checked={!!selectedGroupIds[group.id]}
+                                            onChange={() => handleGroupSelectionChange(group.id)}
+                                            className="mr-2"
+                                        />
+                                        <label htmlFor={`pdf-group-${group.id}`}>{group.name}</label>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </GenericModal>
+            );
+        };
+
         const ScreenshotOptionsModal = ({ onClose, onConfirm }) => {
             const [showPanel, setShowPanel] = useState(true);
             const [showTimestamp, setShowTimestamp] = useState(true);
@@ -2444,9 +2518,10 @@
             };
 
             const handleGeneratePDF = async (options) => {
-                const { reportTitle } = options;
-                if (!selectedGroup || !selectedArea) {
-                    addToast("الرجاء تحديد مجموعة نقاط أولاً لإنشاء التقرير.", "error");
+                const { reportTitle, selectedGroupIds } = options;
+
+                if (!selectedGroupIds || selectedGroupIds.length === 0) {
+                    addToast("الرجاء تحديد مجموعة نقاط واحدة على الأقل لإنشاء التقرير.", "error");
                     return;
                 }
                 if (!window.jspdf || !window.html2canvas) {
@@ -2456,7 +2531,6 @@
                 addToast("جاري تحضير التقرير...", "info");
 
                 const mapImageData = await new Promise(resolve => {
-                    // تم التعديل: إظهار إطار المعلومات والتاريخ في لقطة شاشة التقرير
                     executeScreenshot({ showPanel: true, showTimestamp: true }, resolve);
                 });
 
@@ -2466,29 +2540,17 @@
                 }
 
                 const { jsPDF } = window.jspdf;
-                const doc = new jsPDF();
+                const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
                 
-                // ملاحظة: تم إزالة الخط العربي المخصص لتجنب أخطاء التشفير.
-                // سيتم استخدام الخطوط القياسية، مما قد يؤثر على عرض الأحرف العربية المتصلة.
                 doc.setFont('Helvetica');
                 
                 let yPos = 20;
                 
                 // --- Header ---
                 doc.setFontSize(22);
-                doc.setR2L(true);
-                doc.text(reportTitle || "تقرير فني", 105, yPos, { align: 'center' });
+                doc.text(reportTitle || "Technical Report", doc.internal.pageSize.getWidth() / 2, yPos, { align: 'center' });
                 yPos += 15;
 
-                // --- Project Info (RTL) ---
-                doc.setFontSize(12);
-                doc.text(`: ${selectedArea.name}`, 195, yPos, { align: 'right' });
-                doc.text("اسم المشروع", 150, yPos, { align: 'right' });
-                yPos += 8;
-                doc.text(`: ${selectedGroup.name}`, 195, yPos, { align: 'right' });
-                doc.text("اسم المجموعة", 150, yPos, { align: 'right' });
-                yPos += 10;
-                
                 // --- Map Image ---
                 const imgProps = doc.getImageProperties(mapImageData);
                 const pdfWidth = doc.internal.pageSize.getWidth();
@@ -2503,36 +2565,38 @@
                 yPos += imgHeight + 10;
 
                 // --- Points Table ---
-                const tableData = selectedGroup.points.map((p, i) => [
-                    p.description || '-',
-                    (p.elevation ?? 0).toFixed(3),
-                    p.utm?.northing?.toFixed(3) || 'N/A',
-                    p.utm?.easting?.toFixed(3) || 'N/A',
+                const pointsToExport = selectedArea.groups
+                    .filter(g => selectedGroupIds.includes(g.id))
+                    .flatMap(g => g.points);
+
+                const tableData = pointsToExport.map((p, i) => [
                     i + 1,
+                    p.utm?.easting?.toFixed(3) || 'N/A',
+                    p.utm?.northing?.toFixed(3) || 'N/A',
+                    (p.elevation ?? 0).toFixed(3),
+                    p.description || '-',
                 ]);
 
                 doc.autoTable({
                     startY: yPos,
-                    head: [['الوصف', 'Elevation (Z)', 'Northing (Y)', 'Easting (X)', '#']],
+                    head: [['#', 'Easting (X)', 'Northing (Y)', 'Elevation (Z)', 'Description']],
                     body: tableData,
                     theme: 'grid',
                     headStyles: { font: 'Helvetica', halign: 'center', fillColor: [41, 128, 185] },
                     bodyStyles: { font: 'Helvetica', halign: 'center' },
                     columnStyles: {
-                        0: { halign: 'right' }, // الوصف
+                        4: { halign: 'left' }, // Description
                     },
                     didDrawPage: (data) => {
                         // Footer
                         const pageCount = doc.internal.getNumberOfPages();
                         doc.setFontSize(10);
-                        doc.setR2L(false); // LTR for page number
                         doc.text(`Page ${data.pageNumber} of ${pageCount}`, data.settings.margin.left, doc.internal.pageSize.height - 10);
-                        doc.setR2L(true); // RTL for date
-                        doc.text(new Date().toLocaleDateString('ar-EG'), doc.internal.pageSize.width - data.settings.margin.right, doc.internal.pageSize.height - 10, { align: 'right' });
+                        doc.text(new Date().toLocaleDateString('en-CA'), doc.internal.pageSize.width - data.settings.margin.right, doc.internal.pageSize.height - 10, { align: 'right' });
                     }
                 });
                 
-                doc.save(`تقرير-${selectedGroup.name}.pdf`);
+                doc.save(`${reportTitle || 'Technical-Report'}.pdf`);
                 addToast("تم إنشاء التقرير بنجاح.", "success");
             };
 
@@ -2596,16 +2660,17 @@
             };
 
             const handleOpenPdfOptions = () => {
+                if (!selectedArea) {
+                     addToast('الرجاء تحديد منطقة عمل أولاً.', 'error');
+                     return;
+                }
                  setModal({
-                    type: 'prompt',
-                    props: {
-                        title: "إعدادات تقرير PDF",
-                        message: "أدخل عنواناً للتقرير الذي سيتم إنشاؤه.",
-                        inputLabel: "عنوان التقرير",
-                        initialValue: `تقرير فني - ${selectedGroup?.name || ''}`,
-                        onConfirm: (title) => handleGeneratePDF({ reportTitle: title }),
-                        onClose: closeModal,
-                        confirmText: "إنشاء التقرير"
+                    type: 'pdfOptions', 
+                    props: { 
+                        onClose: closeModal, 
+                        onConfirm: handleGeneratePDF, 
+                        groups: selectedArea.groups,
+                        selectedGroupId: selectedGroupId
                     }
                 });
             };
@@ -2630,6 +2695,8 @@
                         return <ExportPointsModal {...modal.props} />;
                     case 'screenshotOptions':
                         return <ScreenshotOptionsModal {...modal.props} />;
+                    case 'pdfOptions':
+                         return <PdfOptionsModal {...modal.props} />;
                     case 'tools':
                          return <ToolsModal
                             settings={{...displaySettings, isDeleteMode}}
