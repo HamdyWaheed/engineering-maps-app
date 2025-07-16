@@ -207,9 +207,9 @@
         //  FILE: src/constants.js
         // ====================================================================
         const GOOGLE_MAPS_API_KEY = 'AIzaSyAKXVuJsf0vANjBtlUIWcPj-wNWPkOc-S4';
-        const DEFAULT_UTM_ZONE = 35; // تم التحديث إلى 35
-        const DEFAULT_MAP_CENTER_LAT = 30.04439461; // تم التحديث
-        const DEFAULT_MAP_CENTER_LNG = 31.23577427; // تم التحديث
+        const DEFAULT_UTM_ZONE = 35; 
+        const DEFAULT_MAP_CENTER_LAT = 30.04439461; 
+        const DEFAULT_MAP_CENTER_LNG = 31.23577427; 
         const DEFAULT_MAP_ZOOM = 18;
         const SNAP_TOLERANCE_METERS = 10;
         const MAX_ZOOM_FOR_SNAP = 21;
@@ -2096,7 +2096,7 @@
                 if (isDeleteMode) { addToast('وضع الحذف مفعل. قم بإلغاء تفعيله لإضافة نقاط.', 'info'); return null; }
                 if (!selectedArea) { addToast('الرجاء تحديد منطقة عمل أولاً.', 'error'); return null; }
                 
-                let finalLat = lat, finalLng = lng, finalElevation = null, finalUtm = null, snapped = false;
+                let finalLat = lat, finalLng = lng, finalElevation = 0.0, finalUtm = null, snapped = false;
                 
                 const allPoints = selectedArea.groups.flatMap(g => g.points);
                 if (selectedGroup?.snapEnabled && allPoints.length > 0) {
@@ -2117,14 +2117,18 @@
                 }
 
                 if (!snapped) {
-                    addToast('جاري إضافة النقطة...', 'info');
-                    const { elevation, status } = await getElevation({ lat: finalLat, lng: finalLng });
-                    if(status !== 'OK') addToast(`فشل جلب المنسوب (${status}). سيتم استخدام قيمة افتراضية.`, 'error', 5000);
-                    finalElevation = elevation;
+                    if (selectedGroup?.showElevations) {
+                        addToast('جاري جلب المنسوب...', 'info');
+                        const { elevation, status } = await getElevation({ lat: finalLat, lng: finalLng });
+                        if(status !== 'OK') addToast(`فشل جلب المنسوب (${status}).`, 'error');
+                        finalElevation = elevation ?? 0.0;
+                    } else {
+                        finalElevation = 0.0;
+                    }
                     finalUtm = convertLatLngToUtm(finalLat, finalLng, utmZone);
                 }
 
-                const newPoint = { id: generateUniqueId(), lat: finalLat, lng: finalLng, elevation: finalElevation ?? 0.00, utm: finalUtm, description: '', markerIcon: 'default', createdAt: new Date().toISOString() };
+                const newPoint = { id: generateUniqueId(), lat: finalLat, lng: finalLng, elevation: finalElevation, utm: finalUtm, description: '', markerIcon: 'default', createdAt: new Date().toISOString() };
                 
                 setWorkAreas(prevAreas => {
                     return prevAreas.map(area => {
@@ -2159,9 +2163,19 @@
                 let newPointData = {};
                 
                 if (field === 'latlng') {
-                    const { elevation, status } = await getElevation(value);
-                    if (status !== 'OK') addToast(`تعذر تحديث المنسوب (${status}).`, 'error');
-                    newPointData = { lat: value.lat, lng: value.lng, utm: convertLatLngToUtm(value.lat, value.lng, utmZone), elevation: elevation ?? 0 };
+                    const area = workAreas.find(a => a.id === areaId);
+                    const group = area?.groups.find(g => g.id === groupId);
+                    const point = group?.points.find(p => p.id === pointId);
+
+                    let finalElevation = point?.elevation ?? 0;
+
+                    if (group?.showElevations) {
+                        const { elevation, status } = await getElevation(value);
+                        if (status !== 'OK') addToast(`تعذر تحديث المنسوب (${status}).`, 'error');
+                        finalElevation = elevation ?? point?.elevation ?? 0;
+                    }
+                    
+                    newPointData = { lat: value.lat, lng: value.lng, utm: convertLatLngToUtm(value.lat, value.lng, utmZone), elevation: finalElevation };
                 } else {
                     newPointData[field] = value;
                 }
@@ -2179,7 +2193,7 @@
                         ) 
                     } : area
                 ));
-            }, [utmZone, addToast, setWorkAreas]);
+            }, [workAreas, utmZone, addToast, setWorkAreas]);
             
             const handleDeletePointById = (groupId, pointId) => {
                 if (!selectedArea) return;
@@ -2550,7 +2564,7 @@
                 doc.setFontSize(22);
                 doc.text(reportTitle || "Technical Report", doc.internal.pageSize.getWidth() / 2, yPos, { align: 'center' });
                 yPos += 15;
-
+                
                 // --- Map Image ---
                 const imgProps = doc.getImageProperties(mapImageData);
                 const pdfWidth = doc.internal.pageSize.getWidth();
