@@ -546,9 +546,8 @@
             );
         };
         
-        const Sidebar = ({ isOpen, onClose, workAreas, selectedAreaId, selectedGroupId, onSelectArea, onSelectGroup, onAddNewArea, onRenameArea, onDeleteArea, onZoomToWorkArea, onAddNewGroup, onRenameGroup, onDeleteGroup, onZoomToGroup, onUpdateGroupColor, onOpenExportModal, onToggleGroupVisibility, onSetGroupMarker, onOpenImportModal, onOpenPdfOptions, setModal, closeModal }) => {
+        const Sidebar = ({ isOpen, onClose, workAreas, selectedAreaId, selectedGroupId, onSelectArea, onSelectGroup, onAddNewArea, onRenameArea, onDeleteArea, onZoomToWorkArea, onAddNewGroup, onRenameGroup, onDeleteGroup, onZoomToGroup, onUpdateGroupColor, onOpenExportModal, onToggleGroupVisibility, onSetGroupMarker, onOpenImportModal, onOpenPdfOptions, setModal, closeModal, isLayersSectionOpen, onToggleLayersSection }) => {
             const { utmZone, setUtmZone, coordinateSystem, setCoordinateSystem } = useAppContext();
-            const [isLayersSectionOpen, setIsLayersSectionOpen] = useState(true);
             const selectedArea = workAreas.find(area => area.id === selectedAreaId);
             const selectedGroup = selectedArea?.groups.find(group => group.id === selectedGroupId);
 
@@ -588,7 +587,7 @@
                     <aside className={sidebarClasses}>
                         <div className="mb-4">
                             <button 
-                                onClick={() => setIsLayersSectionOpen(prev => !prev)}
+                                onClick={onToggleLayersSection}
                                 className="w-full flex justify-between items-center p-3 bg-slate-100 dark:bg-slate-700/50 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600/50 transition-colors"
                             >
                                 <h2 className="text-lg font-bold flex items-center gap-2">
@@ -730,7 +729,7 @@
         // ====================================================================
         //  FILE: src/components/table/PointsTable.js
         // ====================================================================
-        const PointsTable = ({ selectedArea, selectedGroupId, onUpdatePoint, onDeletePoint, onZoomToPoint, onActivateGroup, activePointId, setActivePointId, onOpenMarkerPicker, setModal, closeModal }) => {
+        const PointsTable = ({ selectedArea, selectedGroupId, onUpdatePoint, onDeletePoint, onZoomToPoint, onActivateGroup, activePointId, setActivePointId, onOpenMarkerPicker, setModal, closeModal, selectedPointIds, setSelectedPointIds, onBulkDelete, onBulkChangeMarker, onBulkCopyUtm, onBulkCopyLatLng }) => {
             const { addToast, coordinateSystem } = useAppContext();
             const rowRefs = useRef({});
             const groupHeaderRefs = useRef({});
@@ -752,6 +751,33 @@
                     });
                 }
             }, [selectedGroupId]);
+
+            const handlePointSelection = (pointId) => {
+                setSelectedPointIds(prev => {
+                    const newSet = new Set(prev);
+                    if (newSet.has(pointId)) {
+                        newSet.delete(pointId);
+                    } else {
+                        newSet.add(pointId);
+                    }
+                    return newSet;
+                });
+            };
+
+            const handleSelectAllInGroup = (group) => {
+                const allPointIds = new Set(group.points.map(p => p.id));
+                const areAllSelected = group.points.every(p => selectedPointIds.has(p.id));
+
+                setSelectedPointIds(prev => {
+                    const newSet = new Set(prev);
+                    if (areAllSelected) {
+                        allPointIds.forEach(id => newSet.delete(id));
+                    } else {
+                        allPointIds.forEach(id => newSet.add(id));
+                    }
+                    return newSet;
+                });
+            };
 
             const handleOpenMarkerPicker = (e, point, group) => {
                 e.stopPropagation();
@@ -801,7 +827,6 @@
 
             const PointCard = ({ point, group, index }) => (
                 <div 
-                    key={point.id}
                     ref={el => (rowRefs.current[point.id] = el)}
                     onClick={() => {
                         onZoomToPoint(selectedArea.id, group.id, point.id);
@@ -811,6 +836,9 @@
                     className={`p-3 border-b dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors duration-200 ${point.id === activePointId ? 'bg-blue-100 dark:bg-blue-900/50 ring-2 ring-blue-500 z-10' : ''}`}
                 >
                     <div className="flex items-center gap-3">
+                        <div className="flex-shrink-0">
+                            <input type="checkbox" checked={selectedPointIds.has(point.id)} onChange={() => handlePointSelection(point.id)} onClick={e => e.stopPropagation()} className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                        </div>
                         <div className="flex-grow">
                             <div className="flex justify-between items-center mb-2">
                                 <div className="flex items-center gap-2">
@@ -846,6 +874,15 @@
                 <div className="flex-grow overflow-auto h-full bg-white dark:bg-slate-800 flex flex-col">
                     <div className="flex-shrink-0 p-2 flex justify-between items-center border-b dark:border-slate-700">
                         <h3 className="font-bold text-md text-slate-800 dark:text-slate-100">نقاط: {selectedArea.name}</h3>
+                        {selectedPointIds.size > 0 && (
+                            <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium">{selectedPointIds.size} نقاط محددة</span>
+                                <button onClick={onBulkDelete} className="button-secondary bg-red-600 hover:bg-red-700 !px-3 !py-1.5 text-xs"><Icon name="trash-2" size={16} className="ml-1"/> حذف</button>
+                                <button onClick={onBulkChangeMarker} className="button-secondary !px-3 !py-1.5 text-xs"><Icon name="shapes" size={16} className="ml-1"/> تغيير الرمز</button>
+                                <button onClick={onBulkCopyUtm} className="button-secondary !px-3 !py-1.5 text-xs"><Icon name="copy" size={16} className="ml-1"/> نسخ UTM</button>
+                                <button onClick={onBulkCopyLatLng} className="button-secondary !px-3 !py-1.5 text-xs"><Icon name="globe-2" size={16} className="ml-1"/> نسخ Lat/Lng</button>
+                            </div>
+                        )}
                     </div>
                     <div className="flex-grow overflow-y-auto">
                         <div className="lg:hidden">
@@ -867,21 +904,22 @@
                                     <div className="overflow-x-auto">
                                         <table className="w-full text-sm text-left">
                                             <thead className="text-xs text-gray-700 uppercase bg-slate-200 dark:bg-slate-700 dark:text-gray-400"><tr>
-                                                <th className="px-2 py-2 text-center">Actions</th>
-                                                <th className="px-4 py-2">Description</th>
-                                                <th className="px-4 py-2">Elevation (Z)</th>
+                                                <th className="px-2 py-2"><input type="checkbox" onChange={() => handleSelectAllInGroup(group)} checked={group.points.length > 0 && group.points.every(p => selectedPointIds.has(p.id))} /></th>
+                                                <th className="px-2 py-2">#</th>
                                                 {coordinateSystem === 'utm' ? (
                                                     <>
-                                                        <th className="px-4 py-2">Northing (Y)</th>
                                                         <th className="px-4 py-2">Easting (X)</th>
+                                                        <th className="px-4 py-2">Northing (Y)</th>
                                                     </>
                                                 ) : (
                                                     <>
-                                                        <th className="px-4 py-2">Longitude</th>
                                                         <th className="px-4 py-2">Latitude</th>
+                                                        <th className="px-4 py-2">Longitude</th>
                                                     </>
                                                 )}
-                                                <th className="px-2 py-2">#</th>
+                                                <th className="px-4 py-2">Elevation (Z)</th>
+                                                <th className="px-4 py-2">Description</th>
+                                                <th className="px-2 py-2 text-center">Actions</th>
                                             </tr></thead>
                                             <tbody>
                                             {(group.points || []).filter(p => p).map((point, i) => (
@@ -895,6 +933,30 @@
                                                     }} 
                                                     className={`border-b dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors duration-200 even:bg-slate-50 dark:even:bg-slate-800/50 ${point.id === activePointId ? 'bg-blue-100 dark:bg-blue-900/50 ring-2 ring-blue-500 z-10' : ''}`}
                                                 >
+                                                    <td className="px-2 py-2"><input type="checkbox" checked={selectedPointIds.has(point.id)} onChange={() => handlePointSelection(point.id)} onClick={e => e.stopPropagation()} /></td>
+                                                    <td className="px-2 py-2 font-medium text-slate-500 dark:text-slate-400">{i + 1}</td>
+                                                    {coordinateSystem === 'utm' ? (
+                                                        <>
+                                                            <td className="px-4 py-2"><input type="number" value={point.utm?.easting?.toFixed(3) || ''} readOnly className={coordInputClasses} /></td>
+                                                            <td className="px-4 py-2"><input type="number" value={point.utm?.northing?.toFixed(3) || ''} readOnly className={coordInputClasses} /></td>
+                                                        </>
+                                                    ) : (
+                                                         <>
+                                                            <td className="px-4 py-2"><input type="number" value={point.lat?.toFixed(8) || ''} readOnly className={coordInputClasses} /></td>
+                                                            <td className="px-4 py-2"><input type="number" value={point.lng?.toFixed(8) || ''} readOnly className={coordInputClasses} /></td>
+                                                        </>
+                                                    )}
+                                                    <td className="px-4 py-2"><input type="number" value={point.elevation?.toFixed(3) || '0.000'} readOnly className={coordInputClasses} /></td>
+                                                    <td className="px-4 py-2">
+                                                        <input 
+                                                            type="text" 
+                                                            value={point.description || ''} 
+                                                            onChange={(e) => onUpdatePoint(selectedArea.id, group.id, point.id, 'description', e.target.value)}
+                                                            onClick={e => e.stopPropagation()}
+                                                            className="w-full p-1 border rounded bg-transparent dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-blue-500"
+                                                            placeholder="وصف..."
+                                                        />
+                                                    </td>
                                                     <td className="px-2 py-2">
                                                         <div className="flex items-center justify-center space-x-1">
                                                             <button onClick={(e) => handleOpenMarkerPicker(e, point, group)} className="icon-button !w-11 !h-11 text-indigo-500 hover:bg-indigo-100 dark:hover:bg-indigo-900/50" title="تغيير الرمز">
@@ -911,29 +973,6 @@
                                                             </button>
                                                         </div>
                                                     </td>
-                                                    <td className="px-4 py-2">
-                                                        <input 
-                                                            type="text" 
-                                                            value={point.description || ''} 
-                                                            onChange={(e) => onUpdatePoint(selectedArea.id, group.id, point.id, 'description', e.target.value)}
-                                                            onClick={e => e.stopPropagation()}
-                                                            className="w-full p-1 border rounded bg-transparent dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-blue-500"
-                                                            placeholder="وصف..."
-                                                        />
-                                                    </td>
-                                                    <td className="px-4 py-2"><input type="number" value={point.elevation?.toFixed(3) || '0.000'} readOnly className={coordInputClasses} /></td>
-                                                    {coordinateSystem === 'utm' ? (
-                                                        <>
-                                                            <td className="px-4 py-2"><input type="number" value={point.utm?.northing?.toFixed(3) || ''} readOnly className={coordInputClasses} /></td>
-                                                            <td className="px-4 py-2"><input type="number" value={point.utm?.easting?.toFixed(3) || ''} readOnly className={coordInputClasses} /></td>
-                                                        </>
-                                                    ) : (
-                                                         <>
-                                                            <td className="px-4 py-2"><input type="number" value={point.lng?.toFixed(8) || ''} readOnly className={coordInputClasses} /></td>
-                                                            <td className="px-4 py-2"><input type="number" value={point.lat?.toFixed(8) || ''} readOnly className={coordInputClasses} /></td>
-                                                        </>
-                                                    )}
-                                                    <td className="px-2 py-2 font-medium text-slate-500 dark:text-slate-400">{i + 1}</td>
                                                 </tr>
                                             ))}
                                             </tbody>
@@ -1571,7 +1610,7 @@
             );
         };
 
-        const ImportChoiceModal = ({ onClose, onPasteClick, onFileClick }) => {
+        const ImportChoiceModal = ({ onClose, onPasteClick, onFileClick, onImportProjectClick }) => {
             return (
                 <GenericModal
                     title="استيراد / تحميل"
@@ -1581,14 +1620,18 @@
                     cancelText="إغلاق"
                 >
                     <div className="flex flex-col space-y-4">
-                        <p className="text-gray-800 dark:text-slate-300">اختر طريقة إدخال البيانات:</p>
+                        <p className="text-gray-800 dark:text-slate-300">اختر الإجراء المطلوب:</p>
                         <button onClick={onPasteClick} className="button-secondary flex items-center justify-center w-full !py-3 text-base">
                             <Icon name="clipboard-paste" className="ml-2" />
                             لصق الإحداثيات مباشرة
                         </button>
                         <button onClick={onFileClick} className="button-primary flex items-center justify-center w-full !py-3 text-base">
-                            <Icon name="upload" className="ml-2" />
-                            تحميل ملف
+                            <Icon name="file-text" className="ml-2" />
+                            فتح ملف إحداثيات (txt, csv)
+                        </button>
+                        <button onClick={onImportProjectClick} className="button-tertiary flex items-center justify-center w-full !py-3 text-base">
+                            <Icon name="folder-down" className="ml-2" />
+                            استيراد مشروع (.hemap)
                         </button>
                     </div>
                 </GenericModal>
@@ -2118,6 +2161,9 @@
             const [modal, setModal] = useState({ type: null, props: {} });
             const [isTakingScreenshot, setIsTakingScreenshot] = useState(false);
             const [screenshotOptions, setScreenshotOptions] = useState({ showPanel: true, showTimestamp: true });
+            const [isLayersSectionOpen, setIsLayersSectionOpen] = useState(true);
+            const [selectedPointIds, setSelectedPointIds] = useState(new Set());
+            const [importMode, setImportMode] = useState(null);
             const mapApiRef = useRef(null);
             const fileInputRef = useRef(null);
             
@@ -2431,33 +2477,30 @@
                 reader.onload = (e) => {
                     const content = e.target.result;
                     try {
-                        if (fileName.endsWith('.hemap')) {
-                            const decodedData = decodeURIComponent(escape(atob(content)));
-                            const projectData = JSON.parse(decodedData);
+                        if (importMode === 'project') {
+                            if (fileName.endsWith('.hemap')) {
+                                const decodedData = decodeURIComponent(escape(atob(content)));
+                                const projectData = JSON.parse(decodedData);
 
-                            if (projectData.format !== 'EngineeringMapProject' || !Array.isArray(projectData.workAreas)) {
-                                throw new Error('ملف المشروع غير صالح أو تالف.');
+                                if (projectData.format !== 'EngineeringMapProject' || !Array.isArray(projectData.workAreas)) {
+                                    throw new Error('ملف المشروع غير صالح أو تالف.');
+                                }
+                                
+                                setWorkAreas(projectData.workAreas.map(area => ({ ...area, groups: area.groups.map(g => ({...DEFAULT_GROUP_SETTINGS, isVisible: g.isVisible !== false, ...g})) })));
+                                setSelectedWorkAreaId(projectData.selectedWorkAreaId);
+                                setSelectedGroupId(projectData.selectedGroupId);
+                                if (projectData.utmZone) setUtmZone(projectData.utmZone);
+                                addToast('تم تحميل المشروع بنجاح.', 'success');
+                                
+                                setTimeout(() => {
+                                    const loadedArea = projectData.workAreas.find(a => a.id === projectData.selectedWorkAreaId);
+                                    const allPoints = loadedArea?.groups.flatMap(g => g.points) || [];
+                                     if (allPoints.length > 0) mapApiRef.current?.zoomToBounds(allPoints);
+                                }, 200);
+                            } else {
+                                addToast('امتداد ملف المشروع غير صالح. يجب أن يكون .hemap', 'error');
                             }
-                            
-                            setWorkAreas(projectData.workAreas.map(area => ({ ...area, groups: area.groups.map(g => ({...DEFAULT_GROUP_SETTINGS, isVisible: g.isVisible !== false, ...g})) })));
-                            setSelectedWorkAreaId(projectData.selectedWorkAreaId);
-                            setSelectedGroupId(projectData.selectedGroupId);
-                            if (projectData.utmZone) setUtmZone(projectData.utmZone);
-                            addToast('تم تحميل المشروع بنجاح.', 'success');
-                            
-                            setTimeout(() => {
-                                const loadedArea = projectData.workAreas.find(a => a.id === projectData.selectedWorkAreaId);
-                                const allPoints = loadedArea?.groups.flatMap(g => g.points) || [];
-                                 if (allPoints.length > 0) mapApiRef.current?.zoomToBounds(allPoints);
-                            }, 200);
-
-                        } else if (fileName.endsWith('.json')) {
-                            const projectData = JSON.parse(content);
-                            const dataToLoad = projectData.workAreas ? projectData.workAreas : projectData;
-                            if (!Array.isArray(dataToLoad)) throw new Error('صيغة ملف JSON غير معروفة.');
-                            setWorkAreas(dataToLoad.map(area => ({ ...area, groups: area.groups.map(g => ({...DEFAULT_GROUP_SETTINGS, isVisible: g.isVisible !== false, ...g})) })));
-                            addToast('تم تحميل مشروع JSON بنجاح.', 'success');
-                        } else {
+                        } else if (importMode === 'coords') {
                             if (!selectedArea) { addToast('الرجاء تحديد منطقة عمل أولاً لاستيراد النقاط.', 'error'); return; }
                             const parsedData = parseDelimitedText(content);
                             if (parsedData.error && !parsedData.data.length) { addToast(parsedData.error, 'error'); return; }
@@ -2466,9 +2509,16 @@
                     } catch (err) {
                         console.error("File load error:", err);
                         addToast(`فشل في تحميل الملف: ${err.message}`, 'error');
+                    } finally {
+                        setImportMode(null); // Reset import mode
+                        event.target.value = null; // Reset file input
                     }
                 };
-                reader.onerror = () => addToast('فشل في قراءة الملف.', 'error');
+                reader.onerror = () => {
+                    addToast('فشل في قراءة الملف.', 'error');
+                    setImportMode(null);
+                    event.target.value = null;
+                };
                 reader.readAsText(file, 'UTF-8');
             };
             
@@ -2505,6 +2555,12 @@
                         }, 50);
                     },
                     onFileClick: () => {
+                        setImportMode('coords');
+                        closeModal();
+                        fileInputRef.current.click();
+                    },
+                    onImportProjectClick: () => {
+                        setImportMode('project');
                         closeModal();
                         fileInputRef.current.click();
                     }
@@ -2961,7 +3017,7 @@
             return (
                 <div className="h-screen w-screen flex flex-col bg-slate-100 dark:bg-slate-900">
                     {renderModal()}
-                    <input type="file" ref={fileInputRef} onChange={handleFileLoad} style={{ display: 'none' }} accept=".txt,.csv,.tsv,.json,.hemap" />
+                    <input type="file" ref={fileInputRef} onChange={handleFileLoad} style={{ display: 'none' }} accept=".txt,.csv,.tsv,.hemap" />
                     <Header onToggleFullScreen={() => setIsMapFullScreen(f => !f)} isFullScreen={isMapFullScreen} onToggleSidebar={() => setIsSidebarOpen(true)} />
                     <div className="flex flex-grow min-h-0"> 
                         <div className={`${isMapFullScreen ? 'hidden' : ''} lg:block`}>
@@ -2995,6 +3051,8 @@
                                 onOpenPdfOptions={handleOpenPdfOptions}
                                 setModal={setModal}
                                 closeModal={closeModal}
+                                isLayersSectionOpen={isLayersSectionOpen}
+                                onToggleLayersSection={() => setIsLayersSectionOpen(prev => !prev)}
                             />
                         </div>
                         
@@ -3081,6 +3139,39 @@
                                             onOpenMarkerPicker={handleOpenMarkerPickerForPoint}
                                             setModal={setModal}
                                             closeModal={closeModal}
+                                            selectedPointIds={selectedPointIds}
+                                            setSelectedPointIds={setSelectedPointIds}
+                                            onBulkDelete={() => {
+                                                const ids = Array.from(selectedPointIds);
+                                                setWorkAreas(prev => prev.map(area => ({
+                                                    ...area,
+                                                    groups: area.groups.map(group => ({
+                                                        ...group,
+                                                        points: group.points.filter(p => !ids.includes(p.id))
+                                                    }))
+                                                })));
+                                                setSelectedPointIds(new Set());
+                                                addToast(`${ids.length} نقطة تم حذفها.`, 'success');
+                                            }}
+                                            onBulkChangeMarker={() => {
+                                                setModal({type: 'markerPicker', props: {
+                                                    onClose: closeModal,
+                                                    onSelect: (iconKey) => {
+                                                        const ids = Array.from(selectedPointIds);
+                                                        setWorkAreas(prev => prev.map(area => ({
+                                                            ...area,
+                                                            groups: area.groups.map(group => ({
+                                                                ...group,
+                                                                points: group.points.map(p => ids.includes(p.id) ? { ...p, markerIcon: iconKey } : p)
+                                                            }))
+                                                        })));
+                                                        setSelectedPointIds(new Set());
+                                                        closeModal();
+                                                    }
+                                                }})
+                                            }}
+                                            onBulkCopyUtm={() => handleBulkCopy('utm')}
+                                            onBulkCopyLatLng={() => handleBulkCopy('latlng')}
                                         />
                                     </div>
                                 </div>
@@ -3106,6 +3197,8 @@
                                     onOpenMarkerPicker={handleOpenMarkerPickerForPoint}
                                     setModal={setModal}
                                     closeModal={closeModal}
+                                    selectedPointIds={selectedPointIds}
+                                    setSelectedPointIds={setSelectedPointIds}
                                 />
                             </div>
                             
@@ -3119,7 +3212,7 @@
                                     <span className="text-xs">النقاط</span>
                                 </button>
                                 <button onClick={triggerGetCurrentLocation} className="h-14 w-14 -mt-8 bg-blue-600 rounded-full text-white flex items-center justify-center shadow-lg"><Icon name="plus" size={28}/></button>
-                                <button onClick={() => setIsSidebarOpen(true)} className="flex flex-col items-center gap-1 text-slate-500">
+                                <button onClick={() => { setIsSidebarOpen(true); setIsLayersSectionOpen(true); }} className="flex flex-col items-center gap-1 text-slate-500">
                                     <Icon name="folder-kanban" />
                                     <span className="text-xs">الطبقات</span>
                                 </button>
