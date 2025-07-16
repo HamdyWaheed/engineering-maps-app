@@ -1376,30 +1376,6 @@
             );
         };
 
-        const PasteChoiceModal = ({ onClose, onUtmClick, onLatLngClick }) => {
-            return (
-                <GenericModal
-                    title="اختر نوع الإحداثيات للصق"
-                    onClose={onClose}
-                    showConfirm={false}
-                    showCancel={true}
-                    cancelText="إغلاق"
-                >
-                    <div className="flex flex-col space-y-4">
-                        <p className="text-slate-600 dark:text-slate-300">اختر نظام الإحداثيات الذي تريد لصق بياناته:</p>
-                        <button onClick={onUtmClick} className="button-secondary flex items-center justify-center w-full !py-3 text-base">
-                            <Icon name="grid" className="ml-2" />
-                            لصق إحداثيات UTM
-                        </button>
-                        <button onClick={onLatLngClick} className="button-primary flex items-center justify-center w-full !py-3 text-base">
-                            <Icon name="globe" className="ml-2" />
-                            لصق إحداثيات (Lat/Long)
-                        </button>
-                    </div>
-                </GenericModal>
-            );
-        };
-        
         const ImportPointsModal = ({ fileData, onClose, onImport, utmZone }) => {
             const { addToast } = useAppContext();
             const [mappings, setMappings] = useState({ easting: '0', northing: '1', elevation: '-1', description: '-1' });
@@ -2417,9 +2393,9 @@
                         closeModal();
                         setTimeout(() => {
                             if (coordinateSystem === 'utm') {
-                                setModal({type: 'directPasteUtm', props: { onClose:closeModal, onProcessPaste:handleProcessPastedPoints, utmZone:utmZone }});
+                                setModal({type: 'directPasteUtm', props: { onClose: closeModal, onProcessPaste: handleProcessPastedPoints, utmZone: utmZone }});
                             } else {
-                                setModal({type: 'directPasteLatLng', props: { onClose:closeModal, onProcessPaste:handleProcessPastedPoints, utmZone:utmZone }});
+                                setModal({type: 'directPasteLatLng', props: { onClose: closeModal, onProcessPaste: handleProcessPastedPoints, utmZone: utmZone }});
                             }
                         }, 50);
                     },
@@ -2715,18 +2691,33 @@
                     .filter(g => selectedGroupIds.includes(g.id))
                     .flatMap(g => g.points);
 
-                const tableData = pointsToExport.map((p, i) => [
-                    i + 1,
-                    p.utm?.easting?.toFixed(3) || 'N/A',
-                    p.utm?.northing?.toFixed(3) || 'N/A',
-                    (p.elevation ?? 0).toFixed(3),
-                    p.description || '-',
-                ]);
+                let tableHead;
+                let tableBody;
+
+                if (coordinateSystem === 'utm') {
+                    tableHead = [['#', 'Easting (X)', 'Northing (Y)', 'Elevation (Z)', 'Description']];
+                    tableBody = pointsToExport.map((p, i) => [
+                        i + 1,
+                        p.utm?.easting?.toFixed(3) || 'N/A',
+                        p.utm?.northing?.toFixed(3) || 'N/A',
+                        (p.elevation ?? 0).toFixed(3),
+                        p.description || '-',
+                    ]);
+                } else { // latlng
+                    tableHead = [['#', 'Latitude', 'Longitude', 'Elevation (Z)', 'Description']];
+                    tableBody = pointsToExport.map((p, i) => [
+                        i + 1,
+                        p.lat?.toFixed(8) || 'N/A',
+                        p.lng?.toFixed(8) || 'N/A',
+                        (p.elevation ?? 0).toFixed(3),
+                        p.description || '-',
+                    ]);
+                }
 
                 doc.autoTable({
                     startY: yPos,
-                    head: [['#', 'Easting (X)', 'Northing (Y)', 'Elevation (Z)', 'Description']],
-                    body: tableData,
+                    head: tableHead,
+                    body: tableBody,
                     theme: 'grid',
                     headStyles: { font: 'Helvetica', halign: 'center', fillColor: [41, 128, 185] },
                     bodyStyles: { font: 'Helvetica', halign: 'center' },
