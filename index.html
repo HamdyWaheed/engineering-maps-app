@@ -650,11 +650,11 @@
             return (
                 <div className="modal-overlay" onClick={handleCancel}>
                     <div className="modal-content" onClick={e => e.stopPropagation()}>
-                        <h2 className="text-2xl font-bold mb-4 text-slate-800 dark:text-slate-100">{title}</h2>
-                        {message && <p className="mb-6 text-slate-700 dark:text-slate-300">{message}</p>}
+                        <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-slate-100">{title}</h2>
+                        {message && <p className="mb-6 text-gray-800 dark:text-slate-300">{message}</p>}
                         {type === 'prompt' && (
                             <div className="mb-6">
-                                <label htmlFor="modal-input" className="block text-sm font-medium mb-1">{inputLabel}</label>
+                                <label htmlFor="modal-input" className="block text-sm font-medium mb-1 text-gray-700 dark:text-slate-200">{inputLabel}</label>
                                 <input id="modal-input" ref={inputRef} type="text" value={inputValue} onChange={e => setInputValue(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleConfirm()} className="block w-full p-2 border rounded-md dark:bg-slate-700 dark:border-slate-600" />
                             </div>
                         )}
@@ -806,23 +806,23 @@
                                         <h4 className="font-semibold text-slate-700 dark:text-slate-200">{group.name}</h4>
                                     </div>
                                     <div className="overflow-x-auto">
-                                        <table className="w-full text-sm text-left rtl:text-right">
+                                        <table className="w-full text-sm text-left">
                                             <thead className="text-xs text-gray-700 uppercase bg-slate-200 dark:bg-slate-700 dark:text-gray-400"><tr>
-                                                <th className="px-2 py-2">#</th>
+                                                <th className="px-2 py-2 text-center">Actions</th>
+                                                <th className="px-4 py-2">Description</th>
+                                                <th className="px-4 py-2">Elevation (Z)</th>
                                                 {coordinateSystem === 'utm' ? (
                                                     <>
-                                                        <th className="px-4 py-2">Easting (X)</th>
                                                         <th className="px-4 py-2">Northing (Y)</th>
+                                                        <th className="px-4 py-2">Easting (X)</th>
                                                     </>
                                                 ) : (
                                                     <>
-                                                        <th className="px-4 py-2">Latitude</th>
                                                         <th className="px-4 py-2">Longitude</th>
+                                                        <th className="px-4 py-2">Latitude</th>
                                                     </>
                                                 )}
-                                                <th className="px-4 py-2">Elevation (Z)</th>
-                                                <th className="px-4 py-2">الوصف</th>
-                                                <th className="px-2 py-2 text-center">إجراءات</th>
+                                                <th className="px-2 py-2">#</th>
                                             </tr></thead>
                                             <tbody>
                                             {(group.points || []).map((point, i) => (
@@ -836,31 +836,8 @@
                                                     }} 
                                                     className={`border-b dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors duration-200 even:bg-slate-50 dark:even:bg-slate-800/50 ${point.id === activePointId ? 'bg-blue-100 dark:bg-blue-900/50 ring-2 ring-blue-500 z-10' : ''}`}
                                                 >
-                                                    <td className="px-2 py-2 font-medium text-slate-500 dark:text-slate-400">{i + 1}</td>
-                                                    {coordinateSystem === 'utm' ? (
-                                                        <>
-                                                            <td className="px-4 py-2"><input type="number" value={point.utm?.easting?.toFixed(3) || ''} readOnly className={coordInputClasses} /></td>
-                                                            <td className="px-4 py-2"><input type="number" value={point.utm?.northing?.toFixed(3) || ''} readOnly className={coordInputClasses} /></td>
-                                                        </>
-                                                    ) : (
-                                                         <>
-                                                            <td className="px-4 py-2"><input type="number" value={point.lat?.toFixed(8) || ''} readOnly className={coordInputClasses} /></td>
-                                                            <td className="px-4 py-2"><input type="number" value={point.lng?.toFixed(8) || ''} readOnly className={coordInputClasses} /></td>
-                                                        </>
-                                                    )}
-                                                    <td className="px-4 py-2"><input type="number" value={point.elevation?.toFixed(3) || '0.000'} readOnly className={coordInputClasses} /></td>
-                                                    <td className="px-4 py-2">
-                                                        <input 
-                                                            type="text" 
-                                                            value={point.description || ''} 
-                                                            onChange={(e) => onUpdatePoint(selectedArea.id, group.id, point.id, 'description', e.target.value)}
-                                                            onClick={e => e.stopPropagation()}
-                                                            className="w-full p-1 border rounded bg-transparent dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-blue-500"
-                                                            placeholder="وصف..."
-                                                        />
-                                                    </td>
                                                     <td className="px-2 py-2">
-                                                        <div className="flex items-center justify-center space-x-1 space-x-reverse">
+                                                        <div className="flex items-center justify-center space-x-1">
                                                             <button onClick={(e) => handleOpenMarkerPicker(e, point, group)} className="icon-button !w-11 !h-11 text-indigo-500 hover:bg-indigo-100 dark:hover:bg-indigo-900/50" title="تغيير الرمز">
                                                                 <Icon name="palette" size={22}/>
                                                             </button>
@@ -875,6 +852,29 @@
                                                             </button>
                                                         </div>
                                                     </td>
+                                                    <td className="px-4 py-2">
+                                                        <input 
+                                                            type="text" 
+                                                            value={point.description || ''} 
+                                                            onChange={(e) => onUpdatePoint(selectedArea.id, group.id, point.id, 'description', e.target.value)}
+                                                            onClick={e => e.stopPropagation()}
+                                                            className="w-full p-1 border rounded bg-transparent dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-blue-500"
+                                                            placeholder="وصف..."
+                                                        />
+                                                    </td>
+                                                    <td className="px-4 py-2"><input type="number" value={point.elevation?.toFixed(3) || '0.000'} readOnly className={coordInputClasses} /></td>
+                                                    {coordinateSystem === 'utm' ? (
+                                                        <>
+                                                            <td className="px-4 py-2"><input type="number" value={point.utm?.northing?.toFixed(3) || ''} readOnly className={coordInputClasses} /></td>
+                                                            <td className="px-4 py-2"><input type="number" value={point.utm?.easting?.toFixed(3) || ''} readOnly className={coordInputClasses} /></td>
+                                                        </>
+                                                    ) : (
+                                                         <>
+                                                            <td className="px-4 py-2"><input type="number" value={point.lng?.toFixed(8) || ''} readOnly className={coordInputClasses} /></td>
+                                                            <td className="px-4 py-2"><input type="number" value={point.lat?.toFixed(8) || ''} readOnly className={coordInputClasses} /></td>
+                                                        </>
+                                                    )}
+                                                    <td className="px-2 py-2 font-medium text-slate-500 dark:text-slate-400">{i + 1}</td>
                                                 </tr>
                                             ))}
                                             </tbody>
@@ -1227,7 +1227,7 @@
                 <div className="modal-overlay" onClick={onClose}>
                     <div className="modal-content" onClick={e => e.stopPropagation()}>
                         <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100">اختر رمز النقطة</h2>
+                            <h2 className="text-2xl font-bold text-gray-900 dark:text-slate-100">اختر رمز النقطة</h2>
                             <button onClick={onClose} className="icon-button"><Icon name="x" /></button>
                         </div>
                         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
@@ -1299,7 +1299,7 @@
                     onConfirm={handleProcessClick} 
                     confirmText="معالجة وتوقيع"
                 >
-                    <p className="mb-4 text-slate-600 dark:text-slate-300">
+                    <p className="mb-4 text-gray-800 dark:text-slate-300">
                         قم بلصق الإحداثيات في المربع أدناه. يجب أن تكون بتنسيق (Easting, Northing, [Elevation], [Description]) مفصولة بفاصلة أو مسافة أو تاب.
                     </p>
                     <textarea
@@ -1362,7 +1362,7 @@
                     onConfirm={handleProcessClick} 
                     confirmText="معالجة وتوقيع"
                 >
-                    <p className="mb-4 text-slate-600 dark:text-slate-300">
+                    <p className="mb-4 text-gray-800 dark:text-slate-300">
                         قم بلصق الإحداثيات في المربع أدناه. يجب أن تكون بتنسيق (Latitude, Longitude, [Description]) مفصولة بفاصلة أو مسافة أو تاب.
                     </p>
                     <textarea
@@ -1372,118 +1372,6 @@
                         placeholder="30.0443, 31.2357, Tahrir Square&#10;29.9792 31.1342 Pyramid Giza&#10;..."
                         dir="ltr"
                     />
-                </GenericModal>
-            );
-        };
-
-        const ImportPointsModal = ({ fileData, onClose, onImport, utmZone }) => {
-            const { addToast } = useAppContext();
-            const [mappings, setMappings] = useState({ easting: '0', northing: '1', elevation: '-1', description: '-1' });
-            const [groupName, setGroupName] = useState(fileData.fileName ? `استيراد - ${fileData.fileName}` : 'مجموعة مستوردة');
-            const [ignoreHeader, setIgnoreHeader] = useState(fileData.hasHeader);
-
-            const { headers, dataRows } = useMemo(() => {
-                const rawData = fileData.data || [];
-                if (rawData.length === 0) return { headers: [], dataRows: [] };
-                
-                const headerRow = ignoreHeader ? rawData[0] : rawData[0].map((_, i) => `العمود ${i + 1}`);
-                const dataContent = ignoreHeader ? rawData.slice(1) : rawData;
-                
-                return { headers: headerRow, dataRows: dataContent };
-            }, [fileData.data, ignoreHeader]);
-
-            useEffect(() => {
-                if (ignoreHeader && headers.length > 0) {
-                    const lowerCaseHeaders = headers.map(h => h.toLowerCase());
-                    const eastingIndex = lowerCaseHeaders.findIndex(h => h.includes('east') || h === 'x');
-                    const northingIndex = lowerCaseHeaders.findIndex(h => h.includes('north') || h === 'y');
-                    const elevationIndex = lowerCaseHeaders.findIndex(h => h.includes('elev') || h.includes('z'));
-                    const descriptionIndex = lowerCaseHeaders.findIndex(h => h.includes('desc') || h.includes('code'));
-                    
-                    setMappings({
-                        easting: eastingIndex !== -1 ? `${eastingIndex}` : '0',
-                        northing: northingIndex !== -1 ? `${northingIndex}` : '1',
-                        elevation: elevationIndex !== -1 ? `${elevationIndex}` : '-1',
-                        description: descriptionIndex !== -1 ? `${descriptionIndex}` : '-1',
-                    });
-                }
-            }, [headers, ignoreHeader]);
-
-            const handleImportClick = () => {
-                if (!mappings.easting || !mappings.northing) { addToast("الرجاء تحديد أعمدة Easting و Northing.", "error"); return; }
-                if (!groupName.trim()) { addToast("الرجاء إدخال اسم للمجموعة.", "error"); return; }
-                
-                const pointsToImport = dataRows.map(row => {
-                    const easting = parseFloat(row[parseInt(mappings.easting)]);
-                    const northing = parseFloat(row[parseInt(mappings.northing)]);
-                    const elevation = mappings.elevation !== '-1' ? parseFloat(row[parseInt(mappings.elevation)]) : null;
-                    const description = mappings.description !== '-1' ? row[parseInt(mappings.description)] : '';
-                    if (isNaN(easting) || isNaN(northing)) return null;
-                    const latLng = convertUtmToLatLng(easting, northing, utmZone);
-                    if (!latLng) return null;
-                    return { id: generateUniqueId(), lat: latLng.lat, lng: latLng.lng, elevation: isNaN(elevation) ? null : elevation, utm: { easting, northing, zone: utmZone }, description, markerIcon: 'default', createdAt: new Date().toISOString() };
-                }).filter(Boolean);
-
-                if (pointsToImport.length === 0) { addToast("لم يتم العثور على نقاط صالحة للاستيراد.", "error"); return; }
-                onImport(groupName.trim(), pointsToImport);
-                onClose();
-            };
-
-            const getColumnPreview = (colIndex) => {
-                if (colIndex === '-1' || !dataRows || dataRows.length === 0) return "لا يوجد";
-                return dataRows.slice(0, 3).map(row => row[colIndex]).join(', ') + (dataRows.length > 3 ? ', ...' : '');
-            };
-
-            return (
-                <GenericModal title="استيراد نقاط من ملف" onClose={onClose} onConfirm={handleImportClick} confirmText="استيراد">
-                    <div className="mb-4">
-                        <label className="block text-sm font-medium mb-1">اسم المجموعة الجديدة</label>
-                        <input type="text" value={groupName} onChange={e => setGroupName(e.target.value)} className="block w-full p-2 border rounded-md dark:bg-slate-700 dark:border-slate-600" />
-                    </div>
-                    <div className="flex items-center mb-4">
-                        <input type="checkbox" id="ignore-header" checked={ignoreHeader} onChange={e => setIgnoreHeader(e.target.checked)} className="ml-2" />
-                        <label htmlFor="ignore-header">الصف الأول يحتوي على ترويسة (أسماء الأعمدة)</label>
-                    </div>
-                    <h3 className="text-lg font-semibold mb-2">ربط الأعمدة</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                        <div>
-                            <label className="block text-sm font-medium mb-1">Easting (X)</label>
-                            <select value={mappings.easting} onChange={e => setMappings(m => ({...m, easting: e.target.value}))} className="block w-full p-2 border rounded-md dark:bg-slate-700 dark:border-slate-600">
-                                {headers.map((h, i) => <option key={i} value={i}>{h}</option>)}
-                            </select>
-                            <p className="text-xs text-slate-500 mt-1">معاينة: {getColumnPreview(mappings.easting)}</p>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium mb-1">Northing (Y)</label>
-                            <select value={mappings.northing} onChange={e => setMappings(m => ({...m, northing: e.target.value}))} className="block w-full p-2 border rounded-md dark:bg-slate-700 dark:border-slate-600">
-                                {headers.map((h, i) => <option key={i} value={i}>{h}</option>)}
-                            </select>
-                            <p className="text-xs text-slate-500 mt-1">معاينة: {getColumnPreview(mappings.northing)}</p>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium mb-1">Elevation (Z)</label>
-                            <select value={mappings.elevation} onChange={e => setMappings(m => ({...m, elevation: e.target.value}))} className="block w-full p-2 border rounded-md dark:bg-slate-700 dark:border-slate-600">
-                                <option value="-1">-- لا يوجد --</option>
-                                {headers.map((h, i) => <option key={i} value={i}>{h}</option>)}
-                            </select>
-                            <p className="text-xs text-slate-500 mt-1">معاينة: {getColumnPreview(mappings.elevation)}</p>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium mb-1">الوصف (Description)</label>
-                            <select value={mappings.description} onChange={e => setMappings(m => ({...m, description: e.target.value}))} className="block w-full p-2 border rounded-md dark:bg-slate-700 dark:border-slate-600">
-                                <option value="-1">-- لا يوجد --</option>
-                                {headers.map((h, i) => <option key={i} value={i}>{h}</option>)}
-                            </select>
-                            <p className="text-xs text-slate-500 mt-1">معاينة: {getColumnPreview(mappings.description)}</p>
-                        </div>
-                    </div>
-                    <h3 className="text-lg font-semibold mb-2">معاينة البيانات (أول 5 صفوف)</h3>
-                    <div className="overflow-auto border rounded-lg dark:border-slate-600" style={{maxHeight: '200px'}}>
-                        <table className="w-full text-sm">
-                            <thead className="bg-gray-50 dark:bg-slate-700"><tr className="text-right">{headers.map((h, i) => <th key={i} className="p-2 font-semibold"><div>{`العمود ${i + 1}`}</div><div className="font-normal text-xs">{h}</div></th>)}</tr></thead>
-                            <tbody className="dark:bg-slate-800">{dataRows.slice(0, 5).map((row, i) => <tr key={i} className="border-t dark:border-slate-700 text-right">{row.map((cell, j) => <td key={j} className="p-2">{cell}</td>)}</tr>)}</tbody>
-                        </table>
-                    </div>
                 </GenericModal>
             );
         };
@@ -1498,7 +1386,7 @@
                     cancelText="إغلاق"
                 >
                     <div className="flex flex-col space-y-4">
-                        <p className="text-slate-600 dark:text-slate-300">اختر طريقة إدخال البيانات:</p>
+                        <p className="text-gray-800 dark:text-slate-300">اختر طريقة إدخال البيانات:</p>
                         <button onClick={onPasteClick} className="button-secondary flex items-center justify-center w-full !py-3 text-base">
                             <Icon name="clipboard-paste" className="ml-2" />
                             لصق الإحداثيات مباشرة
@@ -1522,7 +1410,7 @@
                     cancelText="إغلاق"
                 >
                     <div className="flex flex-col space-y-4">
-                        <p className="text-slate-600 dark:text-slate-300">اختر الإجراء المطلوب:</p>
+                        <p className="text-gray-800 dark:text-slate-300">اختر الإجراء المطلوب:</p>
                         <button onClick={onExportClick} className="button-secondary flex items-center justify-center w-full !py-3 text-base">
                             <Icon name="file-output" className="ml-2" />
                             تصدير النقاط (CSV, SCR...)
@@ -1771,7 +1659,7 @@
                 >
                     <div className="space-y-4" dir="ltr">
                         <div>
-                            <label htmlFor="report-title" className="block text-sm font-medium mb-1">Report Title</label>
+                            <label htmlFor="report-title" className="block text-sm font-medium mb-1 text-gray-700 dark:text-slate-200">Report Title</label>
                             <input
                                 id="report-title"
                                 type="text"
@@ -1781,7 +1669,7 @@
                             />
                         </div>
                         <div>
-                            <h4 className="text-sm font-medium mb-2">Select Groups to Include</h4>
+                            <h4 className="text-sm font-medium mb-2 text-gray-700 dark:text-slate-200">Select Groups to Include</h4>
                             <div className="max-h-48 overflow-y-auto p-2 border rounded-md dark:border-slate-600">
                                 {groups.map(group => (
                                     <div key={group.id} className="flex items-center">
@@ -1815,11 +1703,11 @@
                     <div className="space-y-4">
                         <div className="flex items-center">
                             <input id="show-panel-check" type="checkbox" checked={showPanel} onChange={e => setShowPanel(e.target.checked)} className="ml-3 h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                            <label htmlFor="show-panel-check" className="text-base text-slate-700 dark:text-slate-200">إظهار معلومات المشروع</label>
+                            <label htmlFor="show-panel-check" className="text-base text-gray-800 dark:text-slate-200">إظهار معلومات المشروع</label>
                         </div>
                         <div className="flex items-center">
                             <input id="show-timestamp-check" type="checkbox" checked={showTimestamp} onChange={e => setShowTimestamp(e.target.checked)} className="ml-3 h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                            <label htmlFor="show-timestamp-check" className="text-base text-slate-700 dark:text-slate-200">إظهار الوقت والتاريخ</label>
+                            <label htmlFor="show-timestamp-check" className="text-base text-gray-800 dark:text-slate-200">إظهار الوقت والتاريخ</label>
                         </div>
                     </div>
                 </GenericModal>
@@ -2102,9 +1990,9 @@
                 const newGroupId = generateUniqueId();
                 const defaultArea = { 
                     id: newAreaId, 
-                    name: 'منطقة عمل 1', 
+                    name: 'القاهرة ، مصر', 
                     createdAt: new Date().toISOString(), 
-                    groups: [{ id: newGroupId, name: 'مجموعة نقاط 1', color: POINT_GROUP_COLORS[0], points: [], ...DEFAULT_GROUP_SETTINGS }],
+                    groups: [{ id: newGroupId, name: 'ميدان التحرير', color: POINT_GROUP_COLORS[0], points: [], ...DEFAULT_GROUP_SETTINGS }],
                 };
                 setWorkAreas([defaultArea]);
                 setSelectedWorkAreaId(newAreaId);
@@ -2381,7 +2269,7 @@
                 addToast(`تم إضافة ${points.length} نقطة بنجاح.`, 'success');
                 setTimeout(() => mapApiRef.current?.zoomToBounds(points), 100);
             };
-
+            
             const handleOpenImportModal = () => {
                 if (!selectedArea) {
                     addToast('الرجاء تحديد منطقة عمل أولاً.', 'error');
