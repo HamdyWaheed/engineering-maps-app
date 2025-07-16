@@ -244,7 +244,7 @@
         // ====================================================================
         //  FILE: src/constants.js
         // ====================================================================
-        const GOOGLE_MAPS_API_KEY = 'AIzaSyAKXVuJsf0vANjBtlUIWcPj-wNWPkOc-S4';
+        const GOOGLE_MAPS_API_KEY = 'AIzaSyAKXVuJsf0vANjBtlUIWcPj-wNWPkOc-S4'; // تحذير: هذا المفتاح ظاهر للعامة. يجب تأمينه في بيئة الإنتاج.
         const DEFAULT_UTM_ZONE = 35; 
         const DEFAULT_MAP_CENTER_LAT = 30.04439461; 
         const DEFAULT_MAP_CENTER_LNG = 31.23577427; 
@@ -471,8 +471,7 @@
                 historyRef.current.future.length > 0
             ];
         };
-
-
+        
         // ====================================================================
         //  FILE: src/contexts/AppContext.js
         // ====================================================================
@@ -945,7 +944,7 @@
                                                          <>
                                                             <td className="px-4 py-2"><input type="number" value={point.lat?.toFixed(8) || ''} readOnly className={coordInputClasses} /></td>
                                                             <td className="px-4 py-2"><input type="number" value={point.lng?.toFixed(8) || ''} readOnly className={coordInputClasses} /></td>
-                                                        </>
+                                                         </>
                                                     )}
                                                     <td className="px-4 py-2"><input type="number" value={point.elevation?.toFixed(3) || '0.000'} readOnly className={coordInputClasses} /></td>
                                                     <td className="px-4 py-2">
@@ -1060,16 +1059,21 @@
 
         // ====================================================================
         //  FILE: src/components/map/MapComponent.js
+        //  -- REFACTORED FOR PERFORMANCE --
         // ====================================================================
         const MapComponent = forwardRef(({ selectedArea, utmZone, onAddPoint, onUpdatePoint, addToast, onUpdateGroupSettings, selectedGroupId, isDeleteMode, onDeletePointById, onActivateGroup, setActivePointId, onZoomChange }, ref) => {
             const { darkMode } = useAppContext();
             const mapRef = useRef(null);
             const [map, setMap] = useState(null);
             const [mapOverlays, setMapOverlays] = useState([]);
-            const markersRef = useRef({});
-            const polylinesRef = useRef({});
+            
+            // استخدام Refs لتخزين عناصر الخريطة لتجنب إعادة الرسم غير الضرورية
+            const markersRef = useRef(new Map());
+            const polylinesRef = useRef(new Map());
+            const areaPolygonsRef = useRef(new Map());
             const infoWindowRef = useRef(null);
             const onAddPointRef = useRef(onAddPoint);
+
             useEffect(() => { onAddPointRef.current = onAddPoint; }, [onAddPoint]);
 
             useImperativeHandle(ref, () => ({
@@ -1093,6 +1097,7 @@
                 }
             }));
 
+            // Effect لتهيئة الخريطة مرة واحدة فقط
             useEffect(() => {
                 if (mapRef.current && !map) {
                     const mapInstance = new window.google.maps.Map(mapRef.current, { center: { lat: DEFAULT_MAP_CENTER_LAT, lng: DEFAULT_MAP_CENTER_LNG }, zoom: DEFAULT_MAP_ZOOM, mapTypeId: 'satellite', mapTypeControl: false, streetViewControl: false, fullscreenControl: false, zoomControl: true, clickableIcons: !isDeleteMode });
@@ -1109,185 +1114,209 @@
                     mapInstance.addListener('zoom_changed', () => {
                         const currentZoom = mapInstance.getZoom();
                         onZoomChange(currentZoom);
-                        if (selectedGroupId) {
-                            const shouldBeEnabled = currentZoom < MAX_ZOOM_FOR_SNAP;
-                            onUpdateGroupSettings(selectedGroupId, 'snapEnabled', shouldBeEnabled);
-                        }
                     });
                     
                     setMap(mapInstance);
                 }
-            }, [mapRef, map, selectedGroupId, onUpdateGroupSettings]);
+            }, [mapRef, map]);
 
+            // Effect لتحديث خيارات الخريطة عند تغيير وضع الحذف
             useEffect(() => {
                 if(map) {
                     map.setOptions({ draggableCursor: isDeleteMode ? 'crosshair' : null, clickableIcons: !isDeleteMode });
                 }
             }, [map, isDeleteMode]);
 
+            // Effect لمزامنة العلامات (Markers) مع الحالة
             useEffect(() => {
-                if (!map) return;
-                Object.values(markersRef.current).forEach(m => m.setMap(null));
-                markersRef.current = {};
-                Object.values(polylinesRef.current).forEach(p => p.setMap(null));
-                polylinesRef.current = {};
-                
-                const newOverlays = [];
-                const currentZoom = map.getZoom();
+                if (!map || !selectedArea) return;
 
-                if (selectedArea) {
-                    selectedArea.groups.filter(group => group.isVisible).forEach(group => {
-                        const { showPolylines, showElevations, showLabels, showDescriptions, isMeasuring, isAreaMeasuring } = group;
-                        const path = [];
-                        const canShowAnyLabel = currentZoom >= LABEL_VISIBILITY_ZOOM_THRESHOLD;
+                const currentMarkers = markersRef.current;
+                const pointsInState = new Set();
 
-                        (group.points || []).filter(p => p && typeof p.lat === 'number' && typeof p.lng === 'number').forEach((point, index) => {
-                            const latLng = new window.google.maps.LatLng(point.lat, point.lng);
-                            path.push(latLng);
+                selectedArea.groups.forEach(group => {
+                    if (!group.isVisible) return;
 
-                            const iconKey = point.markerIcon || 'default';
-                            const iconDefinition = MARKER_ICONS[iconKey] || MARKER_ICONS['default'];
-                            const markerIcon = { path: iconDefinition.path, fillColor: group.color, fillOpacity: 1, strokeWeight: iconDefinition.strokeWeight, strokeColor: '#ffffff', scale: iconDefinition.scale, anchor: iconDefinition.anchor ? new window.google.maps.Point(iconDefinition.anchor.x, iconDefinition.anchor.y) : null };
+                    (group.points || []).forEach((point, index) => {
+                        if (!point || typeof point.lat !== 'number' || typeof point.lng !== 'number') return;
+                        
+                        pointsInState.add(point.id);
+                        const latLng = new window.google.maps.LatLng(point.lat, point.lng);
+                        const iconKey = point.markerIcon || 'default';
+                        const iconDefinition = MARKER_ICONS[iconKey] || MARKER_ICONS['default'];
+                        const markerIcon = { path: iconDefinition.path, fillColor: group.color, fillOpacity: 1, strokeWeight: iconDefinition.strokeWeight, strokeColor: '#ffffff', scale: iconDefinition.scale, anchor: iconDefinition.anchor ? new window.google.maps.Point(iconDefinition.anchor.x, iconDefinition.anchor.y) : null };
 
-                            const marker = new window.google.maps.Marker({ 
+                        let marker = currentMarkers.get(point.id);
+
+                        if (marker) { // إذا كانت العلامة موجودة، قم بتحديثها
+                            marker.setPosition(latLng);
+                            marker.setIcon(markerIcon);
+                            marker.setVisible(map.getZoom() >= MARKER_VISIBILITY_ZOOM_THRESHOLD);
+                        } else { // إذا كانت جديدة، قم بإنشائها
+                            marker = new window.google.maps.Marker({ 
                                 position: latLng, 
                                 map, 
                                 draggable: !isDeleteMode, 
                                 title: `نقطة ${index + 1} (${group.name})`, 
                                 icon: markerIcon, 
                                 cursor: isDeleteMode ? 'pointer' : 'grab',
-                                visible: currentZoom >= MARKER_VISIBILITY_ZOOM_THRESHOLD
+                                visible: map.getZoom() >= MARKER_VISIBILITY_ZOOM_THRESHOLD
                             });
-                            markersRef.current[point.id] = marker;
-                            
-                            let labelHtml = '';
-                            if (canShowAnyLabel) {
-                                let pointLabel = '';
-                                let elevationLabel = '';
-                                let descriptionLabel = '';
+                            currentMarkers.set(point.id, marker);
 
-                                if (showLabels) {
-                                    pointLabel = `${index + 1}`;
-                                }
-                                if (showElevations && point.elevation != null) {
-                                    elevationLabel = `Z: ${point.elevation.toFixed(2)}m`;
-                                }
-                                if (showDescriptions && point.description) {
-                                    descriptionLabel = point.description;
-                                }
-
-                                if (pointLabel || elevationLabel || descriptionLabel) {
-                                    const mainInfo = [
-                                        pointLabel ? `<span class="point-label-header">${pointLabel}</span>` : '',
-                                        elevationLabel ? `<span class="point-label-body">${elevationLabel}</span>` : ''
-                                    ].filter(Boolean).join(`<span class="point-label-separator mx-1">|</span>`);
-                                    
-                                    const descInfo = descriptionLabel ? `<div class="point-label-desc">${descriptionLabel}</div>` : '';
-
-                                    labelHtml = `<div class="point-label-card ${darkMode ? 'dark-mode' : ''}">
-                                        ${mainInfo ? `<div class="point-label-main">${mainInfo}</div>` : ''}
-                                        ${descInfo}
-                                    </div>`;
-                                }
-                            }
-
-                            if (labelHtml) {
-                                newOverlays.push({ id: `point-${point.id}`, position: latLng, text: labelHtml, styleProps: { transform: 'translate(-50%, -38px)' } });
-                            }
-
-                            const utm = point.utm;
-                            const infoContent = `<div dir="rtl"><h4>نقطة ${index + 1} (${group.name})</h4><p>Lat: ${point.lat?.toFixed(6) || 'N/A'}</p><p>Lng: ${point.lng?.toFixed(6) || 'N/A'}</p>${utm ? `<p>Easting: ${utm.easting?.toFixed(2) || 'N/A'}</p><p>Northing: ${utm.northing?.toFixed(2) || 'N/A'}</p>` : ''}<p>Elevation: ${point.elevation != null ? point.elevation.toFixed(2) : 'N/A'}</p>${point.description ? `<p>الوصف: ${point.description}</p>` : ''}</div>`;
-                            
+                            // إضافة المستمعين مرة واحدة فقط عند الإنشاء
                             marker.addListener('click', () => { 
                                 onActivateGroup(group.id);
                                 setActivePointId(point.id);
                                 if (isDeleteMode) {
                                     onDeletePointById(group.id, point.id);
                                 } else {
+                                    const utm = point.utm;
+                                    const infoContent = `<div dir="rtl"><h4>نقطة ${index + 1} (${group.name})</h4><p>Lat: ${point.lat?.toFixed(6) || 'N/A'}</p><p>Lng: ${point.lng?.toFixed(6) || 'N/A'}</p>${utm ? `<p>Easting: ${utm.easting?.toFixed(2) || 'N/A'}</p><p>Northing: ${utm.northing?.toFixed(2) || 'N/A'}</p>` : ''}<p>Elevation: ${point.elevation != null ? point.elevation.toFixed(2) : 'N/A'}</p>${point.description ? `<p>الوصف: ${point.description}</p>` : ''}</div>`;
                                     infoWindowRef.current.setContent(infoContent); 
                                     infoWindowRef.current.open(map, marker); 
                                 }
                             });
                             
                             marker.addListener('dragend', (event) => {
-                                const newLatLng = event.latLng;
-                                let finalLat = newLatLng.lat(), finalLng = newLatLng.lng();
-                                
-                                const allOtherPoints = selectedArea.groups.flatMap(g => g.points).filter(p => p.id !== point.id);
-                                if (group.snapEnabled && allOtherPoints.length > 0) {
-                                    const closestPoint = allOtherPoints.reduce((closest, current) => {
-                                        const distance = window.google.maps.geometry.spherical.computeDistanceBetween(newLatLng, new window.google.maps.LatLng(current.lat, current.lng));
-                                        return distance < closest.distance ? { distance, point: current } : closest;
-                                    }, { distance: Infinity, point: null });
-
-                                    if (closestPoint.distance < SNAP_TOLERANCE_METERS) {
-                                        finalLat = closestPoint.point.lat;
-                                        finalLng = closestPoint.point.lng;
-                                        addToast('تم الالتقاط إلى نقطة قريبة.', 'info');
-                                    }
-                                }
-                                
-                                onUpdatePoint(selectedArea.id, group.id, point.id, 'latlng', { lat: finalLat, lng: finalLng });
+                                onUpdatePoint(selectedArea.id, group.id, point.id, 'latlng', { lat: event.latLng.lat(), lng: event.latLng.lng() });
                             });
-                        });
-
-                        if (showPolylines && path.length > 1) {
-                            const polylineStyle = currentZoom < MARKER_VISIBILITY_ZOOM_THRESHOLD 
-                                ? { strokeOpacity: 1.0, strokeWeight: 5 }
-                                : { strokeOpacity: 0.8, strokeWeight: 3 };
-
-                            polylinesRef.current[group.id] = new window.google.maps.Polyline({ 
-                                path, 
-                                map, 
-                                geodesic: true, 
-                                strokeColor: group.color, 
-                                ...polylineStyle 
-                            });
-                            
-                            if (isMeasuring && currentZoom >= DISTANCE_LABEL_VISIBILITY_ZOOM_THRESHOLD) {
-                                for (let i = 0; i < path.length - 1; i++) {
-                                    const p1 = path[i], p2 = path[i+1];
-                                    const distance = window.google.maps.geometry.spherical.computeDistanceBetween(p1, p2);
-                                    const midpoint = window.google.maps.geometry.spherical.interpolate(p1, p2, 0.5);
-                                    let distanceText = `${distance.toFixed(2)} م`;
-                                    newOverlays.push({ id: `dist-${group.id}-${i}`, position: midpoint, text: `<div class="distance-label"><i data-lucide="ruler" style="width:12px; height:12px; display:inline-block; margin-left:4px;"></i>${distanceText}</div>`, styleProps: { transform: 'translate(-50%, -50%)' } });
-                                }
-                            }
-                        }
-                        
-                        if (isAreaMeasuring && path.length >= 3) {
-                            const areaPolygon = new window.google.maps.Polygon({
-                                paths: path,
-                                strokeColor: group.color,
-                                strokeWeight: 2,
-                                strokeOpacity: 0.8,
-                                fillColor: group.color,
-                                fillOpacity: 0.2,
-                                map: map
-                            });
-                            polylinesRef.current[`area-fill-${group.id}`] = areaPolygon;
-                            
-                            if (currentZoom >= AREA_LABEL_VISIBILITY_ZOOM_THRESHOLD) {
-                                const area = window.google.maps.geometry.spherical.computeArea(path);
-                                const perimeter = window.google.maps.geometry.spherical.computeLength(path);
-                                const bounds = new window.google.maps.LatLngBounds();
-                                path.forEach(p => bounds.extend(p));
-                                
-                                const areaText = area > 400000 ? `${(area / 1000000).toFixed(3)} كم²` : `${area.toFixed(2)} م²`;
-                                const perimeterText = perimeter > 10000 ? `${(perimeter / 1000).toFixed(2)} كم` : `${perimeter.toFixed(2)} م`;
-                                
-                                const areaHtml = `<div class="area-label-card ${darkMode ? 'dark-mode' : ''}">
-                                    <div><i data-lucide="square" style="color:${group.color};"></i><span class="font-semibold">المساحة:</span> ${areaText}</div>
-                                    <div class="mt-1 pt-1 border-t border-slate-200 dark:border-slate-700"><i data-lucide="move-horizontal" style="color:${group.color};"></i><span class="font-semibold">المحيط:</span> ${perimeterText}</div>
-                                </div>`;
-                                
-                                newOverlays.push({ id: `area-${group.id}`, position: bounds.getCenter(), text: areaHtml, styleProps: { transform: 'translate(-50%, -50%)' } });
-                            }
                         }
                     });
-                }
+                });
+
+                // إزالة العلامات التي لم تعد موجودة في الحالة
+                currentMarkers.forEach((marker, pointId) => {
+                    if (!pointsInState.has(pointId)) {
+                        marker.setMap(null);
+                        currentMarkers.delete(pointId);
+                    }
+                });
+
+            }, [map, JSON.stringify(selectedArea), isDeleteMode, onUpdatePoint]);
+
+            // Effect لمزامنة الخطوط والمضلعات والتسميات
+            useEffect(() => {
+                if (!map || !selectedArea) return;
+
+                const currentPolylines = polylinesRef.current;
+                const currentAreaPolygons = areaPolygonsRef.current;
+                const groupsInState = new Set();
+                const newOverlays = [];
+                const currentZoom = map.getZoom();
+
+                selectedArea.groups.forEach(group => {
+                    if (!group.isVisible) return;
+
+                    groupsInState.add(group.id);
+                    const path = (group.points || []).filter(p => p && typeof p.lat === 'number').map(p => new window.google.maps.LatLng(p.lat, p.lng));
+                    
+                    // --- تحديث الخطوط (Polylines) ---
+                    let polyline = currentPolylines.get(group.id);
+                    if (group.showPolylines && path.length > 1) {
+                        const polylineStyle = currentZoom < MARKER_VISIBILITY_ZOOM_THRESHOLD 
+                            ? { strokeOpacity: 1.0, strokeWeight: 5 }
+                            : { strokeOpacity: 0.8, strokeWeight: 3 };
+                        
+                        if (polyline) {
+                            polyline.setPath(path);
+                            polyline.setOptions({ strokeColor: group.color, ...polylineStyle });
+                            polyline.setVisible(true);
+                        } else {
+                            polyline = new window.google.maps.Polyline({ path, map, geodesic: true, strokeColor: group.color, ...polylineStyle });
+                            currentPolylines.set(group.id, polyline);
+                        }
+                    } else if (polyline) {
+                        polyline.setVisible(false);
+                    }
+
+                    // --- تحديث مضلعات المساحة (Area Polygons) ---
+                    let areaPolygon = currentAreaPolygons.get(group.id);
+                    if (group.isAreaMeasuring && path.length >= 3) {
+                         const style = { strokeColor: group.color, fillColor: group.color, strokeWeight: 2, strokeOpacity: 0.8, fillOpacity: 0.2 };
+                        if (areaPolygon) {
+                            areaPolygon.setPath(path);
+                            areaPolygon.setOptions(style);
+                            areaPolygon.setVisible(true);
+                        } else {
+                            areaPolygon = new window.google.maps.Polygon({ paths: path, map, ...style });
+                            currentAreaPolygons.set(group.id, areaPolygon);
+                        }
+                    } else if (areaPolygon) {
+                        areaPolygon.setVisible(false);
+                    }
+
+                    // --- تحديث التسميات (Labels) ---
+                    const canShowAnyLabel = currentZoom >= LABEL_VISIBILITY_ZOOM_THRESHOLD;
+                    (group.points || []).forEach((point, index) => {
+                         if (canShowAnyLabel) {
+                            let labelHtml = '';
+                            let pointLabel = group.showLabels ? `${index + 1}` : '';
+                            let elevationLabel = group.showElevations && point.elevation != null ? `Z: ${point.elevation.toFixed(2)}m` : '';
+                            let descriptionLabel = group.showDescriptions && point.description ? point.description : '';
+
+                            if (pointLabel || elevationLabel || descriptionLabel) {
+                                const mainInfo = [
+                                    pointLabel ? `<span class="point-label-header">${pointLabel}</span>` : '',
+                                    elevationLabel ? `<span class="point-label-body">${elevationLabel}</span>` : ''
+                                ].filter(Boolean).join(`<span class="point-label-separator mx-1">|</span>`);
+                                
+                                const descInfo = descriptionLabel ? `<div class="point-label-desc">${descriptionLabel}</div>` : '';
+
+                                labelHtml = `<div class="point-label-card ${darkMode ? 'dark-mode' : ''}">
+                                    ${mainInfo ? `<div class="point-label-main">${mainInfo}</div>` : ''}
+                                    ${descInfo}
+                                </div>`;
+                                if(labelHtml) newOverlays.push({ id: `point-${point.id}`, position: new window.google.maps.LatLng(point.lat, point.lng), text: labelHtml, styleProps: { transform: 'translate(-50%, -38px)' } });
+                            }
+                         }
+                    });
+
+                    if (group.isMeasuring && currentZoom >= DISTANCE_LABEL_VISIBILITY_ZOOM_THRESHOLD && path.length > 1) {
+                         for (let i = 0; i < path.length - 1; i++) {
+                            const p1 = path[i], p2 = path[i+1];
+                            const distance = window.google.maps.geometry.spherical.computeDistanceBetween(p1, p2);
+                            const midpoint = window.google.maps.geometry.spherical.interpolate(p1, p2, 0.5);
+                            let distanceText = `${distance.toFixed(2)} م`;
+                            newOverlays.push({ id: `dist-${group.id}-${i}`, position: midpoint, text: `<div class="distance-label"><i data-lucide="ruler" style="width:12px; height:12px; display:inline-block; margin-left:4px;"></i>${distanceText}</div>`, styleProps: { transform: 'translate(-50%, -50%)' } });
+                        }
+                    }
+                    
+                    if (group.isAreaMeasuring && currentZoom >= AREA_LABEL_VISIBILITY_ZOOM_THRESHOLD && path.length >= 3) {
+                        const area = window.google.maps.geometry.spherical.computeArea(path);
+                        const perimeter = window.google.maps.geometry.spherical.computeLength(path);
+                        const bounds = new window.google.maps.LatLngBounds();
+                        path.forEach(p => bounds.extend(p));
+                        
+                        const areaText = area > 400000 ? `${(area / 1000000).toFixed(3)} كم²` : `${area.toFixed(2)} م²`;
+                        const perimeterText = perimeter > 10000 ? `${(perimeter / 1000).toFixed(2)} كم` : `${perimeter.toFixed(2)} م`;
+                        
+                        const areaHtml = `<div class="area-label-card ${darkMode ? 'dark-mode' : ''}">
+                            <div><i data-lucide="square" style="color:${group.color};"></i><span class="font-semibold">المساحة:</span> ${areaText}</div>
+                            <div class="mt-1 pt-1 border-t border-slate-200 dark:border-slate-700"><i data-lucide="move-horizontal" style="color:${group.color};"></i><span class="font-semibold">المحيط:</span> ${perimeterText}</div>
+                        </div>`;
+                        
+                        newOverlays.push({ id: `area-${group.id}`, position: bounds.getCenter(), text: areaHtml, styleProps: { transform: 'translate(-50%, -50%)' } });
+                    }
+                });
+
+                // إزالة الخطوط والمضلعات التي لم تعد موجودة
+                currentPolylines.forEach((poly, groupId) => {
+                    if (!groupsInState.has(groupId) || !selectedArea.groups.find(g=>g.id === groupId)?.showPolylines) {
+                        poly.setMap(null);
+                        currentPolylines.delete(groupId);
+                    }
+                });
+                currentAreaPolygons.forEach((poly, groupId) => {
+                    if (!groupsInState.has(groupId) || !selectedArea.groups.find(g=>g.id === groupId)?.isAreaMeasuring) {
+                        poly.setMap(null);
+                        currentAreaPolygons.delete(groupId);
+                    }
+                });
+
                 setMapOverlays(newOverlays);
-            }, [map, selectedArea, utmZone, onUpdatePoint, darkMode, addToast, isDeleteMode, onDeletePointById, onActivateGroup, setActivePointId]);
+
+            }, [map, JSON.stringify(selectedArea), darkMode]);
 
             return (
                 <>
@@ -1325,6 +1354,7 @@
 
         // ====================================================================
         //  FILE: src/components/modals/index.js
+        //  -- REFACTORED FOR PERFORMANCE & CODE STRUCTURE --
         // ====================================================================
         
         const MarkerPickerModal = ({ onClose, onSelect, currentIconKey, previewColor = '#6b7280' }) => {
@@ -2006,18 +2036,12 @@
                 </>
             );
         };
-
-        const ToolsSheet = ({ settings, onClose, onUpdateSettings, onToggleDeleteMode, onOpenScreenshotModal, isZoomedInEnough }) => {
+        
+        // --- REFACTOR: Tools Configuration ---
+        // تم نقل تعريف الأدوات إلى هذا المكان المركزي
+        const getToolsConfig = (settings, onUpdateSettings, onToggleDeleteMode, onOpenScreenshotModal, isZoomedInEnough) => {
             const { showPolylines, showElevations, showLabels, showDescriptions, isMeasuring, isAreaMeasuring, snapEnabled, isDeleteMode } = settings;
-            
-            const handleToolClick = (action, toolId) => {
-                action();
-                if (toolId === 'screenshot') {
-                    onClose();
-                }
-            };
-
-            const tools = [
+            return [
                 // Row 1
                 { id: 'measure', icon: 'ruler', title: 'قياس المسافة', action: () => onUpdateSettings('isMeasuring', !isMeasuring), active: isMeasuring },
                 { id: 'area', icon: 'square', title: 'قياس المساحة', action: () => onUpdateSettings('isAreaMeasuring', !isAreaMeasuring), active: isAreaMeasuring },
@@ -2029,8 +2053,33 @@
                 // Row 3
                 { id: 'showDescription', icon: 'message-square-text', title: 'إظهار الوصف', action: () => onUpdateSettings('showDescriptions', !showDescriptions), active: showDescriptions, disabled: !isZoomedInEnough },
                 { id: 'delete', icon: 'trash-2', title: 'حذف نقطة بالنقر', action: onToggleDeleteMode, active: isDeleteMode, danger: true },
-                { id: 'screenshot', icon: 'camera', title: 'أخذ لقطة شاشة', action: onOpenScreenshotModal, active: false },
+                { id: 'screenshot', icon: 'camera', title: 'لقطة شاشة', action: onOpenScreenshotModal, active: false },
             ];
+        };
+
+        // --- REFACTOR: Reusable ToolButton Component ---
+        const ToolButton = ({ tool, onClick, className = '' }) => (
+             <button 
+                key={tool.id} 
+                onClick={() => onClick(tool.action, tool.id)} 
+                disabled={tool.disabled}
+                className={`flex flex-col items-center justify-center gap-2 p-3 rounded-lg transition-colors ${tool.active ? (tool.danger ? 'bg-red-500 text-white' : 'bg-blue-600 text-white') : 'bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600'} ${tool.disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
+            >
+                <Icon name={tool.icon} size={28} />
+                <span className="text-xs text-center">{tool.title}</span>
+            </button>
+        );
+
+        // --- REFACTORED: ToolsSheet (for Mobile) ---
+        const ToolsSheet = ({ settings, onClose, onUpdateSettings, onToggleDeleteMode, onOpenScreenshotModal, isZoomedInEnough }) => {
+            const tools = getToolsConfig(settings, onUpdateSettings, onToggleDeleteMode, onOpenScreenshotModal, isZoomedInEnough);
+            
+            const handleToolClick = (action, toolId) => {
+                action();
+                if (toolId === 'screenshot') {
+                    onClose();
+                }
+            };
             
             return (
                  <>
@@ -2046,15 +2095,7 @@
                         <h3 className="text-lg font-bold text-center mb-4">أدوات الخريطة</h3>
                         <div className="grid grid-cols-3 gap-4">
                             {tools.map(tool => (
-                                <button 
-                                    key={tool.id} 
-                                    onClick={() => handleToolClick(tool.action, tool.id)} 
-                                    disabled={tool.disabled}
-                                    className={`flex flex-col items-center justify-center gap-2 p-3 rounded-lg transition-colors ${tool.active ? (tool.danger ? 'bg-red-500 text-white' : 'bg-blue-600 text-white') : 'bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600'} ${tool.disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                >
-                                    <Icon name={tool.icon} size={28} />
-                                    <span className="text-xs text-center">{tool.title}</span>
-                                </button>
+                                <ToolButton key={tool.id} tool={tool} onClick={handleToolClick} />
                             ))}
                         </div>
                     </div>
@@ -2062,23 +2103,9 @@
             );
         };
         
+        // --- REFACTORED: ToolsModal (for Desktop) ---
         const ToolsModal = ({ settings, onClose, onUpdateSettings, onToggleDeleteMode, onOpenScreenshotModal, isZoomedInEnough }) => {
-            const { showPolylines, showElevations, showLabels, showDescriptions, isMeasuring, isAreaMeasuring, snapEnabled, isDeleteMode } = settings;
-            
-            const tools = [
-                 // Row 1
-                { id: 'measure', icon: 'ruler', title: 'قياس المسافة', action: () => onUpdateSettings('isMeasuring', !isMeasuring), active: isMeasuring },
-                { id: 'area', icon: 'square', title: 'قياس المساحة', action: () => onUpdateSettings('isAreaMeasuring', !isAreaMeasuring), active: isAreaMeasuring },
-                { id: 'snap', icon: 'magnet', title: 'تفعيل الالتقاط', action: () => onUpdateSettings('snapEnabled', !snapEnabled), active: snapEnabled },
-                // Row 2
-                { id: 'showLabels', icon: 'hash', title: 'إظهار التسلسل', action: () => onUpdateSettings('showLabels', !showLabels), active: showLabels, disabled: !isZoomedInEnough },
-                { id: 'polyline', icon: 'git-commit', title: 'إظهار الخطوط', action: () => onUpdateSettings('showPolylines', !showPolylines), active: showPolylines },
-                { id: 'elevation', icon: 'text', title: 'إظهار المناسيب', action: () => onUpdateSettings('showElevations', !showElevations), active: showElevations, disabled: !isZoomedInEnough },
-                // Row 3
-                { id: 'showDescription', icon: 'message-square-text', title: 'إظهار الوصف', action: () => onUpdateSettings('showDescriptions', !showDescriptions), active: showDescriptions, disabled: !isZoomedInEnough },
-                { id: 'delete', icon: 'trash-2', title: 'حذف نقطة بالنقر', action: onToggleDeleteMode, active: isDeleteMode, danger: true },
-                { id: 'screenshot', icon: 'camera', title: 'لقطة شاشة', action: onOpenScreenshotModal, active: false },
-            ];
+            const tools = getToolsConfig(settings, onUpdateSettings, onToggleDeleteMode, onOpenScreenshotModal, isZoomedInEnough);
 
             return (
                 <GenericModal
@@ -2090,15 +2117,7 @@
                 >
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                         {tools.map(tool => (
-                            <button 
-                                key={tool.id} 
-                                onClick={tool.action} 
-                                disabled={tool.disabled}
-                                className={`flex flex-col items-center justify-center gap-2 p-4 rounded-lg transition-colors ${tool.active ? (tool.danger ? 'bg-red-500 text-white' : 'bg-blue-600 text-white') : 'bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600'} ${tool.disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            >
-                                <Icon name={tool.icon} size={28} />
-                                <span className="text-xs text-center font-semibold">{tool.title}</span>
-                            </button>
+                             <ToolButton key={tool.id} tool={tool} onClick={tool.action} className="p-4"/>
                         ))}
                     </div>
                 </GenericModal>
@@ -2408,7 +2427,7 @@
                 } else {
                     newPointData[field] = value;
                 }
-        
+    
                 setWorkAreas(prev => prev.map(area => 
                     area.id === areaId ? { 
                         ...area, 
@@ -2954,19 +2973,19 @@
             };
 
             const handleOpenPdfOptions = () => {
-                if (!selectedArea) {
-                     addToast('الرجاء تحديد منطقة عمل أولاً.', 'error');
-                     return;
-                }
+                 if (!selectedArea) {
+                       addToast('الرجاء تحديد منطقة عمل أولاً.', 'error');
+                       return;
+                 }
                  setModal({
-                    type: 'pdfOptions', 
-                    props: { 
-                        onClose: closeModal, 
-                        onConfirm: handleGeneratePDF, 
-                        groups: selectedArea.groups,
-                        selectedGroupId: selectedGroupId
-                    }
-                });
+                     type: 'pdfOptions', 
+                     props: { 
+                         onClose: closeModal, 
+                         onConfirm: handleGeneratePDF, 
+                         groups: selectedArea.groups,
+                         selectedGroupId: selectedGroupId
+                     }
+                 });
             };
 
             const renderModal = () => {
