@@ -212,6 +212,22 @@
         .dark-mode .area-label-card div {
             color: #cbd5e1;
         }
+
+        .collapsible-content {
+            max-height: 1000px; /* A large enough value to not clip the content */
+            overflow: hidden;
+            transition: max-height 0.4s ease-in-out, opacity 0.4s ease-in-out, padding 0.4s ease-in-out;
+            opacity: 1;
+        }
+        .collapsible-content.closed {
+            max-height: 0;
+            opacity: 0;
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
+            margin-top: 0 !important;
+            margin-bottom: 0 !important;
+            border-width: 0 !important;
+        }
     </style>
 </head>
 <body>
@@ -532,6 +548,7 @@
         
         const Sidebar = ({ isOpen, onClose, workAreas, selectedAreaId, selectedGroupId, onSelectArea, onSelectGroup, onAddNewArea, onRenameArea, onDeleteArea, onZoomToWorkArea, onAddNewGroup, onRenameGroup, onDeleteGroup, onZoomToGroup, onUpdateGroupColor, onOpenExportModal, onToggleGroupVisibility, onSetGroupMarker, onOpenImportModal, onOpenPdfOptions, setModal, closeModal }) => {
             const { utmZone, setUtmZone, coordinateSystem, setCoordinateSystem } = useAppContext();
+            const [isLayersSectionOpen, setIsLayersSectionOpen] = useState(true);
             const selectedArea = workAreas.find(area => area.id === selectedAreaId);
             const selectedGroup = selectedArea?.groups.find(group => group.id === selectedGroupId);
 
@@ -569,76 +586,90 @@
                 <>
                     <div className={`fixed inset-0 bg-gray-900/50 z-30 lg:hidden ${isOpen ? 'block' : 'hidden'}`} onClick={onClose}></div>
                     <aside className={sidebarClasses}>
-                        {/* قسم مناطق العمل */}
-                        <div className="mb-6">
-                            <div className="flex justify-between items-center mb-2 p-2 bg-slate-50 dark:bg-slate-900/50 rounded-lg border-b border-slate-200 dark:border-slate-700">
+                        <div className="mb-4">
+                            <button 
+                                onClick={() => setIsLayersSectionOpen(prev => !prev)}
+                                className="w-full flex justify-between items-center p-3 bg-slate-100 dark:bg-slate-700/50 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600/50 transition-colors"
+                            >
                                 <h2 className="text-lg font-bold flex items-center gap-2">
-                                    <Icon name="folder-kanban" size={20} className="text-slate-500"/>
-                                    <span>مناطق العمل</span>
+                                    <Icon name="layers" size={20} />
+                                    <span>إعدادات المناطق والطبقات</span>
                                 </h2>
-                                <button onClick={onAddNewArea} className="icon-button !w-10 !h-10" title="إضافة منطقة عمل"><Icon name="plus-circle" className="text-blue-500" /></button>
-                            </div>
-                            <select id="work-area-select" value={selectedAreaId || ''} onChange={e => onSelectArea(e.target.value)} className="w-full p-2 border rounded-md dark:bg-slate-700 dark:border-slate-600 mb-2 text-base custom-select">
-                                {workAreas.map(area => (
-                                    <option key={area.id} value={area.id}>{area.name} ({area.groups.length})</option>
-                                ))}
-                            </select>
-                            {selectedArea && (
-                                <div className="flex justify-between items-center mt-1">
-                                    <span className="text-xs text-slate-500 dark:text-slate-400">{selectedArea.groups.length} مجموعات</span>
-                                    <div className="flex items-center space-x-0 space-x-reverse">
-                                        <button onClick={() => promptAction("تعديل الاسم", "أدخل الاسم الجديد:", "الاسم", selectedArea.name, newName => newName && onRenameArea(selectedArea.id, newName.trim()))} className="icon-button" title="تعديل"><Icon name="file-pen-line" size={18}/></button>
-                                        <button onClick={() => confirmAction("تأكيد الحذف", `هل تريد حذف "${selectedArea.name}"؟`, () => onDeleteArea(selectedArea.id))} className="icon-button text-red-500" title="حذف"><Icon name="trash-2" size={18}/></button>
+                                <Icon name={isLayersSectionOpen ? 'chevron-up' : 'chevron-down'} />
+                            </button>
+                            <div className={`pt-4 collapsible-content ${!isLayersSectionOpen ? 'closed' : ''}`}>
+                                {/* قسم مناطق العمل */}
+                                <div className="mb-6">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <h3 className="text-md font-bold flex items-center gap-2">
+                                            <Icon name="folder-kanban" size={20} className="text-slate-500"/>
+                                            <span>مناطق العمل</span>
+                                        </h3>
+                                        <button onClick={onAddNewArea} className="icon-button !w-10 !h-10" title="إضافة منطقة عمل"><Icon name="plus-circle" className="text-blue-500" /></button>
                                     </div>
+                                    <select id="work-area-select" value={selectedAreaId || ''} onChange={e => onSelectArea(e.target.value)} className="w-full p-2 border rounded-md dark:bg-slate-700 dark:border-slate-600 mb-2 text-base custom-select">
+                                        {workAreas.map(area => (
+                                            <option key={area.id} value={area.id}>{area.name} ({area.groups.length})</option>
+                                        ))}
+                                    </select>
+                                    {selectedArea && (
+                                        <div className="flex justify-between items-center mt-1">
+                                            <span className="text-xs text-slate-500 dark:text-slate-400">{selectedArea.groups.length} مجموعات</span>
+                                            <div className="flex items-center space-x-0 space-x-reverse">
+                                                <button onClick={() => promptAction("تعديل الاسم", "أدخل الاسم الجديد:", "الاسم", selectedArea.name, newName => newName && onRenameArea(selectedArea.id, newName.trim()))} className="icon-button" title="تعديل"><Icon name="file-pen-line" size={18}/></button>
+                                                <button onClick={() => confirmAction("تأكيد الحذف", `هل تريد حذف "${selectedArea.name}"؟`, () => onDeleteArea(selectedArea.id))} className="icon-button text-red-500" title="حذف"><Icon name="trash-2" size={18}/></button>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
-                            )}
-                        </div>
 
-                        {/* قسم مجموعات النقاط */}
-                        {selectedArea && (
-                            <div className="border-t pt-4 mt-4 dark:border-slate-700">
-                                <div className="flex justify-between items-center mb-2 p-2 bg-slate-50 dark:bg-slate-900/50 rounded-lg border-b border-slate-200 dark:border-slate-700">
-                                    <h2 className="text-lg font-bold flex items-center gap-2">
-                                        <Icon name="folder-pen" size={20} className="text-slate-500"/>
-                                        <span>المجموعة النشطة</span>
-                                    </h2>
-                                    <button onClick={() => onAddNewGroup(selectedArea.id)} className="icon-button !w-10 !h-10" title="إضافة مجموعة"><Icon name="folder-plus" className="text-blue-500" /></button>
-                                </div>
-                                <select id="point-group-select" value={selectedGroupId || ''} onChange={e => {
-                                    const groupId = e.target.value;
-                                    onSelectGroup(groupId);
-                                    onZoomToGroup(selectedArea.id, groupId);
-                                }} className="w-full p-2 border rounded-md dark:bg-slate-700 dark:border-slate-600 mb-2 text-base custom-select">
-                                    {selectedArea.groups.map(group => (
-                                        <option key={group.id} value={group.id}>{group.name} ({group.points.length})</option>
-                                    ))}
-                                </select>
-                                {selectedGroup && (
-                                    <div className="flex justify-between items-center mt-1">
-                                        <div className="flex items-center space-x-2 space-x-reverse">
-                                            <label className="color-picker-label" style={{ backgroundColor: selectedGroup.color }}>
-                                                <input type="color" value={selectedGroup.color} onChange={(e) => onUpdateGroupColor(selectedArea.id, selectedGroup.id, e.target.value)} onClick={e => e.stopPropagation()} />
-                                            </label>
-                                            <span className="text-xs text-slate-500 dark:text-slate-400">{selectedGroup.points.length} نقاط</span>
+                                {/* قسم مجموعات النقاط */}
+                                {selectedArea && (
+                                    <div className="border-t pt-4 mt-4 dark:border-slate-700">
+                                        <div className="flex justify-between items-center mb-2">
+                                            <h3 className="text-md font-bold flex items-center gap-2">
+                                                <Icon name="folder-pen" size={20} className="text-slate-500"/>
+                                                <span>المجموعة النشطة</span>
+                                            </h3>
+                                            <button onClick={() => onAddNewGroup(selectedArea.id)} className="icon-button !w-10 !h-10" title="إضافة مجموعة"><Icon name="folder-plus" className="text-blue-500" /></button>
                                         </div>
-                                        <div className="flex items-center space-x-0 space-x-reverse">
-                                            <button 
-                                                onClick={() => onToggleGroupVisibility(selectedArea.id, selectedGroup.id)} 
-                                                className={`icon-button flex-shrink-0 ${selectedGroup.isVisible ? 'active' : ''}`} 
-                                                title={selectedGroup.isVisible ? 'إخفاء المجموعة' : 'إظهار المجموعة'}
-                                            >
-                                                <Icon name={selectedGroup.isVisible ? 'eye' : 'eye-off'} size={18} />
-                                            </button>
-                                            <button onClick={openGroupMarkerPicker} className="icon-button" title="تغيير رمز كل النقاط في المجموعة">
-                                                <Icon name="shapes" size={18}/>
-                                            </button>
-                                            <button onClick={() => promptAction("تعديل اسم المجموعة", "أدخل الاسم الجديد:", "الاسم", selectedGroup.name, newName => newName && onRenameGroup(selectedArea.id, selectedGroup.id, newName.trim()))} className="icon-button" title="تعديل"><Icon name="file-pen-line" size={18}/></button>
-                                            <button onClick={() => confirmAction("تأكيد حذف المجموعة", `هل تريد حذف "${selectedGroup.name}"؟`, () => onDeleteGroup(selectedArea.id, selectedGroup.id))} className="icon-button text-red-500" title="حذف"><Icon name="trash-2" size={18}/></button>
-                                        </div>
+                                        <select id="point-group-select" value={selectedGroupId || ''} onChange={e => {
+                                            const groupId = e.target.value;
+                                            onSelectGroup(groupId);
+                                            onZoomToGroup(selectedArea.id, groupId);
+                                        }} className="w-full p-2 border rounded-md dark:bg-slate-700 dark:border-slate-600 mb-2 text-base custom-select">
+                                            {selectedArea.groups.map(group => (
+                                                <option key={group.id} value={group.id}>{group.name} ({group.points.length})</option>
+                                            ))}
+                                        </select>
+                                        {selectedGroup && (
+                                            <div className="flex justify-between items-center mt-1">
+                                                <div className="flex items-center space-x-2 space-x-reverse">
+                                                    <label className="color-picker-label" style={{ backgroundColor: selectedGroup.color }}>
+                                                        <input type="color" value={selectedGroup.color} onChange={(e) => onUpdateGroupColor(selectedArea.id, selectedGroup.id, e.target.value)} onClick={e => e.stopPropagation()} />
+                                                    </label>
+                                                    <span className="text-xs text-slate-500 dark:text-slate-400">{selectedGroup.points.length} نقاط</span>
+                                                </div>
+                                                <div className="flex items-center space-x-0 space-x-reverse">
+                                                    <button 
+                                                        onClick={() => onToggleGroupVisibility(selectedArea.id, selectedGroup.id)} 
+                                                        className={`icon-button flex-shrink-0 ${selectedGroup.isVisible ? 'active' : ''}`} 
+                                                        title={selectedGroup.isVisible ? 'إخفاء المجموعة' : 'إظهار المجموعة'}
+                                                    >
+                                                        <Icon name={selectedGroup.isVisible ? 'eye' : 'eye-off'} size={18} />
+                                                    </button>
+                                                    <button onClick={openGroupMarkerPicker} className="icon-button" title="تغيير رمز كل النقاط في المجموعة">
+                                                        <Icon name="shapes" size={18}/>
+                                                    </button>
+                                                    <button onClick={() => promptAction("تعديل اسم المجموعة", "أدخل الاسم الجديد:", "الاسم", selectedGroup.name, newName => newName && onRenameGroup(selectedArea.id, selectedGroup.id, newName.trim()))} className="icon-button" title="تعديل"><Icon name="file-pen-line" size={18}/></button>
+                                                    <button onClick={() => confirmAction("تأكيد حذف المجموعة", `هل تريد حذف "${selectedGroup.name}"؟`, () => onDeleteGroup(selectedArea.id, selectedGroup.id))} className="icon-button text-red-500" title="حذف"><Icon name="trash-2" size={18}/></button>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </div>
-                        )}
+                        </div>
                         
                         <div className="border-t pt-4 mt-4 dark:border-slate-700">
                             <h3 className="font-semibold mb-2">الإعدادات وإدارة البيانات</h3>
