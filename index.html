@@ -32,6 +32,13 @@
         .modal-content { background-color: white; padding: 1.5rem; border-radius: 0.75rem; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); width: 95%; max-width: 800px; max-height: 90vh; overflow-y: auto; animation: slide-in-down 0.3s ease-out forwards; transform-origin: center; }
         .dark-mode .modal-content { background-color: #1e293b; }
         
+        /* تحسين التباين في الوضع الفاتح */
+        .modal-content h2 { color: #1f2937; }
+        .modal-content p, .modal-content label, .modal-content .text-sm { color: #374151; }
+        .dark-mode .modal-content h2 { color: #f1f5f9; }
+        .dark-mode .modal-content p, .dark-mode .modal-content label, .dark-mode .modal-content .text-sm { color: #cbd5e1; }
+
+
         .button-primary { background-color: #2563eb; color: white; padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: 600; transition: all 0.2s; box-shadow: 0 1px 3px 0 rgba(0,0,0,0.1), 0 1px 2px 0 rgba(0,0,0,0.06); }
         .button-primary:hover { background-color: #1d4ed8; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); transform: translateY(-1px); }
         .button-secondary { background-color: #64748b; color: white; padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: 600; transition: all 0.2s; }
@@ -275,6 +282,9 @@
 
         const convertLatLngToUtm = (lat, lng, zone) => {
             try {
+                if (!isFinite(lat) || !isFinite(lng)) {
+                    throw new Error("Invalid coordinates provided to convertLatLngToUtm");
+                }
                 const utmProjection = `EPSG:326${zone}`;
                 if (!window.proj4.defs[utmProjection]) return null;
                 const [easting, northing] = window.proj4("EPSG:4326", utmProjection, [lng, lat]);
@@ -284,6 +294,9 @@
 
         const convertUtmToLatLng = (easting, northing, zone) => {
             try {
+                if (!isFinite(easting) || !isFinite(northing)) {
+                    throw new Error("Invalid coordinates provided to convertUtmToLatLng");
+                }
                 const utmProjection = `EPSG:326${zone}`;
                 if (!window.proj4.defs[utmProjection]) return null;
                 const [lng, lat] = window.proj4(utmProjection, "EPSG:4326", [easting, northing]);
@@ -807,7 +820,7 @@
                         <div className="lg:hidden">
                             {selectedArea.groups.map(group => (
                                 <div key={group.id} className="mb-2" ref={el => (groupHeaderRefs.current[group.id] = el)}>
-                                    {(group.points || []).map((point, i) => (
+                                    {(group.points || []).filter(p => p).map((point, i) => (
                                         <PointCard key={point.id} point={point} group={group} index={i} />
                                     ))}
                                 </div>
@@ -840,7 +853,7 @@
                                                 <th className="px-2 py-2">#</th>
                                             </tr></thead>
                                             <tbody>
-                                            {(group.points || []).map((point, i) => (
+                                            {(group.points || []).filter(p => p).map((point, i) => (
                                                 <tr 
                                                     key={point.id} 
                                                     ref={el => (rowRefs.current[point.id] = el)}
@@ -991,10 +1004,16 @@
             useImperativeHandle(ref, () => ({
                 zoomToPoint(lat, lng) { map?.setCenter({ lat, lng }); map?.setZoom(21); },
                 zoomToBounds(boundsData) {
-                    if (map && boundsData && boundsData.length > 0) {
+                    if (map && Array.isArray(boundsData) && boundsData.length > 0) {
                         const bounds = new window.google.maps.LatLngBounds();
-                        boundsData.forEach(p => bounds.extend(new window.google.maps.LatLng(p.lat, p.lng)));
-                        map.fitBounds(bounds, 50);
+                        boundsData.forEach(p => {
+                            if (p && typeof p.lat === 'number' && typeof p.lng === 'number') {
+                                bounds.extend(new window.google.maps.LatLng(p.lat, p.lng));
+                            }
+                        });
+                        if (!bounds.isEmpty()) {
+                           map.fitBounds(bounds, 50);
+                        }
                     }
                 },
                 resetView() {
@@ -1051,7 +1070,7 @@
                         const path = [];
                         const canShowAnyLabel = currentZoom >= LABEL_VISIBILITY_ZOOM_THRESHOLD;
 
-                        (group.points || []).forEach((point, index) => {
+                        (group.points || []).filter(p => p && typeof p.lat === 'number' && typeof p.lng === 'number').forEach((point, index) => {
                             const latLng = new window.google.maps.LatLng(point.lat, point.lng);
                             path.push(latLng);
 
@@ -1105,8 +1124,8 @@
                                 newOverlays.push({ id: `point-${point.id}`, position: latLng, text: labelHtml, styleProps: { transform: 'translate(-50%, -38px)' } });
                             }
 
-                            const utm = convertLatLngToUtm(point.lat, point.lng, utmZone);
-                            const infoContent = `<div dir="rtl"><h4>نقطة ${index + 1} (${group.name})</h4><p>Lat: ${point.lat.toFixed(6)}</p><p>Lng: ${point.lng.toFixed(6)}</p>${utm ? `<p>Easting: ${utm.easting.toFixed(2)}</p><p>Northing: ${utm.northing.toFixed(2)}</p>` : ''}<p>Elevation: ${point.elevation != null ? point.elevation.toFixed(2) : 'N/A'}</p>${point.description ? `<p>الوصف: ${point.description}</p>` : ''}</div>`;
+                            const utm = point.utm;
+                            const infoContent = `<div dir="rtl"><h4>نقطة ${index + 1} (${group.name})</h4><p>Lat: ${point.lat?.toFixed(6) || 'N/A'}</p><p>Lng: ${point.lng?.toFixed(6) || 'N/A'}</p>${utm ? `<p>Easting: ${utm.easting?.toFixed(2) || 'N/A'}</p><p>Northing: ${utm.northing?.toFixed(2) || 'N/A'}</p>` : ''}<p>Elevation: ${point.elevation != null ? point.elevation.toFixed(2) : 'N/A'}</p>${point.description ? `<p>الوصف: ${point.description}</p>` : ''}</div>`;
                             
                             marker.addListener('click', () => { 
                                 onActivateGroup(group.id);
@@ -2349,6 +2368,28 @@
                 ));
             };
 
+            const handleProcessImportedFile = (groupName, points) => {
+                if (!selectedArea) {
+                    addToast('لا توجد منطقة عمل نشطة للاستيراد إليها.', 'error');
+                    return;
+                }
+                const newGroup = { 
+                    id: generateUniqueId(), 
+                    name: groupName, 
+                    color: POINT_GROUP_COLORS[selectedArea.groups.length % POINT_GROUP_COLORS.length], 
+                    points, 
+                    ...DEFAULT_GROUP_SETTINGS 
+                };
+                setWorkAreas(prev => prev.map(area => 
+                    area.id === selectedArea.id ? { ...area, groups: [...area.groups, newGroup] } : area
+                ));
+                addToast(`تم استيراد ${points.length} نقطة بنجاح إلى "${groupName}".`, 'success');
+                setSelectedGroupId(newGroup.id);
+                setTimeout(() => {
+                    mapApiRef.current?.zoomToBounds(points);
+                }, 100);
+            };
+
             const handleFileLoad = (event) => {
                 const file = event.target.files[0];
                 if (!file) return;
@@ -2389,7 +2430,7 @@
                             if (!selectedArea) { addToast('الرجاء تحديد منطقة عمل أولاً لاستيراد النقاط.', 'error'); return; }
                             const parsedData = parseDelimitedText(content);
                             if (parsedData.error && !parsedData.data.length) { addToast(parsedData.error, 'error'); return; }
-                            setModal({type: 'importPoints', props: {fileData:{...parsedData, fileName}, onClose:closeModal, onImport:handleProcessPastedPoints, utmZone:utmZone}});
+                            setModal({type: 'importPoints', props: {fileData:{...parsedData, fileName}, onClose:closeModal, onImport:handleProcessImportedFile, utmZone:utmZone}});
                         }
                     } catch (err) {
                         console.error("File load error:", err);
