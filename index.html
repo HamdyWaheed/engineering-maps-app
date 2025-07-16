@@ -38,6 +38,21 @@
         .button-secondary:hover { background-color: #475569; transform: translateY(-1px); }
         .button-tertiary { background-color: #1e293b; color: white; padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: 600; transition: all 0.2s; }
         .button-tertiary:hover { background-color: #334155; transform: translateY(-1px); }
+        .button-pdf {
+            background-color: #dc2626; /* red-600 */
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: all 0.2s;
+            box-shadow: 0 1px 3px 0 rgba(0,0,0,0.1), 0 1px 2px 0 rgba(0,0,0,0.06);
+            border: 1px solid #b91c1c; /* red-700 */
+        }
+        .button-pdf:hover {
+            background-color: #b91c1c; /* red-700 */
+            box-shadow: 0 4px 8px -1px rgba(0,0,0,0.2), 0 2px 6px -1px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
 
         .icon-button { background: transparent; border: none; cursor: pointer; padding: 0.75rem; width: 48px; height: 48px; border-radius: 9999px; transition: background-color 0.2s, transform 0.2s; line-height: 1; display: flex; align-items: center; justify-content: center; }
         .icon-button:hover { background-color: rgba(0,0,0,0.1); transform: scale(1.1); }
@@ -628,7 +643,7 @@
                             <div className="mt-4 flex flex-col space-y-2">
                                 <button onClick={onOpenImportModal} className="button-secondary flex items-center justify-center text-sm"><Icon name="upload" className="ml-2" size={18} />استيراد / تحميل</button>
                                 <button onClick={onOpenExportModal} className="button-primary flex items-center justify-center text-sm"><Icon name="download" className="ml-2" size={18} />تصدير / حفظ</button>
-                                <button onClick={onOpenPdfOptions} className="button-tertiary flex items-center justify-center text-sm"><Icon name="file-text" className="ml-2" size={18} />تقرير PDF</button>
+                                <button onClick={onOpenPdfOptions} className="button-pdf flex items-center justify-center text-sm"><Icon name="file-text" className="ml-2" size={18} />تقرير PDF</button>
                             </div>
                         </div>
                     </aside>
@@ -1378,7 +1393,8 @@
 
         const ImportPointsModal = ({ fileData, onClose, onImport, utmZone }) => {
             const { addToast } = useAppContext();
-            const [mappings, setMappings] = useState({ easting: '0', northing: '1', elevation: '-1', description: '-1' });
+            const [importFormat, setImportFormat] = useState('utm');
+            const [mappings, setMappings] = useState({ col1: '0', col2: '1', elevation: '-1', description: '-1' });
             const [groupName, setGroupName] = useState(fileData.fileName ? `استيراد - ${fileData.fileName}` : 'مجموعة مستوردة');
             const [ignoreHeader, setIgnoreHeader] = useState(fileData.hasHeader);
 
@@ -1395,14 +1411,14 @@
             useEffect(() => {
                 if (ignoreHeader && headers.length > 0) {
                     const lowerCaseHeaders = headers.map(h => h.toLowerCase());
-                    const eastingIndex = lowerCaseHeaders.findIndex(h => h.includes('east') || h === 'x');
-                    const northingIndex = lowerCaseHeaders.findIndex(h => h.includes('north') || h === 'y');
+                    const col1Index = lowerCaseHeaders.findIndex(h => h.includes('east') || h === 'x' || h.includes('lat'));
+                    const col2Index = lowerCaseHeaders.findIndex(h => h.includes('north') || h === 'y' || h.includes('lon'));
                     const elevationIndex = lowerCaseHeaders.findIndex(h => h.includes('elev') || h.includes('z'));
                     const descriptionIndex = lowerCaseHeaders.findIndex(h => h.includes('desc') || h.includes('code'));
                     
                     setMappings({
-                        easting: eastingIndex !== -1 ? `${eastingIndex}` : '0',
-                        northing: northingIndex !== -1 ? `${northingIndex}` : '1',
+                        col1: col1Index !== -1 ? `${col1Index}` : '0',
+                        col2: col2Index !== -1 ? `${col2Index}` : '1',
                         elevation: elevationIndex !== -1 ? `${elevationIndex}` : '-1',
                         description: descriptionIndex !== -1 ? `${descriptionIndex}` : '-1',
                     });
@@ -1410,18 +1426,28 @@
             }, [headers, ignoreHeader]);
 
             const handleImportClick = () => {
-                if (!mappings.easting || !mappings.northing) { addToast("الرجاء تحديد أعمدة Easting و Northing.", "error"); return; }
+                if (!mappings.col1 || !mappings.col2) { addToast("الرجاء تحديد أعمدة الإحداثيات.", "error"); return; }
                 if (!groupName.trim()) { addToast("الرجاء إدخال اسم للمجموعة.", "error"); return; }
                 
                 const pointsToImport = dataRows.map(row => {
-                    const easting = parseFloat(row[parseInt(mappings.easting)]);
-                    const northing = parseFloat(row[parseInt(mappings.northing)]);
-                    const elevation = mappings.elevation !== '-1' ? parseFloat(row[parseInt(mappings.elevation)]) : null;
+                    const elevation = mappings.elevation !== '-1' ? parseFloat(row[parseInt(mappings.elevation)]) : 0.0;
                     const description = mappings.description !== '-1' ? row[parseInt(mappings.description)] : '';
-                    if (isNaN(easting) || isNaN(northing)) return null;
-                    const latLng = convertUtmToLatLng(easting, northing, utmZone);
-                    if (!latLng) return null;
-                    return { id: generateUniqueId(), lat: latLng.lat, lng: latLng.lng, elevation: isNaN(elevation) ? null : elevation, utm: { easting, northing, zone: utmZone }, description, markerIcon: 'default', createdAt: new Date().toISOString() };
+
+                    if (importFormat === 'utm') {
+                        const easting = parseFloat(row[parseInt(mappings.col1)]);
+                        const northing = parseFloat(row[parseInt(mappings.col2)]);
+                        if (isNaN(easting) || isNaN(northing)) return null;
+                        const latLng = convertUtmToLatLng(easting, northing, utmZone);
+                        if (!latLng) return null;
+                        return { id: generateUniqueId(), lat: latLng.lat, lng: latLng.lng, elevation: isNaN(elevation) ? 0.0 : elevation, utm: { easting, northing, zone: utmZone }, description, markerIcon: 'default', createdAt: new Date().toISOString() };
+                    } else { // latlng
+                        const lat = parseFloat(row[parseInt(mappings.col1)]);
+                        const lng = parseFloat(row[parseInt(mappings.col2)]);
+                        if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
+                        const utm = convertLatLngToUtm(lat, lng, utmZone);
+                        if (!utm) return null;
+                        return { id: generateUniqueId(), lat, lng, elevation: isNaN(elevation) ? 0.0 : elevation, utm, description, markerIcon: 'default', createdAt: new Date().toISOString() };
+                    }
                 }).filter(Boolean);
 
                 if (pointsToImport.length === 0) { addToast("لم يتم العثور على نقاط صالحة للاستيراد.", "error"); return; }
@@ -1444,21 +1470,28 @@
                         <input type="checkbox" id="ignore-header" checked={ignoreHeader} onChange={e => setIgnoreHeader(e.target.checked)} className="ml-2" />
                         <label htmlFor="ignore-header">الصف الأول يحتوي على ترويسة (أسماء الأعمدة)</label>
                     </div>
+                    <div className="mb-4">
+                        <label className="block text-sm font-medium mb-1">نظام إحداثيات الملف</label>
+                        <div className="flex rounded-md shadow-sm">
+                            <button onClick={() => setImportFormat('utm')} className={`flex-1 p-2 rounded-r-md border border-slate-300 dark:border-slate-600 ${importFormat === 'utm' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-slate-700'}`}>UTM</button>
+                            <button onClick={() => setImportFormat('latlng')} className={`flex-1 p-2 rounded-l-md border border-slate-300 dark:border-slate-600 ${importFormat === 'latlng' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-slate-700'}`}>Lat/Long</button>
+                        </div>
+                    </div>
                     <h3 className="text-lg font-semibold mb-2">ربط الأعمدة</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                         <div>
-                            <label className="block text-sm font-medium mb-1">Easting (X)</label>
-                            <select value={mappings.easting} onChange={e => setMappings(m => ({...m, easting: e.target.value}))} className="block w-full p-2 border rounded-md dark:bg-slate-700 dark:border-slate-600">
+                            <label className="block text-sm font-medium mb-1">{importFormat === 'utm' ? 'Easting (X)' : 'Latitude'}</label>
+                            <select value={mappings.col1} onChange={e => setMappings(m => ({...m, col1: e.target.value}))} className="block w-full p-2 border rounded-md dark:bg-slate-700 dark:border-slate-600">
                                 {headers.map((h, i) => <option key={i} value={i}>{h}</option>)}
                             </select>
-                            <p className="text-xs text-slate-500 mt-1">معاينة: {getColumnPreview(mappings.easting)}</p>
+                            <p className="text-xs text-slate-500 mt-1">معاينة: {getColumnPreview(mappings.col1)}</p>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium mb-1">Northing (Y)</label>
-                            <select value={mappings.northing} onChange={e => setMappings(m => ({...m, northing: e.target.value}))} className="block w-full p-2 border rounded-md dark:bg-slate-700 dark:border-slate-600">
+                            <label className="block text-sm font-medium mb-1">{importFormat === 'utm' ? 'Northing (Y)' : 'Longitude'}</label>
+                            <select value={mappings.col2} onChange={e => setMappings(m => ({...m, col2: e.target.value}))} className="block w-full p-2 border rounded-md dark:bg-slate-700 dark:border-slate-600">
                                 {headers.map((h, i) => <option key={i} value={i}>{h}</option>)}
                             </select>
-                            <p className="text-xs text-slate-500 mt-1">معاينة: {getColumnPreview(mappings.northing)}</p>
+                            <p className="text-xs text-slate-500 mt-1">معاينة: {getColumnPreview(mappings.col2)}</p>
                         </div>
                         <div>
                             <label className="block text-sm font-medium mb-1">Elevation (Z)</label>
@@ -1541,7 +1574,7 @@
         };
 
         const ExportPointsModal = ({ workAreas, onClose, onExport, initialFormat = 'csv' }) => {
-            const { addToast } = useAppContext();
+            const { addToast, coordinateSystem } = useAppContext();
             const [selectedIds, setSelectedIds] = useState({});
             const [exportFormat, setExportFormat] = useState(initialFormat);
             const [delimiter, setDelimiter] = useState(',');
@@ -1590,7 +1623,7 @@
                     addToast('الرجاء إدخال اسم ملف صالح.', 'error');
                     return;
                 }
-                const options = { selectedIds, exportFormat, delimiter, fileExtension, entityType, addCsvDescription };
+                const options = { selectedIds, exportFormat, delimiter, fileExtension, entityType, addCsvDescription, coordinateSystem };
                 const result = onExport(options, fileName.trim());
 
                 if (exportFormat === 'acad_script') {
@@ -2407,7 +2440,7 @@
             };
             
             const handleExportData = (options, fileNameFromModal) => {
-                const { selectedIds, exportFormat, delimiter, fileExtension, entityType, addCsvDescription } = options;
+                const { selectedIds, exportFormat, delimiter, fileExtension, entityType, addCsvDescription, coordinateSystem } = options;
                 
                 const selectedGroups = workAreas.flatMap(area => 
                     area.groups.filter(group => selectedIds[area.id] || selectedIds[`group-${group.id}`])
@@ -2426,11 +2459,24 @@
                 let content = '';
                 
                 if (exportFormat === 'csv') {
-                    content = pointsToExport.map((p, index) => {
-                        const base = `${safeToFixed(p.utm.easting)}${delimiter}${safeToFixed(p.utm.northing)}${delimiter}${safeToFixed(p.elevation)}`;
-                        return addCsvDescription ? `${index + 1}${delimiter}${base}${delimiter}${p.description || ''}` : base;
-                    }).join('\n');
+                    let header;
+                    let rows;
+
+                    if (coordinateSystem === 'utm') {
+                        header = addCsvDescription ? ['Point', 'Easting', 'Northing', 'Elevation', 'Description'] : ['Easting', 'Northing', 'Elevation'];
+                        rows = pointsToExport.map((p, index) => {
+                            const base = [safeToFixed(p.utm.easting), safeToFixed(p.utm.northing), safeToFixed(p.elevation)];
+                            return addCsvDescription ? [index + 1, ...base, p.description || ''] : base;
+                        });
+                    } else { // latlng
+                        header = addCsvDescription ? ['Point', 'Latitude', 'Longitude', 'Elevation', 'Description'] : ['Latitude', 'Longitude', 'Elevation'];
+                        rows = pointsToExport.map((p, index) => {
+                            const base = [p.lat.toFixed(8), p.lng.toFixed(8), safeToFixed(p.elevation)];
+                            return addCsvDescription ? [index + 1, ...base, p.description || ''] : base;
+                        });
+                    }
                     
+                    content = [header.join(delimiter), ...rows.map(row => row.join(delimiter))].join('\n');
                     const finalFileName = `${fileNameFromModal}.${fileExtension}`;
                     const mimeType = fileExtension === 'csv' ? 'text/csv' : 'text/plain';
                     downloadFile(content, finalFileName, mimeType);
