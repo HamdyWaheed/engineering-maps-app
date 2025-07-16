@@ -1376,6 +1376,118 @@
             );
         };
 
+        const ImportPointsModal = ({ fileData, onClose, onImport, utmZone }) => {
+            const { addToast } = useAppContext();
+            const [mappings, setMappings] = useState({ easting: '0', northing: '1', elevation: '-1', description: '-1' });
+            const [groupName, setGroupName] = useState(fileData.fileName ? `استيراد - ${fileData.fileName}` : 'مجموعة مستوردة');
+            const [ignoreHeader, setIgnoreHeader] = useState(fileData.hasHeader);
+
+            const { headers, dataRows } = useMemo(() => {
+                const rawData = fileData.data || [];
+                if (rawData.length === 0) return { headers: [], dataRows: [] };
+                
+                const headerRow = ignoreHeader ? rawData[0] : rawData[0].map((_, i) => `العمود ${i + 1}`);
+                const dataContent = ignoreHeader ? rawData.slice(1) : rawData;
+                
+                return { headers: headerRow, dataRows: dataContent };
+            }, [fileData.data, ignoreHeader]);
+
+            useEffect(() => {
+                if (ignoreHeader && headers.length > 0) {
+                    const lowerCaseHeaders = headers.map(h => h.toLowerCase());
+                    const eastingIndex = lowerCaseHeaders.findIndex(h => h.includes('east') || h === 'x');
+                    const northingIndex = lowerCaseHeaders.findIndex(h => h.includes('north') || h === 'y');
+                    const elevationIndex = lowerCaseHeaders.findIndex(h => h.includes('elev') || h.includes('z'));
+                    const descriptionIndex = lowerCaseHeaders.findIndex(h => h.includes('desc') || h.includes('code'));
+                    
+                    setMappings({
+                        easting: eastingIndex !== -1 ? `${eastingIndex}` : '0',
+                        northing: northingIndex !== -1 ? `${northingIndex}` : '1',
+                        elevation: elevationIndex !== -1 ? `${elevationIndex}` : '-1',
+                        description: descriptionIndex !== -1 ? `${descriptionIndex}` : '-1',
+                    });
+                }
+            }, [headers, ignoreHeader]);
+
+            const handleImportClick = () => {
+                if (!mappings.easting || !mappings.northing) { addToast("الرجاء تحديد أعمدة Easting و Northing.", "error"); return; }
+                if (!groupName.trim()) { addToast("الرجاء إدخال اسم للمجموعة.", "error"); return; }
+                
+                const pointsToImport = dataRows.map(row => {
+                    const easting = parseFloat(row[parseInt(mappings.easting)]);
+                    const northing = parseFloat(row[parseInt(mappings.northing)]);
+                    const elevation = mappings.elevation !== '-1' ? parseFloat(row[parseInt(mappings.elevation)]) : null;
+                    const description = mappings.description !== '-1' ? row[parseInt(mappings.description)] : '';
+                    if (isNaN(easting) || isNaN(northing)) return null;
+                    const latLng = convertUtmToLatLng(easting, northing, utmZone);
+                    if (!latLng) return null;
+                    return { id: generateUniqueId(), lat: latLng.lat, lng: latLng.lng, elevation: isNaN(elevation) ? null : elevation, utm: { easting, northing, zone: utmZone }, description, markerIcon: 'default', createdAt: new Date().toISOString() };
+                }).filter(Boolean);
+
+                if (pointsToImport.length === 0) { addToast("لم يتم العثور على نقاط صالحة للاستيراد.", "error"); return; }
+                onImport(groupName.trim(), pointsToImport);
+                onClose();
+            };
+
+            const getColumnPreview = (colIndex) => {
+                if (colIndex === '-1' || !dataRows || dataRows.length === 0) return "لا يوجد";
+                return dataRows.slice(0, 3).map(row => row[colIndex]).join(', ') + (dataRows.length > 3 ? ', ...' : '');
+            };
+
+            return (
+                <GenericModal title="استيراد نقاط من ملف" onClose={onClose} onConfirm={handleImportClick} confirmText="استيراد">
+                    <div className="mb-4">
+                        <label className="block text-sm font-medium mb-1">اسم المجموعة الجديدة</label>
+                        <input type="text" value={groupName} onChange={e => setGroupName(e.target.value)} className="block w-full p-2 border rounded-md dark:bg-slate-700 dark:border-slate-600" />
+                    </div>
+                    <div className="flex items-center mb-4">
+                        <input type="checkbox" id="ignore-header" checked={ignoreHeader} onChange={e => setIgnoreHeader(e.target.checked)} className="ml-2" />
+                        <label htmlFor="ignore-header">الصف الأول يحتوي على ترويسة (أسماء الأعمدة)</label>
+                    </div>
+                    <h3 className="text-lg font-semibold mb-2">ربط الأعمدة</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label className="block text-sm font-medium mb-1">Easting (X)</label>
+                            <select value={mappings.easting} onChange={e => setMappings(m => ({...m, easting: e.target.value}))} className="block w-full p-2 border rounded-md dark:bg-slate-700 dark:border-slate-600">
+                                {headers.map((h, i) => <option key={i} value={i}>{h}</option>)}
+                            </select>
+                            <p className="text-xs text-slate-500 mt-1">معاينة: {getColumnPreview(mappings.easting)}</p>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium mb-1">Northing (Y)</label>
+                            <select value={mappings.northing} onChange={e => setMappings(m => ({...m, northing: e.target.value}))} className="block w-full p-2 border rounded-md dark:bg-slate-700 dark:border-slate-600">
+                                {headers.map((h, i) => <option key={i} value={i}>{h}</option>)}
+                            </select>
+                            <p className="text-xs text-slate-500 mt-1">معاينة: {getColumnPreview(mappings.northing)}</p>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium mb-1">Elevation (Z)</label>
+                            <select value={mappings.elevation} onChange={e => setMappings(m => ({...m, elevation: e.target.value}))} className="block w-full p-2 border rounded-md dark:bg-slate-700 dark:border-slate-600">
+                                <option value="-1">-- لا يوجد --</option>
+                                {headers.map((h, i) => <option key={i} value={i}>{h}</option>)}
+                            </select>
+                            <p className="text-xs text-slate-500 mt-1">معاينة: {getColumnPreview(mappings.elevation)}</p>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium mb-1">الوصف (Description)</label>
+                            <select value={mappings.description} onChange={e => setMappings(m => ({...m, description: e.target.value}))} className="block w-full p-2 border rounded-md dark:bg-slate-700 dark:border-slate-600">
+                                <option value="-1">-- لا يوجد --</option>
+                                {headers.map((h, i) => <option key={i} value={i}>{h}</option>)}
+                            </select>
+                            <p className="text-xs text-slate-500 mt-1">معاينة: {getColumnPreview(mappings.description)}</p>
+                        </div>
+                    </div>
+                    <h3 className="text-lg font-semibold mb-2">معاينة البيانات (أول 5 صفوف)</h3>
+                    <div className="overflow-auto border rounded-lg dark:border-slate-600" style={{maxHeight: '200px'}}>
+                        <table className="w-full text-sm">
+                            <thead className="bg-gray-50 dark:bg-slate-700"><tr className="text-right">{headers.map((h, i) => <th key={i} className="p-2 font-semibold"><div>{`العمود ${i + 1}`}</div><div className="font-normal text-xs">{h}</div></th>)}</tr></thead>
+                            <tbody className="dark:bg-slate-800">{dataRows.slice(0, 5).map((row, i) => <tr key={i} className="border-t dark:border-slate-700 text-right">{row.map((cell, j) => <td key={j} className="p-2">{cell}</td>)}</tr>)}</tbody>
+                        </table>
+                    </div>
+                </GenericModal>
+            );
+        };
+
         const ImportChoiceModal = ({ onClose, onPasteClick, onFileClick }) => {
             return (
                 <GenericModal
