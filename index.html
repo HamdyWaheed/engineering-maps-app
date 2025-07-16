@@ -23,7 +23,7 @@
     <!-- قسم الأنماط المخصصة (Custom CSS) -->
     <style>
         html, body { height: 100%; }
-        body { font-family: 'Cairo', sans-serif; overscroll-behavior: none; -webkit-tap-highlight-color: transparent; overflow: hidden; }
+        body { font-family: 'Cairo', sans-serif; overscroll-behavior: none; -webkit-tap-highlight-color: transparent; }
         
         .dark-mode { background-color: #020617; color: #e2e8f0; }
         .dark-mode body { background-color: #020617; }
@@ -827,6 +827,7 @@
 
             const PointCard = ({ point, group, index }) => (
                 <div 
+                    key={point.id}
                     ref={el => (rowRefs.current[point.id] = el)}
                     onClick={() => {
                         onZoomToPoint(selectedArea.id, group.id, point.id);
@@ -1343,7 +1344,7 @@
                                     <svg width="48" height="48" viewBox="-20 -20 40 40" fill={previewColor} stroke="white" strokeWidth="1.5">
                                         <path d={iconDef.path} />
                                     </svg>
-                                    <span className="mt-2 text-sm text-center">{iconDef.label}</span>
+                                    <span className="mt-2 text-sm text-center text-slate-800 dark:text-slate-200">{iconDef.label}</span>
                                 </div>
                             ))}
                         </div>
@@ -2557,11 +2558,13 @@
                     onFileClick: () => {
                         setImportMode('coords');
                         closeModal();
+                        fileInputRef.current.accept = ".txt,.csv,.tsv";
                         fileInputRef.current.click();
                     },
                     onImportProjectClick: () => {
                         setImportMode('project');
                         closeModal();
+                        fileInputRef.current.accept = ".hemap";
                         fileInputRef.current.click();
                     }
                 }});
@@ -3017,7 +3020,7 @@
             return (
                 <div className="h-screen w-screen flex flex-col bg-slate-100 dark:bg-slate-900">
                     {renderModal()}
-                    <input type="file" ref={fileInputRef} onChange={handleFileLoad} style={{ display: 'none' }} accept=".txt,.csv,.tsv,.hemap" />
+                    <input type="file" ref={fileInputRef} onChange={handleFileLoad} style={{ display: 'none' }} />
                     <Header onToggleFullScreen={() => setIsMapFullScreen(f => !f)} isFullScreen={isMapFullScreen} onToggleSidebar={() => setIsSidebarOpen(true)} />
                     <div className="flex flex-grow min-h-0"> 
                         <div className={`${isMapFullScreen ? 'hidden' : ''} lg:block`}>
@@ -3199,6 +3202,37 @@
                                     closeModal={closeModal}
                                     selectedPointIds={selectedPointIds}
                                     setSelectedPointIds={setSelectedPointIds}
+                                    onBulkDelete={() => {
+                                        const ids = Array.from(selectedPointIds);
+                                        setWorkAreas(prev => prev.map(area => ({
+                                            ...area,
+                                            groups: area.groups.map(group => ({
+                                                ...group,
+                                                points: group.points.filter(p => !ids.includes(p.id))
+                                            }))
+                                        })));
+                                        setSelectedPointIds(new Set());
+                                        addToast(`${ids.length} نقطة تم حذفها.`, 'success');
+                                    }}
+                                    onBulkChangeMarker={() => {
+                                        setModal({type: 'markerPicker', props: {
+                                            onClose: closeModal,
+                                            onSelect: (iconKey) => {
+                                                const ids = Array.from(selectedPointIds);
+                                                setWorkAreas(prev => prev.map(area => ({
+                                                    ...area,
+                                                    groups: area.groups.map(group => ({
+                                                        ...group,
+                                                        points: group.points.map(p => ids.includes(p.id) ? { ...p, markerIcon: iconKey } : p)
+                                                    }))
+                                                })));
+                                                setSelectedPointIds(new Set());
+                                                closeModal();
+                                            }
+                                        }})
+                                    }}
+                                    onBulkCopyUtm={() => handleBulkCopy('utm')}
+                                    onBulkCopyLatLng={() => handleBulkCopy('latlng')}
                                 />
                             </div>
                             
