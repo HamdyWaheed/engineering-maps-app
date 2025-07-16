@@ -437,6 +437,7 @@
             const [darkMode, setDarkMode] = useState(false);
             const [utmZone, setUtmZone] = useState(DEFAULT_UTM_ZONE);
             const [toasts, setToasts] = useState([]);
+            const [coordinateSystem, setCoordinateSystem] = useState('utm');
             
             useEffect(() => { document.documentElement.classList.toggle('dark-mode', darkMode); }, [darkMode]);
 
@@ -447,8 +448,8 @@
             }, []);
             
             const value = useMemo(() => ({
-                darkMode, setDarkMode, utmZone, setUtmZone, addToast
-            }), [darkMode, utmZone, addToast]);
+                darkMode, setDarkMode, utmZone, setUtmZone, addToast, coordinateSystem, setCoordinateSystem
+            }), [darkMode, utmZone, addToast, coordinateSystem]);
 
             return (
                 <AppContext.Provider value={value}>
@@ -502,7 +503,7 @@
         };
         
         const Sidebar = ({ isOpen, onClose, workAreas, selectedAreaId, selectedGroupId, onSelectArea, onSelectGroup, onAddNewArea, onRenameArea, onDeleteArea, onZoomToWorkArea, onAddNewGroup, onRenameGroup, onDeleteGroup, onZoomToGroup, onUpdateGroupColor, onOpenExportModal, onToggleGroupVisibility, onSetGroupMarker, onOpenImportModal, onOpenPdfOptions, setModal, closeModal }) => {
-            const { utmZone, setUtmZone } = useAppContext();
+            const { utmZone, setUtmZone, coordinateSystem, setCoordinateSystem } = useAppContext();
             const selectedArea = workAreas.find(area => area.id === selectedAreaId);
             const selectedGroup = selectedArea?.groups.find(group => group.id === selectedGroupId);
 
@@ -613,8 +614,15 @@
                         
                         <div className="border-t pt-4 mt-4 dark:border-slate-700">
                             <h3 className="font-semibold mb-2">الإعدادات وإدارة البيانات</h3>
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium mb-1">نظام الإحداثيات</label>
+                                <div className="flex rounded-md shadow-sm">
+                                    <button onClick={() => setCoordinateSystem('utm')} className={`flex-1 p-2 rounded-r-md border border-slate-300 dark:border-slate-600 ${coordinateSystem === 'utm' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-slate-700'}`}>UTM</button>
+                                    <button onClick={() => setCoordinateSystem('latlng')} className={`flex-1 p-2 rounded-l-md border border-slate-300 dark:border-slate-600 ${coordinateSystem === 'latlng' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-slate-700'}`}>Lat/Long</button>
+                                </div>
+                            </div>
                             <label htmlFor="utm-zone-select" className="block text-sm font-medium mb-1">UTM Zone</label>
-                            <select id="utm-zone-select" value={utmZone} onChange={e => setUtmZone(parseInt(e.target.value))} className="block w-full p-2 border rounded-md dark:bg-slate-700 dark:border-slate-600 custom-select">
+                            <select id="utm-zone-select" value={utmZone} onChange={e => setUtmZone(parseInt(e.target.value))} className="block w-full p-2 border rounded-md dark:bg-slate-700 dark:border-slate-600 custom-select" disabled={coordinateSystem === 'latlng'}>
                                 {Array.from({ length: 11 }, (_, i) => 30 + i).map(zone => <option key={zone} value={zone}>{zone}N</option>)}
                             </select>
                             <div className="mt-4 flex flex-col space-y-2">
@@ -664,7 +672,7 @@
         //  FILE: src/components/table/PointsTable.js
         // ====================================================================
         const PointsTable = ({ selectedArea, selectedGroupId, onUpdatePoint, onDeletePoint, onZoomToPoint, onActivateGroup, activePointId, setActivePointId, onOpenMarkerPicker, setModal, closeModal }) => {
-            const { addToast } = useAppContext();
+            const { addToast, coordinateSystem } = useAppContext();
             const rowRefs = useRef({});
             const groupHeaderRefs = useRef({});
         
@@ -756,8 +764,17 @@
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm font-mono">
-                                <div className="text-slate-500 dark:text-slate-400">X: <span className="text-slate-800 dark:text-slate-100">{point.utm?.easting?.toFixed(2) || 'N/A'}</span></div>
-                                <div className="text-slate-500 dark:text-slate-400">Y: <span className="text-slate-800 dark:text-slate-100">{point.utm?.northing?.toFixed(2) || 'N/A'}</span></div>
+                                {coordinateSystem === 'utm' ? (
+                                    <>
+                                        <div className="text-slate-500 dark:text-slate-400">X: <span className="text-slate-800 dark:text-slate-100">{point.utm?.easting?.toFixed(2) || 'N/A'}</span></div>
+                                        <div className="text-slate-500 dark:text-slate-400">Y: <span className="text-slate-800 dark:text-slate-100">{point.utm?.northing?.toFixed(2) || 'N/A'}</span></div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className="text-slate-500 dark:text-slate-400">Lat: <span className="text-slate-800 dark:text-slate-100">{point.lat?.toFixed(6) || 'N/A'}</span></div>
+                                        <div className="text-slate-500 dark:text-slate-400">Lng: <span className="text-slate-800 dark:text-slate-100">{point.lng?.toFixed(6) || 'N/A'}</span></div>
+                                    </>
+                                )}
                                 <div className="text-slate-500 dark:text-slate-400">Z: <span className="text-slate-800 dark:text-slate-100">{point.elevation?.toFixed(2) || 'N/A'}</span></div>
                             </div>
                             {point.description && <p className="text-xs text-slate-600 dark:text-slate-400 mt-2">{point.description}</p>}
@@ -792,8 +809,17 @@
                                         <table className="w-full text-sm text-left rtl:text-right">
                                             <thead className="text-xs text-gray-700 uppercase bg-slate-200 dark:bg-slate-700 dark:text-gray-400"><tr>
                                                 <th className="px-2 py-2">#</th>
-                                                <th className="px-4 py-2">Easting (X)</th>
-                                                <th className="px-4 py-2">Northing (Y)</th>
+                                                {coordinateSystem === 'utm' ? (
+                                                    <>
+                                                        <th className="px-4 py-2">Easting (X)</th>
+                                                        <th className="px-4 py-2">Northing (Y)</th>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <th className="px-4 py-2">Latitude</th>
+                                                        <th className="px-4 py-2">Longitude</th>
+                                                    </>
+                                                )}
                                                 <th className="px-4 py-2">Elevation (Z)</th>
                                                 <th className="px-4 py-2">الوصف</th>
                                                 <th className="px-2 py-2 text-center">إجراءات</th>
@@ -811,8 +837,17 @@
                                                     className={`border-b dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors duration-200 even:bg-slate-50 dark:even:bg-slate-800/50 ${point.id === activePointId ? 'bg-blue-100 dark:bg-blue-900/50 ring-2 ring-blue-500 z-10' : ''}`}
                                                 >
                                                     <td className="px-2 py-2 font-medium text-slate-500 dark:text-slate-400">{i + 1}</td>
-                                                    <td className="px-4 py-2"><input type="number" value={point.utm?.easting?.toFixed(3) || ''} readOnly className={coordInputClasses} /></td>
-                                                    <td className="px-4 py-2"><input type="number" value={point.utm?.northing?.toFixed(3) || ''} readOnly className={coordInputClasses} /></td>
+                                                    {coordinateSystem === 'utm' ? (
+                                                        <>
+                                                            <td className="px-4 py-2"><input type="number" value={point.utm?.easting?.toFixed(3) || ''} readOnly className={coordInputClasses} /></td>
+                                                            <td className="px-4 py-2"><input type="number" value={point.utm?.northing?.toFixed(3) || ''} readOnly className={coordInputClasses} /></td>
+                                                        </>
+                                                    ) : (
+                                                         <>
+                                                            <td className="px-4 py-2"><input type="number" value={point.lat?.toFixed(8) || ''} readOnly className={coordInputClasses} /></td>
+                                                            <td className="px-4 py-2"><input type="number" value={point.lng?.toFixed(8) || ''} readOnly className={coordInputClasses} /></td>
+                                                        </>
+                                                    )}
                                                     <td className="px-4 py-2"><input type="number" value={point.elevation?.toFixed(3) || '0.000'} readOnly className={coordInputClasses} /></td>
                                                     <td className="px-4 py-2">
                                                         <input 
@@ -1213,7 +1248,7 @@
             );
         };
 
-        const DirectPasteModal = ({ onClose, onProcessPaste, utmZone }) => {
+        const DirectPasteUtmModal = ({ onClose, onProcessPaste, utmZone }) => {
             const { addToast } = useAppContext();
             const [text, setText] = useState('');
 
@@ -1245,11 +1280,11 @@
                     const latLng = convertUtmToLatLng(easting, northing, utmZone);
                     if (!latLng) return null;
                     
-                    return { id: generateUniqueId(), lat: latLng.lat, lng: latLng.lng, elevation: isNaN(elevation) ? null : elevation, utm: { easting, northing, zone: utmZone }, description, markerIcon: 'default', createdAt: new Date().toISOString() };
+                    return { id: generateUniqueId(), lat: latLng.lat, lng: latLng.lng, elevation: isNaN(elevation) ? 0.0 : elevation, utm: { easting, northing, zone: utmZone }, description, markerIcon: 'default', createdAt: new Date().toISOString() };
                 }).filter(Boolean);
 
                 if (pointsToImport.length === 0) {
-                    addToast("لم يتم العثور على نقاط صالحة للاستيراد من النص.", "error");
+                    addToast("لم يتم العثور على نقاط UTM صالحة للاستيراد.", "error");
                     return;
                 }
 
@@ -1259,7 +1294,7 @@
 
             return (
                 <GenericModal 
-                    title="لصق مباشر للإحداثيات" 
+                    title="لصق مباشر لإحداثيات UTM" 
                     onClose={onClose} 
                     onConfirm={handleProcessClick} 
                     confirmText="معالجة وتوقيع"
@@ -1273,6 +1308,94 @@
                         className="w-full h-48 p-2 border rounded-md dark:bg-slate-700 dark:border-slate-600 font-mono text-sm"
                         placeholder="766640.84, 3449894.71, 12.34, Point1&#10;766650.12 3449900.56 12.50 BlockA&#10;..."
                     />
+                </GenericModal>
+            );
+        };
+
+        const DirectPasteLatLngModal = ({ onClose, onProcessPaste, utmZone }) => {
+            const { addToast } = useAppContext();
+            const [text, setText] = useState('');
+
+            const handleProcessClick = () => {
+                if (!text.trim()) {
+                    addToast("الرجاء لصق الإحداثيات في المربع.", "error");
+                    return;
+                }
+
+                const { data: rows, error } = parseDelimitedText(text);
+                if (error) {
+                    addToast(`خطأ في التحليل: ${error}`, "error");
+                }
+                if (!rows || rows.length === 0) {
+                    addToast("لم يتم العثور على بيانات صالحة.", "error");
+                    return;
+                }
+
+                const pointsToImport = rows.map(row => {
+                    if (row.length < 2) return null;
+                    
+                    const lat = parseFloat(row[0]);
+                    const lng = parseFloat(row[1]);
+                    const description = row.length > 2 ? row[2] : '';
+
+                    if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
+                    
+                    const utm = convertLatLngToUtm(lat, lng, utmZone);
+                    if (!utm) return null;
+                    
+                    return { id: generateUniqueId(), lat, lng, elevation: 0.0, utm, description, markerIcon: 'default', createdAt: new Date().toISOString() };
+                }).filter(Boolean);
+
+                if (pointsToImport.length === 0) {
+                    addToast("لم يتم العثور على نقاط Lat/Lng صالحة للاستيراد.", "error");
+                    return;
+                }
+
+                onProcessPaste(pointsToImport);
+                onClose();
+            };
+
+            return (
+                <GenericModal 
+                    title="لصق مباشر لإحداثيات Lat/Long" 
+                    onClose={onClose} 
+                    onConfirm={handleProcessClick} 
+                    confirmText="معالجة وتوقيع"
+                >
+                    <p className="mb-4 text-slate-600 dark:text-slate-300">
+                        قم بلصق الإحداثيات في المربع أدناه. يجب أن تكون بتنسيق (Latitude, Longitude, [Description]) مفصولة بفاصلة أو مسافة أو تاب.
+                    </p>
+                    <textarea
+                        value={text}
+                        onChange={e => setText(e.target.value)}
+                        className="w-full h-48 p-2 border rounded-md dark:bg-slate-700 dark:border-slate-600 font-mono text-sm"
+                        placeholder="30.0443, 31.2357, Tahrir Square&#10;29.9792 31.1342 Pyramid Giza&#10;..."
+                        dir="ltr"
+                    />
+                </GenericModal>
+            );
+        };
+
+        const PasteChoiceModal = ({ onClose, onUtmClick, onLatLngClick }) => {
+            return (
+                <GenericModal
+                    title="اختر نوع الإحداثيات للصق"
+                    onClose={onClose}
+                    showConfirm={false}
+                    showCancel={true}
+                    cancelText="إغلاق"
+                >
+                    <div className="flex flex-col space-y-4">
+                        <p className="text-slate-600 dark:text-slate-300">اختر نظام الإحداثيات الذي تريد لصق بياناته:</p>
+                        <button onClick={onUtmClick} className="button-secondary flex items-center justify-center w-full !py-3 text-base">
+                            <Icon name="grid" className="ml-2" />
+                            لصق إحداثيات UTM
+                        </button>
+                        <button onClick={onLatLngClick} className="button-primary flex items-center justify-center w-full !py-3 text-base">
+                            <Icon name="globe" className="ml-2" />
+                            لصق إحداثيات (Lat/Long)
+                        </button>
+                    </div>
                 </GenericModal>
             );
         };
@@ -1932,7 +2055,7 @@
             const [isDesktopTableExpanded, setIsDesktopTableExpanded] = useState(false);
             const [isToolsSheetOpen, setIsToolsSheetOpen] = useState(false);
             const [currentZoom, setCurrentZoom] = useState(DEFAULT_MAP_ZOOM);
-            const { utmZone, setUtmZone, addToast } = useAppContext();
+            const { utmZone, setUtmZone, addToast, coordinateSystem } = useAppContext();
             const [modal, setModal] = useState({ type: null, props: {} });
             const [isTakingScreenshot, setIsTakingScreenshot] = useState(false);
             const [screenshotOptions, setScreenshotOptions] = useState({ showPanel: true, showTimestamp: true });
@@ -2257,7 +2380,7 @@
                             if (!selectedArea) { addToast('الرجاء تحديد منطقة عمل أولاً لاستيراد النقاط.', 'error'); return; }
                             const parsedData = parseDelimitedText(content);
                             if (parsedData.error && !parsedData.data.length) { addToast(parsedData.error, 'error'); return; }
-                            setModal({type: 'importPoints', props: {fileData:{...parsedData, fileName}, onClose:closeModal, onImport:handleProcessImport, utmZone:utmZone}});
+                            setModal({type: 'importPoints', props: {fileData:{...parsedData, fileName}, onClose:closeModal, onImport:handleProcessPastedPoints, utmZone:utmZone}});
                         }
                     } catch (err) {
                         console.error("File load error:", err);
@@ -2268,17 +2391,7 @@
                 reader.readAsText(file, 'UTF-8');
             };
             
-            const handleProcessImport = (groupName, points) => {
-                const newGroup = { id: generateUniqueId(), name: groupName, color: POINT_GROUP_COLORS[workAreas.length % POINT_GROUP_COLORS.length], points, ...DEFAULT_GROUP_SETTINGS };
-                setWorkAreas(prev => prev.map(area => 
-                    area.id === selectedArea.id ? { ...area, groups: [...area.groups, newGroup], lastModifiedAt: new Date().toISOString() } : area
-                ));
-                addToast(`تم استيراد ${points.length} نقطة بنجاح إلى "${groupName}".`, 'success');
-                setSelectedGroupId(newGroup.id);
-                setTimeout(() => mapApiRef.current?.zoomToBounds(points), 100);
-            };
-
-            const handleProcessDirectPaste = (points) => {
+            const handleProcessPastedPoints = (points) => {
                 if (!selectedArea || !selectedGroup) return;
                 setWorkAreas(prev => prev.map(area => 
                     area.id === selectedArea.id ? { 
@@ -2293,9 +2406,28 @@
                 setTimeout(() => mapApiRef.current?.zoomToBounds(points), 100);
             };
 
-            const handleOpenDirectPasteModal = () => {
-                if (!selectedArea || !selectedGroup) { addToast('الرجاء تحديد منطقة عمل ومجموعة نقاط أولاً.', 'error'); return; }
-                setModal({type: 'directPaste', props: { onClose:closeModal, onProcessPaste:handleProcessDirectPaste, utmZone:utmZone }});
+            const handleOpenImportModal = () => {
+                if (!selectedArea) {
+                    addToast('الرجاء تحديد منطقة عمل أولاً.', 'error');
+                    return;
+                }
+                setModal({type: 'importChoice', props: {
+                    onClose: closeModal,
+                    onPasteClick: () => {
+                        closeModal();
+                        setTimeout(() => {
+                            if (coordinateSystem === 'utm') {
+                                setModal({type: 'directPasteUtm', props: { onClose:closeModal, onProcessPaste:handleProcessPastedPoints, utmZone:utmZone }});
+                            } else {
+                                setModal({type: 'directPasteLatLng', props: { onClose:closeModal, onProcessPaste:handleProcessPastedPoints, utmZone:utmZone }});
+                            }
+                        }, 50);
+                    },
+                    onFileClick: () => {
+                        closeModal();
+                        fileInputRef.current.click();
+                    }
+                }});
             };
             
             const handleExportData = (options, fileNameFromModal) => {
@@ -2626,27 +2758,7 @@
                     previewColor: group.color
                 }});
             };
-
-            const handleOpenImportModal = () => {
-                if (!selectedArea) {
-                    addToast('الرجاء تحديد منطقة عمل أولاً.', 'error');
-                    return;
-                }
-                setModal({type: 'importChoice', props: {
-                    onClose: closeModal,
-                    onPasteClick: () => {
-                        closeModal();
-                        setTimeout(() => {
-                            handleOpenDirectPasteModal();
-                        }, 50);
-                    },
-                    onFileClick: () => {
-                        closeModal();
-                        fileInputRef.current.click();
-                    }
-                }});
-            };
-
+            
             const handleOpenExportModal = () => {
                 setModal({type: 'exportChoice', props: {
                     onClose: closeModal,
@@ -2699,8 +2811,12 @@
                         return <MarkerPickerModal {...modal.props} />;
                     case 'importChoice':
                         return <ImportChoiceModal {...modal.props} />;
-                    case 'directPaste':
-                        return <DirectPasteModal {...modal.props} />;
+                    case 'pasteChoice':
+                        return <PasteChoiceModal {...modal.props} />;
+                    case 'directPasteUtm':
+                        return <DirectPasteUtmModal {...modal.props} />;
+                    case 'directPasteLatLng':
+                        return <DirectPasteLatLngModal {...modal.props} />;
                     case 'importPoints':
                         return <ImportPointsModal {...modal.props} />;
                     case 'exportChoice':
