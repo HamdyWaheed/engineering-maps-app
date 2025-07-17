@@ -415,6 +415,23 @@
             URL.revokeObjectURL(link.href);
         };
 
+        const copyToClipboard = (text, message, addToast) => {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed";
+            textArea.style.top = "-9999px";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                if (addToast) addToast(message, 'success');
+            } catch (err) {
+                if (addToast) addToast('فشل النسخ إلى الحافظة.', 'error');
+            }
+            document.body.removeChild(textArea);
+        };
+
         // ====================================================================
         //  FILE: src/hooks/useHistoryState.js
         // ====================================================================
@@ -791,33 +808,16 @@
                 }});
             };
 
-            const copyToClipboard = (text, message) => {
-                const textArea = document.createElement("textarea");
-                textArea.value = text;
-                textArea.style.position = "fixed";
-                textArea.style.top = "-9999px";
-                document.body.appendChild(textArea);
-                textArea.focus();
-                textArea.select();
-                try {
-                    document.execCommand('copy');
-                    addToast(message, 'success');
-                } catch (err) {
-                    addToast('فشل النسخ إلى الحافظة.', 'error');
-                }
-                document.body.removeChild(textArea);
-            };
-
             const copyUtmToClipboard = (point) => {
                 if (!point) return;
                 const safeToFixed = (num, digits = 3) => (typeof num === 'number' ? num.toFixed(digits) : '0.000');
                 const textToCopy = `${safeToFixed(point.utm?.easting)},${safeToFixed(point.utm?.northing)},${safeToFixed(point.elevation)}`;
-                copyToClipboard(textToCopy, 'تم نسخ إحداثيات UTM.');
+                copyToClipboard(textToCopy, 'تم نسخ إحداثيات UTM.', addToast);
             };
             
             const copyLatLngToClipboard = (point) => {
                 const textToCopy = `${point.lat.toFixed(8)},${point.lng.toFixed(8)}`;
-                copyToClipboard(textToCopy, 'تم نسخ إحداثيات Lat/Lng.');
+                copyToClipboard(textToCopy, 'تم نسخ إحداثيات Lat/Lng.', addToast);
             };
 
             if (!selectedArea) return <div className="p-4 text-center text-slate-500 h-full flex items-center justify-center">الرجاء تحديد منطقة عمل.</div>;
@@ -1067,7 +1067,6 @@
             const [map, setMap] = useState(null);
             const [mapOverlays, setMapOverlays] = useState([]);
             
-            // استخدام Refs لتخزين عناصر الخريطة لتجنب إعادة الرسم غير الضرورية
             const markersRef = useRef(new Map());
             const polylinesRef = useRef(new Map());
             const areaPolygonsRef = useRef(new Map());
@@ -1097,7 +1096,6 @@
                 }
             }));
 
-            // Effect لتهيئة الخريطة مرة واحدة فقط
             useEffect(() => {
                 if (mapRef.current && !map) {
                     const mapInstance = new window.google.maps.Map(mapRef.current, { center: { lat: DEFAULT_MAP_CENTER_LAT, lng: DEFAULT_MAP_CENTER_LNG }, zoom: DEFAULT_MAP_ZOOM, mapTypeId: 'satellite', mapTypeControl: false, streetViewControl: false, fullscreenControl: false, zoomControl: true, clickableIcons: !isDeleteMode });
@@ -1120,14 +1118,14 @@
                 }
             }, [mapRef, map]);
 
-            // Effect لتحديث خيارات الخريطة عند تغيير وضع الحذف
             useEffect(() => {
                 if(map) {
                     map.setOptions({ draggableCursor: isDeleteMode ? 'crosshair' : null, clickableIcons: !isDeleteMode });
                 }
             }, [map, isDeleteMode]);
 
-            // Effect لمزامنة العلامات (Markers) مع الحالة
+            const selectedAreaJson = useMemo(() => JSON.stringify(selectedArea), [selectedArea]);
+
             useEffect(() => {
                 if (!map || !selectedArea) return;
 
@@ -1148,11 +1146,11 @@
 
                         let marker = currentMarkers.get(point.id);
 
-                        if (marker) { // إذا كانت العلامة موجودة، قم بتحديثها
+                        if (marker) {
                             marker.setPosition(latLng);
                             marker.setIcon(markerIcon);
                             marker.setVisible(map.getZoom() >= MARKER_VISIBILITY_ZOOM_THRESHOLD);
-                        } else { // إذا كانت جديدة، قم بإنشائها
+                        } else {
                             marker = new window.google.maps.Marker({ 
                                 position: latLng, 
                                 map, 
@@ -1164,7 +1162,6 @@
                             });
                             currentMarkers.set(point.id, marker);
 
-                            // إضافة المستمعين مرة واحدة فقط عند الإنشاء
                             marker.addListener('click', () => { 
                                 onActivateGroup(group.id);
                                 setActivePointId(point.id);
@@ -1185,7 +1182,6 @@
                     });
                 });
 
-                // إزالة العلامات التي لم تعد موجودة في الحالة
                 currentMarkers.forEach((marker, pointId) => {
                     if (!pointsInState.has(pointId)) {
                         marker.setMap(null);
@@ -1193,9 +1189,8 @@
                     }
                 });
 
-            }, [map, JSON.stringify(selectedArea), isDeleteMode, onUpdatePoint]);
+            }, [map, selectedAreaJson, isDeleteMode]);
 
-            // Effect لمزامنة الخطوط والمضلعات والتسميات
             useEffect(() => {
                 if (!map || !selectedArea) return;
 
@@ -1211,7 +1206,6 @@
                     groupsInState.add(group.id);
                     const path = (group.points || []).filter(p => p && typeof p.lat === 'number').map(p => new window.google.maps.LatLng(p.lat, p.lng));
                     
-                    // --- تحديث الخطوط (Polylines) ---
                     let polyline = currentPolylines.get(group.id);
                     if (group.showPolylines && path.length > 1) {
                         const polylineStyle = currentZoom < MARKER_VISIBILITY_ZOOM_THRESHOLD 
@@ -1230,7 +1224,6 @@
                         polyline.setVisible(false);
                     }
 
-                    // --- تحديث مضلعات المساحة (Area Polygons) ---
                     let areaPolygon = currentAreaPolygons.get(group.id);
                     if (group.isAreaMeasuring && path.length >= 3) {
                          const style = { strokeColor: group.color, fillColor: group.color, strokeWeight: 2, strokeOpacity: 0.8, fillOpacity: 0.2 };
@@ -1246,7 +1239,6 @@
                         areaPolygon.setVisible(false);
                     }
 
-                    // --- تحديث التسميات (Labels) ---
                     const canShowAnyLabel = currentZoom >= LABEL_VISIBILITY_ZOOM_THRESHOLD;
                     (group.points || []).forEach((point, index) => {
                          if (canShowAnyLabel) {
@@ -1300,7 +1292,6 @@
                     }
                 });
 
-                // إزالة الخطوط والمضلعات التي لم تعد موجودة
                 currentPolylines.forEach((poly, groupId) => {
                     if (!groupsInState.has(groupId) || !selectedArea.groups.find(g=>g.id === groupId)?.showPolylines) {
                         poly.setMap(null);
@@ -1316,7 +1307,7 @@
 
                 setMapOverlays(newOverlays);
 
-            }, [map, JSON.stringify(selectedArea), darkMode]);
+            }, [map, selectedAreaJson, darkMode]);
 
             return (
                 <>
@@ -1369,12 +1360,12 @@
                             {Object.entries(MARKER_ICONS).map(([key, iconDef]) => (
                                 <div key={key}
                                     onClick={() => onSelect(key)}
-                                    className={`flex flex-col items-center justify-center p-4 rounded-lg cursor-pointer transition-all duration-200 ${currentIconKey === key ? 'bg-blue-100 dark:bg-blue-800 ring-2 ring-blue-500' : 'bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600'}`}
+                                    className={`flex flex-col items-center justify-center p-4 rounded-lg cursor-pointer transition-all duration-200 border ${currentIconKey === key ? 'bg-blue-100 dark:bg-blue-900/50 border-blue-500 ring-2 ring-blue-500' : 'bg-slate-50 dark:bg-slate-700/50 border-slate-200 dark:border-slate-600 hover:bg-slate-200 dark:hover:bg-slate-600/50 hover:border-slate-300'}`}
                                 >
                                     <svg width="48" height="48" viewBox="-20 -20 40 40" fill={previewColor} stroke="white" strokeWidth="1.5">
                                         <path d={iconDef.path} />
                                     </svg>
-                                    <span className="mt-2 text-sm text-center text-slate-800 dark:text-slate-200">{iconDef.label}</span>
+                                    <span className="mt-2 text-sm text-center font-bold text-slate-900 dark:text-slate-100">{iconDef.label}</span>
                                 </div>
                             ))}
                         </div>
@@ -2755,6 +2746,51 @@
                 addToast('تم تحديث رموز المجموعة بنجاح.', 'success');
             };
 
+            const handleBulkCopy = (copyType) => {
+                if (selectedPointIds.size === 0) {
+                    addToast('لم يتم تحديد أي نقاط لنسخها.', 'info');
+                    return;
+                }
+
+                const idsToCopy = Array.from(selectedPointIds);
+                const pointsToCopy = [];
+
+                workAreas.forEach(area => {
+                    area.groups.forEach(group => {
+                        group.points.forEach(point => {
+                            if (idsToCopy.includes(point.id)) {
+                                pointsToCopy.push(point);
+                            }
+                        });
+                    });
+                });
+
+                if (pointsToCopy.length === 0) {
+                    addToast('لم يتم العثور على النقاط المحددة.', 'error');
+                    return;
+                }
+
+                const safeToFixed = (num, digits = 3) => (typeof num === 'number' ? num.toFixed(digits) : '0.000');
+                let textToCopy = '';
+
+                if (copyType === 'utm') {
+                    textToCopy = pointsToCopy.map(p => {
+                        if (!p.utm) return '';
+                        return `${safeToFixed(p.utm.easting, 2)},${safeToFixed(p.utm.northing, 2)},${safeToFixed(p.elevation, 2)}`;
+                    }).filter(Boolean).join('\n');
+                } else if (copyType === 'latlng') {
+                    textToCopy = pointsToCopy.map(p => {
+                        return `${p.lat.toFixed(8)},${p.lng.toFixed(8)}`;
+                    }).join('\n');
+                }
+
+                if (textToCopy) {
+                    copyToClipboard(textToCopy, `تم نسخ إحداثيات ${pointsToCopy.length} نقطة.`, addToast);
+                } else {
+                    addToast('لا توجد بيانات لنسخها.', 'error');
+                }
+            };
+
             const displaySettings = useMemo(() => {
                 if(selectedGroup) return { ...DEFAULT_GROUP_SETTINGS, ...selectedGroup };
                 return DEFAULT_GROUP_SETTINGS;
@@ -3079,8 +3115,10 @@
                         </div>
                         
                         <main className="flex-grow flex flex-col relative overflow-hidden">
-                            <div className={`flex-shrink-0 relative transition-all duration-300 rounded-lg overflow-hidden ${isMapFullScreen ? 'h-full' : `h-full lg:h-[${isDesktopTableExpanded ? '25%' : '60%'}]`}`} id="capture-area">
-                                <div className="map-frame"></div>
+                            <div 
+                                id="capture-area" 
+                                className={`relative transition-all duration-300 ${isMapFullScreen ? 'h-full' : `flex-shrink-0 ${isDesktopTableExpanded ? 'lg:basis-1/4' : 'lg:basis-3/5'}`}`}
+                            >
                                 <MapComponent
                                     ref={mapApiRef}
                                     selectedArea={selectedArea}
@@ -3133,7 +3171,7 @@
                             </div>
                             
                             {!isMapFullScreen && (
-                                <div className="hidden lg:flex flex-col flex-grow min-h-0 border-t-2 dark:border-slate-700">
+                                <div className="hidden lg:flex flex-col flex-1 min-h-0 border-t-2 dark:border-slate-700">
                                     <div className="flex-shrink-0 p-2 flex justify-center items-center border-b dark:border-slate-700 bg-slate-100 dark:bg-slate-800/50">
                                         <button
                                             onClick={() => setIsDesktopTableExpanded(p => !p)}
