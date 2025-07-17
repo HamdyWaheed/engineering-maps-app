@@ -897,89 +897,116 @@
 
                         <div className="hidden lg:block">
                              {selectedArea.groups.map(group => (
-                                <div key={group.id} className="mb-4" ref={el => (groupHeaderRefs.current[group.id] = el)}>
-                                    <div className="flex items-center mb-2 p-2 rounded-lg bg-slate-100 dark:bg-slate-800 sticky top-0 z-10">
-                                        <h4 className="font-semibold text-slate-700 dark:text-slate-200">{group.name}</h4>
-                                    </div>
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full text-sm text-left">
-                                            <thead className="text-xs text-gray-700 uppercase bg-slate-200 dark:bg-slate-700 dark:text-gray-400"><tr>
-                                                <th className="px-2 py-2"><input type="checkbox" onChange={() => handleSelectAllInGroup(group)} checked={group.points.length > 0 && group.points.every(p => selectedPointIds.has(p.id))} /></th>
-                                                <th className="px-2 py-2">#</th>
-                                                {coordinateSystem === 'utm' ? (
-                                                    <>
-                                                        <th className="px-4 py-2">Easting (X)</th>
-                                                        <th className="px-4 py-2">Northing (Y)</th>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <th className="px-4 py-2">Latitude</th>
-                                                        <th className="px-4 py-2">Longitude</th>
-                                                    </>
-                                                )}
-                                                <th className="px-4 py-2">Elevation (Z)</th>
-                                                <th className="px-4 py-2">Description</th>
-                                                <th className="px-2 py-2 text-center">Actions</th>
-                                            </tr></thead>
-                                            <tbody>
-                                            {(group.points || []).filter(p => p).map((point, i) => (
-                                                <tr 
-                                                    key={point.id} 
-                                                    ref={el => (rowRefs.current[point.id] = el)}
-                                                    onClick={() => {
-                                                        onZoomToPoint(selectedArea.id, group.id, point.id);
-                                                        onActivateGroup(group.id);
-                                                        setActivePointId(point.id);
-                                                    }} 
-                                                    className={`border-b dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors duration-200 even:bg-slate-50 dark:even:bg-slate-800/50 ${point.id === activePointId ? 'bg-blue-100 dark:bg-blue-900/50 ring-2 ring-blue-500 z-10' : ''}`}
-                                                >
-                                                    <td className="px-2 py-2"><input type="checkbox" checked={selectedPointIds.has(point.id)} onChange={() => handlePointSelection(point.id)} onClick={e => e.stopPropagation()} /></td>
-                                                    <td className="px-2 py-2 font-medium text-slate-500 dark:text-slate-400">{i + 1}</td>
-                                                    {coordinateSystem === 'utm' ? (
-                                                        <>
-                                                            <td className="px-4 py-2"><input type="number" value={point.utm?.easting?.toFixed(3) || ''} readOnly className={coordInputClasses} /></td>
-                                                            <td className="px-4 py-2"><input type="number" value={point.utm?.northing?.toFixed(3) || ''} readOnly className={coordInputClasses} /></td>
-                                                        </>
-                                                    ) : (
+                                 <div key={group.id} className="mb-4" ref={el => (groupHeaderRefs.current[group.id] = el)}>
+                                     <div className="flex items-center mb-2 p-2 rounded-lg bg-slate-100 dark:bg-slate-800 sticky top-0 z-10">
+                                         <h4 className="font-semibold text-slate-700 dark:text-slate-200">{group.name}</h4>
+                                     </div>
+                                     <div className="overflow-x-auto">
+                                         <table className="w-full text-sm text-left">
+                                             <thead className="text-xs text-gray-700 uppercase bg-slate-200 dark:bg-slate-700 dark:text-gray-400"><tr>
+                                                 <th className="px-2 py-2"><input type="checkbox" onChange={() => handleSelectAllInGroup(group)} checked={group.points.length > 0 && group.points.every(p => selectedPointIds.has(p.id))} /></th>
+                                                 <th className="px-2 py-2">#</th>
+                                                 {coordinateSystem === 'utm' ? (
+                                                     <>
+                                                         <th className="px-4 py-2">Easting (X)</th>
+                                                         <th className="px-4 py-2">Northing (Y)</th>
+                                                     </>
+                                                 ) : (
+                                                     <>
+                                                         <th className="px-4 py-2">Latitude</th>
+                                                         <th className="px-4 py-2">Longitude</th>
+                                                     </>
+                                                 )}
+                                                 <th className="px-4 py-2">Elevation (Z)</th>
+                                                 <th className="px-4 py-2">Description</th>
+                                                 <th className="px-2 py-2 text-center">Actions</th>
+                                             </tr></thead>
+                                             <tbody>
+                                             {(group.points || []).filter(p => p).map((point, i) => (
+                                                 <tr 
+                                                     key={point.id} 
+                                                     ref={el => (rowRefs.current[point.id] = el)}
+                                                     onClick={() => {
+                                                         onZoomToPoint(selectedArea.id, group.id, point.id);
+                                                         onActivateGroup(group.id);
+                                                         setActivePointId(point.id);
+                                                     }} 
+                                                     className={`border-b dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors duration-200 even:bg-slate-50 dark:even:bg-slate-800/50 ${point.id === activePointId ? 'bg-blue-100 dark:bg-blue-900/50 ring-2 ring-blue-500 z-10' : ''}`}
+                                                 >
+                                                     <td className="px-2 py-2"><input type="checkbox" checked={selectedPointIds.has(point.id)} onChange={() => handlePointSelection(point.id)} onClick={e => e.stopPropagation()} /></td>
+                                                     <td className="px-2 py-2 font-medium text-slate-500 dark:text-slate-400">{i + 1}</td>
+                                                     {coordinateSystem === 'utm' ? (
                                                          <>
-                                                            <td className="px-4 py-2"><input type="number" value={point.lat?.toFixed(8) || ''} readOnly className={coordInputClasses} /></td>
-                                                            <td className="px-4 py-2"><input type="number" value={point.lng?.toFixed(8) || ''} readOnly className={coordInputClasses} /></td>
-                                                          </>
-                                                    )}
-                                                    <td className="px-4 py-2"><input type="number" value={point.elevation?.toFixed(3) || '0.000'} readOnly className={coordInputClasses} /></td>
-                                                    <td className="px-4 py-2">
+                                                            <td className="px-4 py-2">
+                                                                <input 
+                                                                    type="number"
+                                                                    defaultValue={point.utm?.easting?.toFixed(3) || '0.000'}
+                                                                    onBlur={(e) => onUpdatePoint(selectedArea.id, group.id, point.id, 'easting', e.target.value)}
+                                                                    onKeyDown={(e) => e.key === 'Enter' && e.target.blur()}
+                                                                    onClick={e => e.stopPropagation()}
+                                                                    className={coordInputClasses}
+                                                                />
+                                                            </td>
+                                                            <td className="px-4 py-2">
+                                                                <input 
+                                                                    type="number"
+                                                                    defaultValue={point.utm?.northing?.toFixed(3) || '0.000'}
+                                                                    onBlur={(e) => onUpdatePoint(selectedArea.id, group.id, point.id, 'northing', e.target.value)}
+                                                                    onKeyDown={(e) => e.key === 'Enter' && e.target.blur()}
+                                                                    onClick={e => e.stopPropagation()}
+                                                                    className={coordInputClasses}
+                                                                />
+                                                            </td>
+                                                         </>
+                                                     ) : (
+                                                         <>
+                                                             <td className="px-4 py-2"><input type="number" defaultValue={point.lat?.toFixed(8) || ''} readOnly className={coordInputClasses} /></td>
+                                                             <td className="px-4 py-2"><input type="number" defaultValue={point.lng?.toFixed(8) || ''} readOnly className={coordInputClasses} /></td>
+                                                         </>
+                                                     )}
+                                                     <td className="px-4 py-2">
                                                         <input 
-                                                            type="text" 
-                                                            value={point.description || ''} 
-                                                            onChange={(e) => onUpdatePoint(selectedArea.id, group.id, point.id, 'description', e.target.value)}
+                                                            type="number"
+                                                            defaultValue={point.elevation?.toFixed(3) || '0.000'}
+                                                            onBlur={(e) => onUpdatePoint(selectedArea.id, group.id, point.id, 'elevation', e.target.value)}
+                                                            onKeyDown={(e) => e.key === 'Enter' && e.target.blur()}
                                                             onClick={e => e.stopPropagation()}
-                                                            className="w-full p-1 border rounded bg-transparent dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-blue-500"
-                                                            placeholder="وصف..."
+                                                            className={coordInputClasses}
                                                         />
-                                                    </td>
-                                                    <td className="px-2 py-2">
-                                                        <div className="flex items-center justify-center space-x-1">
-                                                            <button onClick={(e) => handleOpenMarkerPicker(e, point, group)} className="icon-button !w-11 !h-11 text-indigo-500 hover:bg-indigo-100 dark:hover:bg-indigo-900/50" title="تغيير الرمز">
-                                                                <Icon name="palette" size={22}/>
-                                                            </button>
-                                                            <button onClick={(e) => { e.stopPropagation(); copyLatLngToClipboard(point); }} className="icon-button !w-11 !h-11 text-sky-500 hover:bg-sky-100 dark:hover:bg-sky-900/50" title="نسخ Lat/Lng">
-                                                                <Icon name="globe-2" size={22}/>
-                                                            </button>
-                                                            <button onClick={(e) => { e.stopPropagation(); copyUtmToClipboard(point); }} className="icon-button !w-11 !h-11 text-green-500 hover:bg-green-100 dark:hover:bg-green-900/50" title="نسخ UTM">
-                                                                <Icon name="copy" size={22}/>
-                                                            </button>
-                                                            <button onClick={e => {e.stopPropagation(); onDeletePoint(group.id, point.id);}} className="icon-button !w-11 !h-11 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/50" title="حذف">
-                                                                <Icon name="trash-2" size={22}/>
-                                                            </button>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            ))}
+                                                     </td>
+                                                     <td className="px-4 py-2">
+                                                         <input 
+                                                             type="text" 
+                                                             value={point.description || ''} 
+                                                             onChange={(e) => onUpdatePoint(selectedArea.id, group.id, point.id, 'description', e.target.value)}
+                                                             onClick={e => e.stopPropagation()}
+                                                             className="w-full p-1 border rounded bg-transparent dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-blue-500"
+                                                             placeholder="وصف..."
+                                                         />
+                                                     </td>
+                                                     <td className="px-2 py-2">
+                                                         <div className="flex items-center justify-center space-x-1">
+                                                             <button onClick={(e) => handleOpenMarkerPicker(e, point, group)} className="icon-button !w-11 !h-11 text-indigo-500 hover:bg-indigo-100 dark:hover:bg-indigo-900/50" title="تغيير الرمز">
+                                                                 <Icon name="palette" size={22}/>
+                                                             </button>
+                                                             <button onClick={(e) => { e.stopPropagation(); copyLatLngToClipboard(point); }} className="icon-button !w-11 !h-11 text-sky-500 hover:bg-sky-100 dark:hover:bg-sky-900/50" title="نسخ Lat/Lng">
+                                                                 <Icon name="globe-2" size={22}/>
+                                                             </button>
+                                                             <button onClick={(e) => { e.stopPropagation(); copyUtmToClipboard(point); }} className="icon-button !w-11 !h-11 text-green-500 hover:bg-green-100 dark:hover:bg-green-900/50" title="نسخ UTM">
+                                                                 <Icon name="copy" size={22}/>
+                                                             </button>
+                                                             <button onClick={e => {e.stopPropagation(); onDeletePoint(group.id, point.id);}} className="icon-button !w-11 !h-11 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/50" title="حذف">
+                                                                 <Icon name="trash-2" size={22}/>
+                                                             </button>
+                                                         </div>
+                                                     </td>
+                                                 </tr>
+                                             ))}
+                                             </tbody>
+                                         </table>
+                                     </div>
+                                 </div>
+                             ))}
                         </div>
                     </div>
                 </div>
@@ -2426,42 +2453,65 @@ redo();
                 if (!snapped) addToast('تمت إضافة النقطة.', 'success');
                 return newPoint.id;
             }, [selectedArea, selectedGroupId, utmZone, addToast, selectedGroup, isDeleteMode, setWorkAreas]);
-
+            
             const handleUpdatePoint = useCallback(async (areaId, groupId, pointId, field, value) => {
                 let newPointData = {};
-                
-                if (field === 'latlng') {
-                    const area = workAreas.find(a => a.id === areaId);
-                    const group = area?.groups.find(g => g.id === groupId);
-                    const point = group?.points.find(p => p.id === pointId);
 
-                    let finalElevation = point?.elevation ?? 0;
-
-                    if (group?.showElevations) {
-                        const { elevation, status } = await getElevation(value);
-                        if (status !== 'OK') addToast(`تعذر تحديث المنسوب (${status}).`, 'error');
-                        finalElevation = elevation ?? point?.elevation ?? 0;
-                    }
+                setWorkAreas(prev => {
+                    const nextAreas = JSON.parse(JSON.stringify(prev)); // Deep copy to avoid mutation issues
+                    const area = nextAreas.find(a => a.id === areaId);
+                    if (!area) return prev;
                     
-                    newPointData = { lat: value.lat, lng: value.lng, utm: convertLatLngToUtm(value.lat, value.lng, utmZone), elevation: finalElevation };
-                } else {
-                    newPointData[field] = value;
-                }
-    
-                setWorkAreas(prev => prev.map(area => 
-                    area.id === areaId ? { 
-                        ...area, 
-                        groups: area.groups.map(g => 
-                            g.id === groupId ? { 
-                                ...g, 
-                                points: g.points.map(p => 
-                                    p.id === pointId ? { ...p, ...newPointData } : p
-                                ) 
-                            } : g
-                        ) 
-                    } : area
-                ));
-            }, [workAreas, utmZone, addToast, setWorkAreas]);
+                    const group = area.groups.find(g => g.id === groupId);
+                    if (!group) return prev;
+                    
+                    const pointIndex = group.points.findIndex(p => p.id === pointId);
+                    if (pointIndex === -1) return prev;
+
+                    const originalPoint = group.points[pointIndex];
+
+                    // --- يبدأ المنطق الجديد هنا ---
+                    if (field === 'latlng') {
+                        // هذا المنطق خاص بالسحب والإفلات على الخريطة
+                        newPointData = { 
+                            lat: value.lat, 
+                            lng: value.lng, 
+                            utm: convertLatLngToUtm(value.lat, value.lng, utmZone),
+                            // لا نلمس المنسوب عند السحب
+                        };
+                    } else if (['easting', 'northing', 'elevation'].includes(field)) {
+                        // هذا المنطق خاص بالتعديل من الجدول
+                        const newNumValue = parseFloat(value);
+                        if (isNaN(newNumValue)) return prev; // تجاهل القيمة غير الرقمية
+
+                        let currentUtm = { ...originalPoint.utm };
+                        let newElevation = originalPoint.elevation;
+
+                        if (field === 'easting') currentUtm.easting = newNumValue;
+                        if (field === 'northing') currentUtm.northing = newNumValue;
+                        if (field === 'elevation') newElevation = newNumValue;
+                        
+                        const newLatLng = convertUtmToLatLng(currentUtm.easting, currentUtm.northing, utmZone);
+                        if (!newLatLng) return prev; // تجاهل إذا كان التحويل خاطئاً
+
+                        newPointData = {
+                            lat: newLatLng.lat,
+                            lng: newLatLng.lng,
+                            utm: currentUtm,
+                            elevation: newElevation
+                        };
+
+                    } else {
+                        // للحقول الأخرى مثل الوصف أو رمز النقطة
+                        newPointData[field] = value;
+                    }
+                    // --- ينتهي المنطق الجديد هنا ---
+
+                    group.points[pointIndex] = { ...originalPoint, ...newPointData };
+                    return nextAreas;
+                });
+
+            }, [utmZone, setWorkAreas]);
             
             const handleDeletePointById = (groupId, pointId) => {
                 if (!selectedArea) return;
@@ -3039,17 +3089,17 @@ redo();
 
             const handleOpenPdfOptions = () => {
                  if (!selectedArea) {
-                        addToast('الرجاء تحديد منطقة عمل أولاً.', 'error');
-                        return;
-                 }
+                         addToast('الرجاء تحديد منطقة عمل أولاً.', 'error');
+                         return;
+                }
                  setModal({
-                       type: 'pdfOptions', 
-                       props: { 
-                           onClose: closeModal, 
-                           onConfirm: handleGeneratePDF, 
-                           groups: selectedArea.groups,
-                           selectedGroupId: selectedGroupId
-                       }
+                         type: 'pdfOptions', 
+                         props: { 
+                             onClose: closeModal, 
+                             onConfirm: handleGeneratePDF, 
+                             groups: selectedArea.groups,
+                             selectedGroupId: selectedGroupId
+                         }
                  });
             };
 
