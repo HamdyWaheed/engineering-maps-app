@@ -944,7 +944,7 @@
                                                          <>
                                                             <td className="px-4 py-2"><input type="number" value={point.lat?.toFixed(8) || ''} readOnly className={coordInputClasses} /></td>
                                                             <td className="px-4 py-2"><input type="number" value={point.lng?.toFixed(8) || ''} readOnly className={coordInputClasses} /></td>
-                                                         </>
+                                                          </>
                                                     )}
                                                     <td className="px-4 py-2"><input type="number" value={point.elevation?.toFixed(3) || '0.000'} readOnly className={coordInputClasses} /></td>
                                                     <td className="px-4 py-2">
@@ -1072,6 +1072,12 @@
             const areaPolygonsRef = useRef(new Map());
             const infoWindowRef = useRef(null);
             const onAddPointRef = useRef(onAddPoint);
+            
+            // FIX: Use a ref to hold the current delete mode state to avoid stale closures in listeners.
+            const isDeleteModeRef = useRef(isDeleteMode);
+            useEffect(() => {
+                isDeleteModeRef.current = isDeleteMode;
+            }, [isDeleteMode]);
 
             useEffect(() => { onAddPointRef.current = onAddPoint; }, [onAddPoint]);
 
@@ -1098,11 +1104,11 @@
 
             useEffect(() => {
                 if (mapRef.current && !map) {
-                    const mapInstance = new window.google.maps.Map(mapRef.current, { center: { lat: DEFAULT_MAP_CENTER_LAT, lng: DEFAULT_MAP_CENTER_LNG }, zoom: DEFAULT_MAP_ZOOM, mapTypeId: 'satellite', mapTypeControl: false, streetViewControl: false, fullscreenControl: false, zoomControl: true, clickableIcons: !isDeleteMode });
+                    const mapInstance = new window.google.maps.Map(mapRef.current, { center: { lat: DEFAULT_MAP_CENTER_LAT, lng: DEFAULT_MAP_CENTER_LNG }, zoom: DEFAULT_MAP_ZOOM, mapTypeId: 'satellite', mapTypeControl: false, streetViewControl: false, fullscreenControl: false, zoomControl: true, clickableIcons: false });
                     infoWindowRef.current = new window.google.maps.InfoWindow();
                     
                     mapInstance.addListener('click', (e) => {
-                        if (isDeleteMode) {
+                        if (isDeleteModeRef.current) {
                             addToast('وضع الحذف مفعل. انقر على نقطة لحذفها.', 'info');
                             return;
                         }
@@ -1118,14 +1124,22 @@
                 }
             }, [mapRef, map]);
 
+            // FIX: This effect now handles all mode-related visual changes.
             useEffect(() => {
                 if(map) {
-                    map.setOptions({ draggableCursor: isDeleteMode ? 'crosshair' : null, clickableIcons: !isDeleteMode });
+                    map.setOptions({
+                        draggableCursor: isDeleteMode ? 'crosshair' : null,
+                        clickableIcons: !isDeleteMode
+                    });
+                    markersRef.current.forEach(marker => {
+                        marker.setDraggable(!isDeleteMode);
+                    });
                 }
             }, [map, isDeleteMode]);
 
             const selectedAreaJson = useMemo(() => JSON.stringify(selectedArea), [selectedArea]);
 
+            // FIX: Removed isDeleteMode from dependency array to prevent re-running this expensive loop on mode change.
             useEffect(() => {
                 if (!map || !selectedArea) return;
 
@@ -1154,10 +1168,9 @@
                             marker = new window.google.maps.Marker({ 
                                 position: latLng, 
                                 map, 
-                                draggable: !isDeleteMode, 
+                                draggable: !isDeleteModeRef.current, // Set initial draggability
                                 title: `نقطة ${index + 1} (${group.name})`, 
                                 icon: markerIcon, 
-                                cursor: isDeleteMode ? 'pointer' : 'grab',
                                 visible: map.getZoom() >= MARKER_VISIBILITY_ZOOM_THRESHOLD
                             });
                             currentMarkers.set(point.id, marker);
@@ -1165,7 +1178,8 @@
                             marker.addListener('click', () => { 
                                 onActivateGroup(group.id);
                                 setActivePointId(point.id);
-                                if (isDeleteMode) {
+                                // FIX: Use the ref to get the latest mode state.
+                                if (isDeleteModeRef.current) {
                                     onDeletePointById(group.id, point.id);
                                 } else {
                                     const utm = point.utm;
@@ -1189,7 +1203,7 @@
                     }
                 });
 
-            }, [map, selectedAreaJson, isDeleteMode]);
+            }, [map, selectedAreaJson]);
 
             useEffect(() => {
                 if (!map || !selectedArea) return;
@@ -2029,22 +2043,18 @@
         };
         
         // --- REFACTOR: Tools Configuration ---
-        // تم نقل تعريف الأدوات إلى هذا المكان المركزي
-        const getToolsConfig = (settings, onUpdateSettings, onToggleDeleteMode, onOpenScreenshotModal, isZoomedInEnough) => {
-            const { showPolylines, showElevations, showLabels, showDescriptions, isMeasuring, isAreaMeasuring, snapEnabled, isDeleteMode } = settings;
+        const getToolsConfig = (settings, onUpdateSettings, onOpenScreenshotModal, isZoomedInEnough, onToggleDeleteMode, isDeleteMode) => {
+            const { showPolylines, showElevations, showLabels, showDescriptions, isMeasuring, isAreaMeasuring, snapEnabled } = settings;
             return [
-                // Row 1
                 { id: 'measure', icon: 'ruler', title: 'قياس المسافة', action: () => onUpdateSettings('isMeasuring', !isMeasuring), active: isMeasuring },
                 { id: 'area', icon: 'square', title: 'قياس المساحة', action: () => onUpdateSettings('isAreaMeasuring', !isAreaMeasuring), active: isAreaMeasuring },
                 { id: 'snap', icon: 'magnet', title: 'تفعيل الالتقاط', action: () => onUpdateSettings('snapEnabled', !snapEnabled), active: snapEnabled },
-                // Row 2
                 { id: 'showLabels', icon: 'hash', title: 'إظهار التسلسل', action: () => onUpdateSettings('showLabels', !showLabels), active: showLabels, disabled: !isZoomedInEnough },
                 { id: 'polyline', icon: 'git-commit', title: 'إظهار الخطوط', action: () => onUpdateSettings('showPolylines', !showPolylines), active: showPolylines },
                 { id: 'elevation', icon: 'text', title: 'إظهار المناسيب', action: () => onUpdateSettings('showElevations', !showElevations), active: showElevations, disabled: !isZoomedInEnough },
-                // Row 3
                 { id: 'showDescription', icon: 'message-square-text', title: 'إظهار الوصف', action: () => onUpdateSettings('showDescriptions', !showDescriptions), active: showDescriptions, disabled: !isZoomedInEnough },
-                { id: 'delete', icon: 'trash-2', title: 'حذف نقطة بالنقر', action: onToggleDeleteMode, active: isDeleteMode, danger: true },
                 { id: 'screenshot', icon: 'camera', title: 'لقطة شاشة', action: onOpenScreenshotModal, active: false },
+                { id: 'delete', icon: 'trash-2', title: 'حذف النقاط', action: onToggleDeleteMode, active: isDeleteMode, danger: true },
             ];
         };
 
@@ -2062,8 +2072,8 @@
         );
 
         // --- REFACTORED: ToolsSheet (for Mobile) ---
-        const ToolsSheet = ({ settings, onClose, onUpdateSettings, onToggleDeleteMode, onOpenScreenshotModal, isZoomedInEnough }) => {
-            const tools = getToolsConfig(settings, onUpdateSettings, onToggleDeleteMode, onOpenScreenshotModal, isZoomedInEnough);
+        const ToolsSheet = ({ settings, onClose, onUpdateSettings, onOpenScreenshotModal, isZoomedInEnough, onToggleDeleteMode, isDeleteMode }) => {
+            const tools = getToolsConfig(settings, onUpdateSettings, onOpenScreenshotModal, isZoomedInEnough, onToggleDeleteMode, isDeleteMode);
             
             const handleToolClick = (action, toolId) => {
                 action();
@@ -2095,8 +2105,8 @@
         };
         
         // --- REFACTORED: ToolsModal (for Desktop) ---
-        const ToolsModal = ({ settings, onClose, onUpdateSettings, onToggleDeleteMode, onOpenScreenshotModal, isZoomedInEnough }) => {
-            const tools = getToolsConfig(settings, onUpdateSettings, onToggleDeleteMode, onOpenScreenshotModal, isZoomedInEnough);
+        const ToolsModal = ({ settings, onClose, onUpdateSettings, onOpenScreenshotModal, isZoomedInEnough, onToggleDeleteMode, isDeleteMode }) => {
+            const tools = getToolsConfig(settings, onUpdateSettings, onOpenScreenshotModal, isZoomedInEnough, onToggleDeleteMode, isDeleteMode);
 
             return (
                 <GenericModal
@@ -2175,6 +2185,7 @@
             const [isLayersSectionOpen, setIsLayersSectionOpen] = useState(true);
             const [selectedPointIds, setSelectedPointIds] = useState(new Set());
             const [importMode, setImportMode] = useState(null);
+            const [isLoading, setIsLoading] = useState(true); // <-- FIX: Add loading state
             const mapApiRef = useRef(null);
             const fileInputRef = useRef(null);
             
@@ -2207,7 +2218,7 @@
                         undo();
                     } else if (event.key.toLowerCase() === 'y') {
                         event.preventDefault();
-                        redo();
+redo();
                     }
                 }
             }, [undo, redo, modal.type]);
@@ -2219,43 +2230,61 @@
                 };
             }, [handleKeyDown]);
             
+            // FIX: Refactored initialization useEffect
             useEffect(() => {
+                let initialState = {
+                    workAreas: [],
+                    selectedWorkAreaId: null,
+                    selectedGroupId: null
+                };
+
                 try {
-                    const saved = localStorage.getItem('workAreas');
-                    if (saved) {
-                        const parsed = JSON.parse(saved);
+                    const savedWorkAreas = localStorage.getItem('workAreas');
+                    if (savedWorkAreas) {
+                        const parsed = JSON.parse(savedWorkAreas);
                         if (Array.isArray(parsed) && parsed.length > 0) {
-                            setWorkAreas(parsed.map(area => ({
+                            initialState.workAreas = parsed.map(area => ({
                                 ...area,
                                 groups: area.groups.map(g => ({...DEFAULT_GROUP_SETTINGS, isVisible: g.isVisible !== false, ...g}))
-                            })));
+                            }));
                             const savedAreaId = localStorage.getItem('selectedWorkAreaId') || parsed[0]?.id;
-                            setSelectedWorkAreaId(savedAreaId);
-                            const savedGroupId = localStorage.getItem('selectedGroupId') || parsed.find(a => a.id === savedAreaId)?.groups[0]?.id || null;
-                            setSelectedGroupId(savedGroupId);
-                            return;
+                            initialState.selectedWorkAreaId = savedAreaId;
+                            initialState.selectedGroupId = localStorage.getItem('selectedGroupId') || parsed.find(a => a.id === savedAreaId)?.groups[0]?.id || null;
                         }
                     }
-                } catch (e) { console.error("Failed to load work areas", e); }
+                } catch (e) {
+                    console.error("Failed to load work areas, will use default.", e);
+                    // Let it fall through to create default state
+                }
                 
-                const newAreaId = generateUniqueId();
-                const newGroupId = generateUniqueId();
-                const defaultArea = { 
-                    id: newAreaId, 
-                    name: 'القاهرة ، مصر', 
-                    createdAt: new Date().toISOString(), 
-                    groups: [{ id: newGroupId, name: 'ميدان التحرير', color: POINT_GROUP_COLORS[0], points: [], ...DEFAULT_GROUP_SETTINGS }],
-                };
-                setWorkAreas([defaultArea]);
-                setSelectedWorkAreaId(newAreaId);
-                setSelectedGroupId(newGroupId);
-            }, []);
+                if (initialState.workAreas.length === 0) {
+                    const newAreaId = generateUniqueId();
+                    const newGroupId = generateUniqueId();
+                    const defaultArea = { 
+                        id: newAreaId, 
+                        name: 'القاهرة ، مصر', 
+                        createdAt: new Date().toISOString(), 
+                        groups: [{ id: newGroupId, name: 'ميدان التحرير', color: POINT_GROUP_COLORS[0], points: [], ...DEFAULT_GROUP_SETTINGS }],
+                    };
+                    initialState.workAreas = [defaultArea];
+                    initialState.selectedWorkAreaId = newAreaId;
+                    initialState.selectedGroupId = newGroupId;
+                }
+
+                // Set all states at once
+                setWorkAreas(initialState.workAreas);
+                setSelectedWorkAreaId(initialState.selectedWorkAreaId);
+                setSelectedGroupId(initialState.selectedGroupId);
+                setIsLoading(false);
+            }, []); // Empty dependency array ensures this runs only once
 
             useEffect(() => {
+                // Do not save during initial load
+                if (isLoading) return;
                 localStorage.setItem('workAreas', JSON.stringify(workAreas));
                 if (selectedWorkAreaId) localStorage.setItem('selectedWorkAreaId', selectedWorkAreaId);
                 if (selectedGroupId) localStorage.setItem('selectedGroupId', selectedGroupId);
-            }, [workAreas, selectedWorkAreaId, selectedGroupId]);
+            }, [workAreas, selectedWorkAreaId, selectedGroupId, isLoading]);
 
             const selectedArea = useMemo(() => workAreas.find(a => a.id === selectedWorkAreaId), [workAreas, selectedWorkAreaId]);
             const selectedGroup = useMemo(() => selectedArea?.groups.find(g => g.id === selectedGroupId), [selectedArea, selectedGroupId]);
@@ -2682,6 +2711,7 @@
 
             const triggerGetCurrentLocation = async () => {
                 if (!selectedArea) { addToast('الرجاء تحديد منطقة عمل أولاً.', 'error'); return; }
+                if (isDeleteMode) { addToast('لا يمكن إضافة نقطة في وضع الحذف.', 'error'); return; }
                 addToast('جاري جلب موقعك الحالي...', 'info');
                 const { location, error } = await getCurrentLocation();
                 if (location) {
@@ -2842,13 +2872,12 @@
                              addToast('فشل تهيئة أداة لقطة الشاشة.', 'error');
                             return;
                         }
-        
+    
                         const elementsToHide = [
                             document.getElementById('map-controls'),
                             document.getElementById('bottom-nav-bar'),
                             document.getElementById('desktop-tools-button-container'),
-                            document.getElementById('desktop-location-button'),
-                            document.getElementById('active-area-indicator')
+                            document.getElementById('desktop-map-actions-container')
                         ];
                         
                         elementsToHide.forEach(el => { if (el) el.style.visibility = 'hidden'; });
@@ -3010,17 +3039,17 @@
 
             const handleOpenPdfOptions = () => {
                  if (!selectedArea) {
-                       addToast('الرجاء تحديد منطقة عمل أولاً.', 'error');
-                       return;
+                        addToast('الرجاء تحديد منطقة عمل أولاً.', 'error');
+                        return;
                  }
                  setModal({
-                     type: 'pdfOptions', 
-                     props: { 
-                         onClose: closeModal, 
-                         onConfirm: handleGeneratePDF, 
-                         groups: selectedArea.groups,
-                         selectedGroupId: selectedGroupId
-                     }
+                       type: 'pdfOptions', 
+                       props: { 
+                           onClose: closeModal, 
+                           onConfirm: handleGeneratePDF, 
+                           groups: selectedArea.groups,
+                           selectedGroupId: selectedGroupId
+                       }
                  });
             };
 
@@ -3034,8 +3063,6 @@
                         return <MarkerPickerModal {...modal.props} />;
                     case 'importChoice':
                         return <ImportChoiceModal {...modal.props} />;
-                    case 'pasteChoice':
-                        return <PasteChoiceModal {...modal.props} />;
                     case 'directPasteUtm':
                         return <DirectPasteUtmModal {...modal.props} />;
                     case 'directPasteLatLng':
@@ -3052,10 +3079,9 @@
                          return <PdfOptionsModal {...modal.props} />;
                     case 'tools':
                          return <ToolsModal
-                            settings={{...displaySettings, isDeleteMode}}
+                            settings={{...displaySettings}}
                             onClose={closeModal}
                             onUpdateSettings={handleUpdateGroupSettings}
-                            onToggleDeleteMode={handleToggleDeleteMode}
                             onOpenScreenshotModal={() => handleOpenScreenshotOptions((options) => executeScreenshot(options, (dataUrl) => {
                                 if(dataUrl) {
                                     const link = document.createElement('a');
@@ -3066,11 +3092,25 @@
                                 }
                             }))}
                             isZoomedInEnough={isZoomedInEnough}
+                            onToggleDeleteMode={handleToggleDeleteMode}
+                            isDeleteMode={isDeleteMode}
                         />;
                     default:
                         return null;
                 }
             };
+
+            // FIX: Add loading screen
+            if (isLoading) {
+                return (
+                    <div className="flex items-center justify-center h-screen w-screen bg-slate-100 dark:bg-slate-900">
+                        <div className="text-center">
+                            <Icon name="loader" className="animate-spin text-blue-600 mx-auto" size={48} />
+                            <p className="mt-4 text-lg font-semibold text-slate-700 dark:text-slate-200">جاري تحميل المشروع...</p>
+                        </div>
+                    </div>
+                );
+            }
             
             return (
                 <div className="h-screen w-screen flex flex-col bg-slate-100 dark:bg-slate-900">
@@ -3142,6 +3182,26 @@
                                             groupName={selectedGroup?.name} 
                                             isTakingScreenshot={isTakingScreenshot}
                                         />
+                                        
+                                        {/* --- NEW: Desktop On-Map Action Buttons --- */}
+                                        <div id="desktop-map-actions-container" className="hidden lg:flex absolute bottom-4 left-4 z-10 flex-col-reverse items-center gap-3">
+                                            <button 
+                                                onClick={triggerGetCurrentLocation} 
+                                                className="bg-blue-600 text-white rounded-full p-4 shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition disabled:bg-slate-400"
+                                                title="إضافة نقطة في موقعك الحالي"
+                                                disabled={isDeleteMode}
+                                            >
+                                                <Icon name="locate-fixed" size={28} />
+                                            </button>
+                                            <button 
+                                                onClick={handleToggleDeleteMode}
+                                                className={`p-3 rounded-full shadow-lg flex items-center justify-center transition-colors duration-200 ${isDeleteMode ? 'bg-red-500 text-white' : 'bg-white/80 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300'}`}
+                                                title={isDeleteMode ? 'إلغاء وضع الحذف' : 'تفعيل وضع الحذف'}
+                                            >
+                                                <Icon name="trash-2" size={24} />
+                                            </button>
+                                        </div>
+
                                         <div id="desktop-tools-button-container" className="hidden lg:flex absolute bottom-4 left-1/2 -translate-x-1/2 z-10">
                                             <button 
                                                 onClick={handleOpenToolsModal} 
@@ -3151,15 +3211,7 @@
                                                 <span className="font-semibold">الأدوات</span>
                                             </button>
                                         </div>
-                                        <div id="desktop-location-button" className="hidden lg:block absolute bottom-4 left-4 z-10">
-                                            <button 
-                                                onClick={triggerGetCurrentLocation} 
-                                                className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm text-slate-600 dark:text-slate-300 rounded-full p-3 shadow-lg hover:bg-white dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition"
-                                                title="جلب الموقع الحالي"
-                                            >
-                                                <Icon name="locate-fixed" size={24} />
-                                            </button>
-                                        </div>
+                                        
                                         <ScreenshotStamp 
                                             isVisible={isTakingScreenshot} 
                                             areaName={selectedArea?.name} 
@@ -3302,7 +3354,7 @@
                                     <Icon name="list-ordered" />
                                     <span className="text-xs">النقاط</span>
                                 </button>
-                                <button onClick={triggerGetCurrentLocation} className="h-14 w-14 -mt-8 bg-blue-600 rounded-full text-white flex items-center justify-center shadow-lg"><Icon name="plus" size={28}/></button>
+                                <button onClick={triggerGetCurrentLocation} disabled={isDeleteMode} className={`h-16 w-16 -mt-8 rounded-full text-white flex items-center justify-center shadow-lg transition-colors ${isDeleteMode ? 'bg-slate-400 cursor-not-allowed' : 'bg-blue-600'}`}><Icon name="plus" size={32}/></button>
                                 <button onClick={() => { setIsSidebarOpen(true); setIsLayersSectionOpen(true); }} className="flex flex-col items-center gap-1 text-slate-500">
                                     <Icon name="folder-kanban" />
                                     <span className="text-xs">الطبقات</span>
@@ -3329,10 +3381,9 @@
                             
                             {isToolsSheetOpen && (
                                 <ToolsSheet
-                                    settings={{...displaySettings, isDeleteMode}}
+                                    settings={{...displaySettings}}
                                     onClose={() => setIsToolsSheetOpen(false)}
                                     onUpdateSettings={handleUpdateGroupSettings}
-                                    onToggleDeleteMode={handleToggleDeleteMode}
                                     onOpenScreenshotModal={() => handleOpenScreenshotOptions((options) => executeScreenshot(options, (dataUrl) => {
                                         if(dataUrl) {
                                             const link = document.createElement('a');
@@ -3343,6 +3394,8 @@
                                         }
                                     }))}
                                     isZoomedInEnough={isZoomedInEnough}
+                                    onToggleDeleteMode={handleToggleDeleteMode}
+                                    isDeleteMode={isDeleteMode}
                                 />
                             )}
                         </main>
